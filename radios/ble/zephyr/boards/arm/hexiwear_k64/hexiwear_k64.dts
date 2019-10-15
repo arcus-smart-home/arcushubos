@@ -1,0 +1,151 @@
+/dts-v1/;
+
+#include <nxp/nxp_k6x.dtsi>
+
+/ {
+	model = "Hexiwear K64  board";
+	compatible = "nxp,hexiwear", "nxp,k64f", "nxp,k6x";
+
+	aliases {
+		adc-0 = &adc0;
+		adc-1 = &adc1;
+		pwm-0 = &pwm0;
+		pwm-1 = &pwm1;
+		pwm-2 = &pwm2;
+		pwm-3 = &pwm3;
+		uart-0 = &uart0;
+		uart-4 = &uart4;
+		pinmux-a = &pinmux_a;
+		pinmux-b = &pinmux_b;
+		pinmux-c = &pinmux_c;
+		pinmux-d = &pinmux_d;
+		pinmux-e = &pinmux_e;
+		gpio-a = &gpioa;
+		gpio-b = &gpiob;
+		gpio-c = &gpioc;
+		gpio-d = &gpiod;
+		gpio-e = &gpioe;
+		i2c-0 = &i2c0;
+		i2c-1 = &i2c1;
+		i2c-2 = &i2c2;
+		led0 = &green_led;
+		led1 = &blue_led;
+		led2 = &red_led;
+	};
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,console = &uart0;
+#ifdef CONFIG_BT
+		zephyr,bt-uart = &uart4;
+#endif
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		red_led: led@0 {
+			gpios = <&gpioc 8 GPIO_INT_ACTIVE_LOW>;
+			label = "User LD1";
+		};
+		green_led: led@1 {
+			gpios = <&gpiod 0 GPIO_INT_ACTIVE_LOW>;
+			label = "User LD2";
+		};
+		blue_led: led@2 {
+			gpios = <&gpioc 9 GPIO_INT_ACTIVE_LOW>;
+			label = "User LD3";
+		};
+	};
+};
+
+&adc0 {
+	status = "ok";
+};
+
+&adc1 {
+	status = "ok";
+};
+
+&pwm3 {
+	status = "ok";
+};
+
+&i2c0 {
+	status = "ok";
+
+	max30101@57 {
+		compatible = "max,max30101";
+		reg = <0x57>;
+		label = "MAX30101";
+	};
+};
+
+&i2c1 {
+	status = "ok";
+
+	fxos8700@1e {
+		compatible = "nxp,fxos8700";
+		reg = <0x1e>;
+		label = "FXOS8700";
+		int1-gpios = <&gpioc 1 0>;
+		int2-gpios = <&gpiod 13 0>;
+	};
+
+	fxas21002@20 {
+		compatible = "nxp,fxas21002";
+		reg = <0x20>;
+		label = "FXAS21002";
+		int1-gpios = <&gpiod 1 0>;
+		int2-gpios = <&gpioc 18 0>;
+	};
+};
+
+&uart0 {
+	status = "ok";
+	current-speed = <115200>;
+};
+
+#ifdef CONFIG_BT
+&uart4 {
+	status = "ok";
+	current-speed = <115200>;
+};
+#endif
+
+&flash0 {
+	/*
+	 * For more information, see:
+	 * http://docs.zephyrproject.org/devices/dts/flash_partitions.html
+	 */
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 0x00010000>;
+			read-only;
+		};
+
+		/*
+		 * The flash starting at 0x00010000 and ending at
+		 * 0x0001ffff (sectors 16-31) is reserved for use
+		 * by the application.
+		 */
+
+		slot0_partition: partition@20000 {
+			label = "image-0";
+			reg = <0x00020000 0x00060000>;
+		};
+		slot1_partition: partition@80000 {
+			label = "image-1";
+			reg = <0x00080000 0x00060000>;
+		};
+		scratch_partition: partition@e0000 {
+			label = "image-scratch";
+			reg = <0x000e0000 0x00020000>;
+		};
+	};
+};

@@ -1,0 +1,83 @@
+/*
+ * Copyright (c) 2017 Clage GmbH
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/stm32f072.dtsi>
+
+/ {
+	model = "STMicroelectronics STM32F072B-DISCO board";
+	compatible = "st,stm32f072b-disco", "st,stm32f072";
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		red_up_led_3: led@0 {
+			gpios = <&gpioc 6 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD3";
+		};
+		yellow_left_4: led@1 {
+			gpios = <&gpioc 8 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD4";
+		};
+		green_right_led_5: led@2 {
+			gpios = <&gpioc 9 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD5";
+		};
+		blue_low_led_6: led@3 {
+			gpios = <&gpioc 7 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD6";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button: button@0 {
+			label = "User";
+			gpios = <&gpioa 0 GPIO_INT_ACTIVE_LOW>;
+		};
+	};
+
+	aliases {
+		led0 = &red_up_led_3;
+		led1 = &yellow_left_4;
+		led2 = &green_right_led_5;
+		led3 = &blue_low_led_6;
+		sw0 = &user_button;
+	};
+};
+
+&usart1 {
+	current-speed = <115200>;
+	pinctrl-0 = <&usart1_pins_a>;
+	pinctrl-names = "default";
+	status = "ok";
+};
+
+&i2c1 {
+	status = "ok";
+	clock-frequency = <I2C_BITRATE_FAST>;
+};
+
+&i2c2 {
+	status = "ok";
+	clock-frequency = <I2C_BITRATE_FAST>;
+};
+
+&spi1 {
+	status = "ok";
+};
+
+&can1 {
+	pinctrl-0 = <&can_pins_a>;
+	pinctrl-names = "default";
+	bus-speed = <250000>;
+	status = "ok";
+};

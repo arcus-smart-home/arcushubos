@@ -1,0 +1,4 @@
+tests:
+  peripheral.pci:
+    depends_on: pci
+    tags: drivers pci

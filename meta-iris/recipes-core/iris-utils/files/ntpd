@@ -1,0 +1,19 @@
+#! /bin/sh
+
+# Start up NTP daemon when network comes up
+
+if test "x$IFACE" = xlo ; then
+	exit 0
+fi
+
+# Skip if already running
+if [ -e /var/run/ntpd.pid ]; then
+    exit 0
+fi
+
+# Run daemon
+LOG=/var/log/ntpd.log
+echo "Running ntpd due to network up..." >> $LOG
+/usr/sbin/ntpd -nqN -p 0.north-america.pool.ntp.org -p 1.north-america.pool.ntp.org -p 2.north-america.pool.ntp.org -p 3.north-america.pool.ntp.org >> $LOG 2<&1
+
+exit 0

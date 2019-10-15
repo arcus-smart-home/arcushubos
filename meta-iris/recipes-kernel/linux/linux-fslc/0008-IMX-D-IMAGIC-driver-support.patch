@@ -1,0 +1,1583 @@
+From 2828c893d093b454e38e02aae7bd5ad14de1bed1 Mon Sep 17 00:00:00 2001
+Date: Fri, 23 Feb 2018 15:46:33 -0500
+Subject: [PATCH] IMX-D-IMAGIC driver support
+
+---
+ drivers/ata/ahci_imx.c                    |   3 +-
+ drivers/misc/Kconfig                      |  34 ++++
+ drivers/misc/Makefile                     |   6 +
+ drivers/misc/buzzer.c                     | 202 ++++++++++++++++++++
+ drivers/misc/imagic_imx6_gpio.c           | 306 ++++++++++++++++++++++++++++++
+ drivers/misc/mbi6023.c                    | 205 ++++++++++++++++++++
+ drivers/misc/watchdog.c                   | 294 ++++++++++++++++++++++++++++
+ drivers/net/ethernet/freescale/fec_main.c |  30 ++-
+ drivers/sbus/char/bbc_envctrl.c           |   7 +-
+ drivers/spi/spidev.c                      |   1 +
+ drivers/tty/serial/imx.c                  | 142 +++++++++++++-
+ drivers/usb/chipidea/ci_hdrc_imx.c        |  43 +++++
+ include/linux/misc/buzzer.h               |  24 +++
+ include/linux/misc/watchdog.h             |  25 +++
+ 14 files changed, 1315 insertions(+), 7 deletions(-)
+ create mode 100644 drivers/misc/buzzer.c
+ create mode 100644 drivers/misc/imagic_imx6_gpio.c
+ create mode 100644 drivers/misc/mbi6023.c
+ create mode 100644 drivers/misc/watchdog.c
+ create mode 100644 include/linux/misc/buzzer.h
+ create mode 100644 include/linux/misc/watchdog.h
+
+diff --git a/drivers/ata/ahci_imx.c b/drivers/ata/ahci_imx.c
+index 787567e..1268f0e 100644
+--- a/drivers/ata/ahci_imx.c
++++ b/drivers/ata/ahci_imx.c
+@@ -760,7 +760,8 @@ static int imx_ahci_probe(struct platform_device *pdev)
+ 		imxpriv->phy_params =
+ 				   IMX6Q_GPR13_SATA_RX_LOS_LVL_SATA2M |
+ 				   IMX6Q_GPR13_SATA_RX_DPLL_MODE_2P_4F |
+-				   IMX6Q_GPR13_SATA_SPD_MODE_3P0G |
++				   // IRIS Change - IMAGIC additions
++				   //IMX6Q_GPR13_SATA_SPD_MODE_3P0G |
+ 				   reg_value;
+ 	}
+ 
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 8136dc7..be3a42a 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -506,6 +506,40 @@ config PCI_ENDPOINT_TEST
+            Enable this configuration option to enable the host side test driver
+            for PCI Endpoint.
+ 
++config WATCH_DOG
++	tristate "WATCH_DOG FOR IMAGIC BOARD"
++	 help
++          If you say yes here you get support for the WATCH_DOG
++
++          This driver can also be built as a module.  If so, the module
++          will be called WATCH_DOG_MODULE.
++
++config MBI6023
++	tristate "MBI6023 IMAGIC BOARD"
++	 help
++	   If you say yes here you get support for the MBI6023
++
++	   This driver can also be built as a module.  If so, the module
++	   will be called MBI6023_MODULE.
++
++config BUZZER
++        tristate "BUZZER FOR IMAGIC IMX6 BOARD"
++        help
++          If you say yes here you get support for the Buzzer
++
++          This driver can also be built as a module.  If so, the module
++          will be called buzzer.
++
++
++config IMX6_GPIO_TEST
++	tristate "IMX6 GPIO TEST FOR IMAGIC BOARD"
++        help
++         If you say yes here you get support for the Gpio_test_driver
++
++         This driver can also be built as a module.  If so, the module
++         will be called Gpio_test_driver.config IMX6_GPIO_TEST
++
++
+ source "drivers/misc/c2port/Kconfig"
+ source "drivers/misc/eeprom/Kconfig"
+ source "drivers/misc/cb710/Kconfig"
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index ad0e64f..345b042 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -3,6 +3,12 @@
+ # Makefile for misc devices that really don't fit anywhere else.
+ #
+ 
++# IRIS Change - IMAGIC additions
++obj-$(CONFIG_WATCH_DOG)     	+= watchdog.o
++obj-$(CONFIG_MBI6023)         += mbi6023.o
++obj-$(CONFIG_IMX6_GPIO_TEST)    += imagic_imx6_gpio.o
++obj-$(CONFIG_BUZZER)            += buzzer.o
++
+ obj-$(CONFIG_IBM_ASM)		+= ibmasm/
+ obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
+ obj-$(CONFIG_AD525X_DPOT_I2C)	+= ad525x_dpot-i2c.o
+diff --git a/drivers/misc/buzzer.c b/drivers/misc/buzzer.c
+new file mode 100644
+index 0000000..2db74da
+--- /dev/null
++++ b/drivers/misc/buzzer.c
+@@ -0,0 +1,202 @@
++/*
++ * buzzer.c -- support  gpio buzzer
++ *
++ *  Author 		wujiajie
++ *  Email   		495398825@qq.com
++ *  Create time 	2014-02-12
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++#include <linux/miscdevice.h>
++#include <linux/delay.h>
++#include <asm/irq.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/mm.h>
++#include <linux/fs.h>
++#include <linux/types.h>
++#include <linux/delay.h>
++#include <linux/moduleparam.h>
++#include <linux/slab.h>
++#include <linux/errno.h>
++#include <linux/ioctl.h>
++#include <linux/cdev.h>
++#include <linux/string.h>
++#include <linux/list.h>
++#include <linux/pci.h>
++#include <linux/gpio.h>
++#include <asm/uaccess.h>
++#include <asm/atomic.h>
++#include <asm/unistd.h>
++
++#include <linux/version.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/completion.h>
++//#include <mach/cputype.h>
++//#include <mach/mux.h>
++
++#include <linux/platform_device.h>
++#include <linux/misc/buzzer.h>
++
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_platform.h>
++
++
++
++#define MOTOR_MAGIC 'L'
++#define BUZZER_ON 	_IOW(MOTOR_MAGIC, 0,int)
++#define BUZZER_OFF _IOW(MOTOR_MAGIC, 1,int)
++
++#define DEVICE_NAME				 "imagic_buzzer"
++
++static struct buzzer_dev
++{
++	unsigned char state;			// state: 1 on 0 off
++	unsigned long pin_number;
++}*buzzerp;
++
++
++static long buzzer_ioctl( struct file *file,  unsigned int cmd,  unsigned long arg) 
++{
++	unsigned long buzzer_pin;
++
++	if(buzzerp->state != cmd)
++	{
++		buzzerp->state = (cmd==BUZZER_ON)?1:0;
++
++		buzzer_pin = buzzerp->pin_number;
++
++		gpio_set_value(buzzer_pin,buzzerp->state);
++	}
++
++	return 0;
++}
++
++
++static struct file_operations buzzer_fops = {
++	 .owner = THIS_MODULE,
++	 .unlocked_ioctl = buzzer_ioctl,
++};
++
++static struct miscdevice miscbuzzer =
++{
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = DEVICE_NAME,
++	.fops = &buzzer_fops,
++};
++
++#ifdef CONFIG_OF
++static inline int buzzer_parse_dt(struct device *dev)
++
++{
++	int pin = -1;
++	struct device_node *np = dev->of_node;
++	pin = of_get_named_gpio(np, "control-gpios", 0);
++	if (!gpio_is_valid(pin))
++		return -EINVAL;
++	return pin;
++}
++#else
++static inline int buzzer_parse_dt(struct device *dev)
++{
++	dev_err(dev, "no platform data defined\n");
++
++	return ERR_PTR(-EINVAL);
++}
++#endif
++
++
++static int buzzer_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct buzzer_platform_data *pdata;
++	unsigned long pin_number;
++
++	pdata = dev_get_platdata(&pdev->dev);
++	if (!pdata) {
++		ret = buzzer_parse_dt(&pdev->dev);
++		if ( ret < 0 ) {
++			dev_err(&pdev->dev, "pin_number error\n");
++			return ret;
++		}
++		pin_number = ret;
++	} else{
++		pin_number= pdata->pin_number;
++	}
++	ret = gpio_request(pin_number, "buzzer");
++		if (ret < 0)
++	{
++	      printk("ERROR can not open GPIO %ld\n", pin_number);
++	      goto exit;
++	}
++	gpio_direction_output(pin_number,0);
++
++	buzzerp = kmalloc(sizeof(struct buzzer_dev), GFP_KERNEL);
++	if(!buzzerp)
++	{
++		printk("Buzzer: no memory\n");
++		ret = -ENOMEM;
++		goto exit;
++	}
++	buzzerp->pin_number = pin_number;
++
++	ret = misc_register(&miscbuzzer);
++	if(ret < 0)
++	{
++		printk("Buzzer: misc register error\n");
++		goto exit_kfree;
++	}
++
++	printk("Buzzer misc register successed.\n");
++
++	gpio_set_value(pin_number,1);
++	msleep(500);
++	gpio_set_value(pin_number,0);
++
++	return ret;
++
++exit_kfree:
++	kfree(buzzerp);
++exit:
++	return ret;
++}
++
++static int buzzer_remove(struct platform_device *pdev)
++{
++	gpio_set_value(buzzerp->pin_number,0);
++	gpio_free(buzzerp->pin_number);
++	misc_deregister(&miscbuzzer);
++	kfree(buzzerp);
++
++	return 0;
++}
++
++#ifdef CONFIG_OF
++static const struct of_device_id imagic_buzzer_dt_match[] = {
++	{ .compatible = "imagic,imagic_buzzer" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, imagic_buzzer_dt_match);
++#endif
++
++static struct platform_driver buzzer_driver = {
++	.driver ={
++		.name = DEVICE_NAME,
++		.of_match_table = of_match_ptr(imagic_buzzer_dt_match),
++	},
++	.probe = buzzer_probe,
++	.remove = buzzer_remove,
++};
++module_platform_driver(buzzer_driver);
++
++MODULE_DESCRIPTION("Driver for imagic IMX6 Buzzer");
++MODULE_AUTHOR("Wujiajie");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("gpio:buzzer");
++
+diff --git a/drivers/misc/imagic_imx6_gpio.c b/drivers/misc/imagic_imx6_gpio.c
+new file mode 100644
+index 0000000..65a14ae
+--- /dev/null
++++ b/drivers/misc/imagic_imx6_gpio.c
+@@ -0,0 +1,306 @@
++/*
++ * gpio driver for imx6
++ *
++ * Copyright (C) 2013  Hangzhou imagic inc.
++ * John Yao <yaobr@imagictech.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++#include <linux/platform_device.h>
++
++#include <linux/workqueue.h>
++#include <linux/module.h>
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/miscdevice.h>
++#include <linux/gpio.h>
++#include <linux/of_platform.h>
++#include <linux/of_gpio.h>
++#include <linux/slab.h>
++#include <linux/ioport.h>
++#include <linux/fcntl.h>
++#include <linux/proc_fs.h>
++#include <linux/sysctl.h>
++#include <linux/delay.h>
++
++#include <linux/uaccess.h>
++
++typedef struct {
++	int  gpio_index;
++	int  gpio_state;
++} imagic_ioctl_arg_gpio;
++
++/* ioctl cmd */
++#define	IOCTL_GPIO_LEVEL_GET		_IOW('Q', 0x02, int)		//get gpio state
++#define	IOCTL_GPIO_LEVEL_SET		_IOR('Q', 0x03, int)	//set gpio output state
++#define	IOCTL_GPIO_DIR_INPUT_SET	    _IOW('Q', 0x04, int)	//set gpio as a input
++
++#define GPIO_NAME_MAX			20
++
++#define GPIO_LEVEL_LOW			0
++#define GPIO_LEVEL_HIGHT		1
++
++static int imx6_gpio_open(struct inode *inode, struct file *filp)
++{
++	return 0;
++}
++
++static int request_one_gpio(imagic_ioctl_arg_gpio *gpio)
++{
++    char gpio_name[GPIO_NAME_MAX];
++
++    gpio_name[0] = '\0';
++    snprintf(gpio_name, sizeof(gpio_name), "user_gpio_%d", gpio->gpio_index);
++
++    if (gpio_request(gpio->gpio_index, gpio_name)) {
++		printk(KERN_ERR "imx6_gpio:request gpio %d failed.\n", gpio->gpio_index);
++	return -EBUSY;
++    }
++
++    return 0;
++}
++
++static void free_requested_gpio(imagic_ioctl_arg_gpio *gpio)
++{
++    gpio_free(gpio->gpio_index);
++}
++
++static int get_gpio_value(imagic_ioctl_arg_gpio *gpio, unsigned long arg)
++{
++    if (request_one_gpio(gpio)){
++	return -EBUSY;
++    }
++
++    gpio->gpio_state = gpio_get_value(gpio->gpio_index);
++
++    free_requested_gpio(gpio);
++
++    if (copy_to_user((imagic_ioctl_arg_gpio *)arg, gpio, sizeof (imagic_ioctl_arg_gpio))){
++		printk(KERN_ERR "imx6_gpio:copy datas to user space failed!\n");
++	return -EINVAL;
++    }
++
++    return 0;
++}
++
++static int set_gpio_value(imagic_ioctl_arg_gpio *gpio)
++{
++    if ((GPIO_LEVEL_LOW != gpio->gpio_state) && (GPIO_LEVEL_HIGHT != gpio->gpio_state)){
++		printk(KERN_ERR "imx6_gpio:gpio arg gpio_state invalid:%d\n", gpio->gpio_state);
++	    return -EINVAL;
++    }
++
++    if (request_one_gpio(gpio)){
++	return -EBUSY;
++    }
++
++    gpio_direction_output(gpio->gpio_index, 0);
++	gpio_set_value(gpio->gpio_index, gpio->gpio_state);
++
++    free_requested_gpio(gpio);
++
++    return 0;
++}
++
++static int set_gpio_dir_input(imagic_ioctl_arg_gpio *gpio)
++{
++	int ret = 0;
++
++	if (request_one_gpio(gpio)){
++		return -EBUSY;
++	}
++
++	ret = gpio_direction_input(gpio->gpio_index);
++	free_requested_gpio(gpio);
++
++	return ret;
++}
++
++static long imx6_gpio_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	int ret = 0;
++	imagic_ioctl_arg_gpio pin;
++
++	if (0 == arg)
++		return -EINVAL;
++
++	memset(&pin, 0, sizeof(pin));
++	if (copy_from_user(&pin, (imagic_ioctl_arg_gpio *)arg, sizeof (imagic_ioctl_arg_gpio))){
++		printk(KERN_ERR "imx6_gpio:copy datas from user failed\n");
++		return -EINVAL;
++	}
++
++	if (!gpio_is_valid(pin.gpio_index)){
++		printk(KERN_ERR "imx6_gpio: gpio arg gpio_index is invalid.\n");
++		return -EINVAL;
++	}
++
++	switch(cmd) {
++		case IOCTL_GPIO_LEVEL_GET:
++			ret = get_gpio_value(&pin, arg);
++			break;
++
++		case IOCTL_GPIO_LEVEL_SET:
++			ret = set_gpio_value(&pin);
++		break;
++
++		case IOCTL_GPIO_DIR_INPUT_SET:
++			ret = set_gpio_dir_input(&pin);
++			break;
++
++		default:
++			printk(KERN_ERR "imx6_gpio:unsupport ioctl cmd!\n");
++			ret = -EINVAL;
++			break;
++	}
++
++	return ret;
++}
++
++static int imx6_gpio_release(struct inode *node, struct file *file)
++{
++	return 0;
++}
++
++static const struct file_operations gpio_fops = {
++	.owner		= THIS_MODULE,
++	.unlocked_ioctl = imx6_gpio_ioctl,
++	.open		= imx6_gpio_open,
++	.release	= imx6_gpio_release,
++};
++
++static struct miscdevice gpio_dev = {
++	.minor		= MISC_DYNAMIC_MINOR,
++	.name		= "imagic_imx6_gpio",
++	.fops		= &gpio_fops,
++};
++
++static int imx6_gpio_probe(struct platform_device *pdev)
++{
++	int ret = 0;
++	int gpio_number = 0, i = 0;
++	struct device_node *np = pdev->dev.of_node;
++	enum of_gpio_flags flags;
++	int control_gpio;
++
++	printk(KERN_INFO"imx6_gpio: register...\n");
++	ret = of_property_read_u32(np, "gpio-number", &gpio_number);
++	if (ret < 0) {
++		printk("No gpio need to be controlled \n");
++	}
++
++	for (i = 0; i < gpio_number; i++) {
++		control_gpio = of_get_gpio_flags(np, i, &flags);
++		if (!gpio_is_valid(control_gpio))
++		{
++			printk("gpio invalid %d \n", control_gpio);
++			continue;
++		}
++		else
++		{
++			if (gpio_request(control_gpio, "imagic gpios")) {
++				printk(KERN_ERR "imx6_gpio:request gpio %d failed.\n", control_gpio);
++				continue;
++			}
++			if(flags == 1)
++			{
++				gpio_direction_output(control_gpio, 0);
++				printk("imx6_gpio_probe gpio %d ,value : %d\n", control_gpio, 0);
++			}
++			else if(flags == 0)
++			{
++				gpio_direction_output(control_gpio, 1);
++				printk("imx6_gpio_probe gpio %d ,value : %d\n", control_gpio, 1);
++			}
++			else
++			{
++				if(flags & 1)
++				{
++					gpio_direction_output(control_gpio, 1);
++					printk("imx6_gpio_probe gpio %d ,value : %d\n", control_gpio, 1);
++					mdelay(flags-1);
++					printk("mdelay %d\n", flags-1);
++					gpio_set_value(control_gpio, 0);
++					printk("imx6_gpio_probe gpio %d ,value : %d\n", control_gpio, 0);
++				}
++				else
++				{
++					gpio_direction_output(control_gpio, 0);
++					printk("imx6_gpio_probe gpio %d ,value : %d\n", control_gpio, 0);
++					mdelay(flags);
++					printk("mdelay %d\n", flags);
++					gpio_set_value(control_gpio, 1);
++					printk("imx6_gpio_probe gpio %d ,value : %d\n", control_gpio, 1);
++				}
++			}
++			gpio_free(control_gpio);
++		}
++	}
++
++	control_gpio = of_get_named_gpio_flags(np, "otg-gpios", 0, &flags);
++	if (control_gpio < 0) {
++		printk("get otg-gpios fail \n");
++	}
++
++	if (gpio_request(control_gpio, "otg gpios")) {
++		printk(KERN_ERR "imx6_gpio:request gpios %d failed.\n", control_gpio);
++	}
++	if(flags == 1)
++	{
++		gpio_direction_output(control_gpio, 0);
++		printk("imx6_gpio_probe gpio %d ,value : %d\n", control_gpio, 0);
++	}
++	else if(flags == 0)
++	{
++		gpio_direction_output(control_gpio, 1);
++		printk("imx6_gpio_probe gpio %d ,value : %d\n", control_gpio, 1);
++	}
++
++	ret = misc_register(&gpio_dev);
++	if (ret != 0) {
++		printk(KERN_ERR "imx6_gpio:misc register failed: %d\n", ret);
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
++static int imx6_gpio_remove(struct platform_device *pdev)
++{
++	misc_deregister(&gpio_dev);
++
++	return 0;
++}
++
++
++#ifdef CONFIG_OF
++static const struct of_device_id imagic_gpio_dt_match[] = {
++	{ .compatible = "imagic,imagic_imx6_gpio" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, imagic_gpio_dt_match);
++#endif
++
++
++static struct platform_driver imx6_gpio_driver = {
++	.probe		= imx6_gpio_probe,
++	.remove		= imx6_gpio_remove,
++	.driver		= {
++		.name	= "imagic_imx6_gpio",
++		.owner	= THIS_MODULE,
++		.of_match_table = imagic_gpio_dt_match,
++	},
++};
++
++module_platform_driver(imx6_gpio_driver);
++
++
++MODULE_AUTHOR("wujiajie<wujj@imagictech.com>");
++MODULE_DESCRIPTION("Imx6 user gpio driver");
++MODULE_LICENSE("GPL");
++
+diff --git a/drivers/misc/mbi6023.c b/drivers/misc/mbi6023.c
+new file mode 100644
+index 0000000..2bafcda
+--- /dev/null
++++ b/drivers/misc/mbi6023.c
+@@ -0,0 +1,205 @@
++/*
++ * gpio driver for imx6
++ *
++ * Copyright (C) 2013  Hangzhou QiYang inc.
++ * John Yao <yaobr@qiyangtech.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++#include <linux/platform_device.h>
++
++#include <linux/workqueue.h>
++#include <linux/module.h>
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/miscdevice.h>
++#include <linux/gpio.h>
++#include <linux/of_platform.h>
++#include <linux/of_gpio.h>
++#include <linux/slab.h>
++#include <linux/ioport.h>
++#include <linux/fcntl.h>
++#include <linux/proc_fs.h>
++#include <linux/sysctl.h>
++#include <linux/delay.h>
++
++#include <linux/uaccess.h>
++#include <linux/errno.h>
++#include <asm-generic/gpio.h>
++#include <linux/unistd.h>
++
++/* ioctl cmd */
++#define MOTOR_MAGIC 'L'
++#define IOCTL_GPIO_SPI_SET		_IOW(MOTOR_MAGIC, 0,int)
++//#define   IOCTL_GPIO_SPI_SET				_IOW('Q', 0x05, int)
++
++#define IMX_GPIO_NR(bank, nr)		(((bank) - 1) * 32 + (nr))
++#define QY_IMX6S_LED_CKI        IMX_GPIO_NR(5 , 14)
++#define QY_IMX6S_LED_SDI        IMX_GPIO_NR(5 , 15)
++#define MAX_INDEX               15 // 3 word control, 3x4 data words
++
++typedef struct {
++	int  mbi6023[MAX_INDEX];
++	int  index;
++	} GPIO_ATTR_AST;
++
++static int imx6_MBI6023_open(struct inode *inode, struct file *filp)
++{
++	return 0;
++}
++static int set_gpio_spi_input(GPIO_ATTR_AST *pin)
++{
++	int i;
++	int ret;
++	int level;
++	int M;
++
++	gpio_set_value(QY_IMX6S_LED_CKI, 0);
++	gpio_set_value(QY_IMX6S_LED_SDI, 0);
++	msleep(1);	//前置时间将CKI 和SDI拉低 172个周期以上
++	for(M=0;M<pin->index;M++)
++		{
++		for(i=15;i>=0;i--)
++			{
++				//ret=0xfc00;
++				ret=pin->mbi6023[M];	//逐一读取数组内容
++
++				level=((ret)>>i)&0x0001;	//将16进制位操作逐一赋值给level
++				gpio_set_value(QY_IMX6S_LED_CKI, 1);
++				gpio_set_value(QY_IMX6S_LED_SDI, level);
++				gpio_set_value(QY_IMX6S_LED_CKI, 0);
++
++			}
++		}
++	return 0;
++}
++
++
++static long imx6_MBI6023_ioctl(struct file *file, unsigned int cmd, unsigned long arg )
++{
++    int ret = 0;
++	static GPIO_ATTR_AST datas;
++
++	memset(&datas, 0, sizeof(datas));
++	copy_from_user(&datas, (GPIO_ATTR_AST *)arg, sizeof (GPIO_ATTR_AST));
++
++	   switch(cmd) {
++       case IOCTL_GPIO_SPI_SET:
++		ret = set_gpio_spi_input(&datas);
++		break;
++	default:
++		printk(KERN_ERR "imx6_MBI6023:unsupport ioctl cmd!\n");
++		ret = -EINVAL;
++		break;
++	}
++
++	return ret;
++}
++
++static int imx6_MBI6023_release(struct inode *node, struct file *file)
++{
++	return 0;
++}
++
++static const struct file_operations MBI_6023_fops = {
++	.owner		= THIS_MODULE,
++    .unlocked_ioctl = imx6_MBI6023_ioctl,
++	.open		= imx6_MBI6023_open,
++	.release	=  imx6_MBI6023_release,
++};
++
++static struct miscdevice MBI_6023_dev = {
++	.minor		= MISC_DYNAMIC_MINOR,
++	.name		= "MBI6023",
++	.fops		= &MBI_6023_fops,
++};
++
++static int imx6_MBI6023_probe(struct platform_device *pdev)
++{
++	int ret = 0;
++	int M;
++	int i ;
++	int level;
++
++    printk(KERN_INFO"imx6_MBI6023: register...\n");
++
++    ret = misc_register(&MBI_6023_dev);
++    if (ret != 0) {
++		printk(KERN_ERR "imx6_MBI6023:misc register failed: %d\n", ret);
++		return -ENODEV;
++	}
++
++	gpio_request(QY_IMX6S_LED_CKI, "led_cki");
++	gpio_direction_output(QY_IMX6S_LED_CKI, 0);
++	gpio_request(QY_IMX6S_LED_SDI , "led_sdi");
++	gpio_direction_output(QY_IMX6S_LED_SDI , 0);
++	msleep(1);
++	 int data[]={
++	0xfc00,0xfc00,0x0000,	   //标头
++	0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
++};
++	for(M=0;M<ARRAY_SIZE(data);M++)
++		{
++		for(i=15;i>=0;i--)
++			{
++				ret=data[M];
++				level=((ret)>>i)&0x0001;
++				gpio_set_value(QY_IMX6S_LED_CKI, 1);
++				gpio_set_value(QY_IMX6S_LED_SDI, level);
++				gpio_set_value(QY_IMX6S_LED_CKI, 0);
++			}
++		}
++
++	return 0;
++}
++
++static int imx6_MBI6023_remove(struct platform_device *pdev)
++{
++	misc_deregister(&MBI_6023_dev);
++
++	return 0;
++}
++
++static const struct of_device_id imagic_mbi6023_dt_match[] = {
++	{ .compatible = "imagic,imagic_mbi6023" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, imagic_mbi6023_dt_match);
++
++static struct platform_driver ATmega88_MBI6023 = {
++	.driver		= {
++		.name	= "MBI6023",
++		.of_match_table = of_match_ptr(imagic_mbi6023_dt_match),
++	},
++    .probe = imx6_MBI6023_probe,                                                             
++    .remove = imx6_MBI6023_remove,
++};
++
++static int __init imx6_MBI6023_init(void)
++{
++    int ret;
++
++	ret = platform_driver_register(&ATmega88_MBI6023);
++	if (ret)
++		printk(KERN_ERR "imx6_MBI6023: probe failed: %d\n", ret);
++
++	return ret;
++}
++
++static void __exit imx6_MBI6023_exit(void)
++{
++	platform_driver_unregister(&ATmega88_MBI6023);
++}
++
++module_init(imx6_MBI6023_init);
++module_exit(imx6_MBI6023_exit);
++
++MODULE_AUTHOR("zhujiehuai<zhujh@qiyangtech.com>");
++MODULE_DESCRIPTION("Imx6 user MBI6023 driver");
++MODULE_LICENSE("GPL");
++
+diff --git a/drivers/misc/watchdog.c b/drivers/misc/watchdog.c
+new file mode 100644
+index 0000000..e5f47e8
+--- /dev/null
++++ b/drivers/misc/watchdog.c
+@@ -0,0 +1,294 @@
++/*
++ * am335x_watchdog.c -- support  gpio watchdog
++ *
++ *  Author 		jio
++ *  Email   		385426564@qq.com
++ *  Create time 	2012-11-28
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++#include <linux/miscdevice.h>
++#include <linux/delay.h>
++#include <asm/irq.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/mm.h>
++#include <linux/fs.h>
++#include <linux/types.h>
++#include <linux/delay.h>
++#include <linux/moduleparam.h>
++#include <linux/slab.h>
++#include <linux/errno.h>
++#include <linux/ioctl.h>
++#include <linux/cdev.h>
++#include <linux/string.h>
++#include <linux/list.h>
++#include <linux/pci.h>
++#include <asm/uaccess.h>
++#include <asm/atomic.h>
++#include <asm/unistd.h>
++
++#include <linux/version.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/completion.h>
++//#include <mach/cputype.h>
++//#include <mach/mux.h>
++#include <asm/gpio.h>
++
++#include <linux/platform_device.h>
++#include <linux/misc/watchdog.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_platform.h>
++
++
++
++#define MOTOR_MAGIC 'L'
++#define FEED_DOG 	_IOW(MOTOR_MAGIC, 0,int)
++#define CLOSE_DOG 	_IOW(MOTOR_MAGIC, 1,int)
++
++
++#define DEVICE_NAME				 "imagic_watchdog"
++#define STATE_HIGH               1
++#define STATE_LOW                0
++
++
++#define WATCHDOG_ENABLE          STATE_HIGH
++#define WATCHDOG_DISABLE         STATE_LOW
++
++#define WATCHDOG_FEED_PIN_INIT   STATE_LOW
++
++static struct watchdog_dev
++{
++	unsigned char state;			// state: current feeddog gpio state
++	unsigned long feeddog_pin;      // feeddog_pin:  feeddog pin number
++	unsigned long enable_pin;       // enable_pin:   feeddog enable pin
++}*watchdog;
++
++static inline void watchdog_feed(void)
++{
++	unsigned long feeddog_pin;
++
++	/* toogle the feed dog pin */
++	feeddog_pin = watchdog->feeddog_pin;
++	watchdog->state = (watchdog->state == STATE_HIGH)?STATE_LOW:STATE_HIGH;
++	gpio_set_value(feeddog_pin,watchdog->state);
++}
++
++
++static inline void watchdog_enable(void)
++{
++
++	unsigned long wathdog_enable_pin;
++
++	wathdog_enable_pin = watchdog->enable_pin;
++
++	/* we must feed dog once watchdog enable */
++	watchdog_feed();
++	gpio_set_value(wathdog_enable_pin,WATCHDOG_ENABLE);
++}
++
++static inline void watchdog_disable(void)
++{
++
++	unsigned long wathdog_enable_pin;
++
++	wathdog_enable_pin = watchdog->enable_pin;
++	gpio_set_value(wathdog_enable_pin,WATCHDOG_DISABLE);
++}
++
++
++static int watchdog_open(struct inode *inode,struct file *file)
++{
++	watchdog_enable();
++	printk("watchdog: enable watchdog\n");
++
++	return 0;
++}
++
++static int watchdog_close(struct inode *inode,struct file *file)
++{
++	//watchdog_disable();
++	printk("watchdog: please use ioctl disable watchdog\n");
++
++	return 0;
++}
++
++
++static long watchdog_ioctl(struct file *file,  unsigned int cmd,  unsigned long arg) 
++{
++
++	if(cmd == FEED_DOG)
++	{
++		watchdog_feed();
++	}
++	else if(cmd == CLOSE_DOG)
++	{
++		watchdog_disable();
++	}
++
++	return 0;
++}
++
++
++static struct file_operations watchdog_fops = {
++	 .owner = THIS_MODULE,
++	 .open = watchdog_open,
++	 .release = watchdog_close,
++	 .unlocked_ioctl = watchdog_ioctl,
++};
++
++static struct miscdevice miscwatchdog =
++{
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = DEVICE_NAME,
++	.fops = &watchdog_fops,
++};
++
++#ifdef CONFIG_OF
++static inline int watchdog_parse_dt(struct device *dev,unsigned long* feeddog_pin, unsigned long* wathdog_enable_pin)
++{
++	int pin = -1;
++	struct device_node *np = dev->of_node;
++	pin = of_get_named_gpio(np, "feed-gpios", 0);
++	if (!gpio_is_valid(pin))
++		return -EINVAL;
++	*feeddog_pin = pin;
++
++	pin = of_get_named_gpio(np, "enable-gpios", 0);
++	if (!gpio_is_valid(pin))
++		return -EINVAL;
++	*wathdog_enable_pin = pin;
++
++	return 0;
++}
++#else
++static inline int watchdog_parse_dt(struct device *dev,unsigned long* feeddog_pin, unsigned long* wathdog_enable_pin)
++
++{
++	dev_err(dev, "no platform data defined\n");
++
++	return ERR_PTR(-EINVAL);
++}
++#endif
++static int watchdog_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct watchdog_platform_data *pdata;
++
++	unsigned long feeddog_pin;
++	unsigned long wathdog_enable_pin;
++
++	printk("watchdog: watchdog_probe\n");
++
++	pdata = pdev->dev.platform_data;
++
++	pdata = dev_get_platdata(&pdev->dev);
++	if (!pdata) {
++		ret = watchdog_parse_dt(&pdev->dev, &feeddog_pin, &wathdog_enable_pin);
++		if (ret) {
++			dev_err(&pdev->dev, "pin config error\n");
++			return ret;
++		}
++	} else{
++		wathdog_enable_pin= pdata->enable_pin;
++		feeddog_pin= pdata->feeddog_pin;
++	}
++
++	watchdog = kmalloc(sizeof(struct watchdog_dev), GFP_KERNEL);
++	if(!watchdog)
++	{
++		printk("watchdog: no memory to malloc\n");
++		ret = -ENOMEM;
++		goto exit;
++	}
++
++	watchdog->enable_pin = wathdog_enable_pin;
++	watchdog->feeddog_pin = feeddog_pin;
++	watchdog->state = WATCHDOG_FEED_PIN_INIT;
++
++	ret = gpio_request(watchdog->enable_pin, "watchdog_enable");
++
++	if (ret < 0)
++	{
++	      printk("watchdog: ERROR can not open GPIO %ld\n", wathdog_enable_pin);
++	      goto exit_kfree;
++	}
++
++	ret = gpio_request(watchdog->feeddog_pin, "watchdog_feeddog");
++	if (ret < 0)
++	{
++	      printk("watchdog: ERROR can not open GPIO %ld\n", feeddog_pin);
++	      goto exit_kfree;
++	}
++
++	gpio_direction_output(watchdog->enable_pin, 0);
++	gpio_direction_output(watchdog->feeddog_pin, 0);
++	gpio_set_value(watchdog->feeddog_pin,watchdog->state);
++
++	/* disable wathdog */
++	watchdog_disable();
++
++	ret = misc_register(&miscwatchdog);
++
++	printk(" watchdog: misc register successed: \n");
++
++	if(ret < 0)
++	{
++		printk("watchdog: misc register error\n");
++		goto exit_kfree;
++	}
++
++	return ret;
++
++exit_kfree:
++	kfree(watchdog);
++exit:
++	return ret;
++}
++
++static int watchdog_remove(struct platform_device *pdev)
++{
++	unsigned long feeddog_pin = watchdog->feeddog_pin;
++	unsigned long wathdog_enable_pin = watchdog->enable_pin;
++
++	gpio_free(feeddog_pin);
++	gpio_free(wathdog_enable_pin);
++	misc_deregister(&miscwatchdog);
++	kfree(watchdog);
++
++	return 0;
++}
++
++
++
++#ifdef CONFIG_OF
++static const struct of_device_id imagic_watchdog_dt_match[] = {
++	{ .compatible = "imagic,imagic_watchdog" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, imagic_watchdog_dt_match);
++#endif
++
++static struct platform_driver watchdog_driver = {
++	.driver ={
++		.name = "imagic_watchdog",
++		.of_match_table = of_match_ptr(imagic_watchdog_dt_match),
++	},
++	.probe = watchdog_probe,
++	.remove = watchdog_remove,
++};
++
++module_platform_driver(watchdog_driver);
++
++
++MODULE_DESCRIPTION("Driver for imagic imx6 Watchdog");
++MODULE_AUTHOR("Jio");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("gpio:watchdog");
++
+diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+index 311539c..a68a865 100644
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -1632,6 +1632,27 @@ static int fec_enet_rx_napi(struct napi_struct *napi, int budget)
+ 	return pkts;
+ }
+ 
++// IRIS Change - IMAGIC additions
++static unsigned char fec_mac[ETH_ALEN];
++static int __init parse_fec_mac(char *options)
++{
++	char *tmp, *end;
++	int j = 0;
++	if(options != NULL)
++	{
++		tmp = options;
++		for (j = 0; j < 6; j++) {
++			fec_mac[j] = tmp ?
++				simple_strtoul(tmp, &end, 16) : 0;
++			if (tmp)
++				tmp = (*end) ? end + 1 : end;
++		}
++		//printk("parse_fec_mac : %02x %02x %02x %02x %02x %02x\n", fec_mac[0], fec_mac[1], fec_mac[2], fec_mac[3], fec_mac[4], fec_mac[5]);
++	}
++	return 1;
++}
++__setup("fec_mac=", parse_fec_mac);
++
+ /* ------------------------------------------------------------------------- */
+ static void fec_get_mac(struct net_device *ndev)
+ {
+@@ -1640,12 +1661,19 @@ static void fec_get_mac(struct net_device *ndev)
+ 	unsigned char *iap, tmpaddr[ETH_ALEN];
+ 
+ 	/*
++	 * Compatible with linux 3.0.35
++	 */
++	iap = fec_mac;
++
++	/*
+ 	 * try to get mac address in following order:
+ 	 *
+ 	 * 1) module parameter via kernel command line in form
+ 	 *    fec.macaddr=0x00,0x04,0x9f,0x01,0x30,0xe0
+ 	 */
+-	iap = macaddr;
++	if (!is_valid_ether_addr(iap)) {
++		iap = macaddr;
++	}
+ 
+ 	/*
+ 	 * 2) from device tree data
+diff --git a/drivers/sbus/char/bbc_envctrl.c b/drivers/sbus/char/bbc_envctrl.c
+index fb5bcf6..e061f40 100644
+--- a/drivers/sbus/char/bbc_envctrl.c
++++ b/drivers/sbus/char/bbc_envctrl.c
+@@ -68,8 +68,11 @@ struct temp_limits {
+ };
+ 
+ static struct temp_limits cpu_temp_limits[2] = {
+-	{ 100, 85, 80, 5, -5, -10 },
+-	{ 100, 85, 80, 5, -5, -10 },
++	// IRIS Change - IMAGIC modifications
++	//{ 100, 85, 80, 5, -5, -10 },
++	//{ 100, 85, 80, 5, -5, -10 },
++	{ 100, 100, 80, 5, -40, -40 },
++	{ 100, 100, 80, 5, -40, -40 },
+ };
+ 
+ static struct temp_limits amb_temp_limits[2] = {
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index cda1071..4c11fb2 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -669,6 +669,7 @@ static const struct of_device_id spidev_dt_ids[] = {
+ 	{ .compatible = "lineartechnology,ltc2488" },
+ 	{ .compatible = "ge,achc" },
+ 	{ .compatible = "semtech,sx1301" },
++	{ .compatible = "spidev" }, // IRIS Change - IMAGIC Modifications
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, spidev_dt_ids);
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 9663ff6..67ff1e6 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -43,6 +43,8 @@
+ #include <asm/irq.h>
+ #include <linux/platform_data/serial-imx.h>
+ #include <linux/platform_data/dma-imx.h>
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
+ 
+ #include "serial_mctrl_gpio.h"
+ 
+@@ -207,6 +209,11 @@ struct imx_port {
+ 	unsigned int		have_rtscts:1;
+ 	unsigned int		have_rtsgpio:1;
+ 	unsigned int		dte_mode:1;
++	//============== gpio_ctrl_rs485 start ==============
++	unsigned int		is_gpio_ctrl_rs485:1;
++	short			rs485_flow_ctrl_gpio;
++	char 			rs485_gpio_name[32];
++	//============== gpio_ctrl_rs485 end   ==============
+ 	struct clk		*clk_ipg;
+ 	struct clk		*clk_per;
+ 	const struct imx_uart_data *devdata;
+@@ -283,6 +290,97 @@ static const struct of_device_id imx_uart_dt_ids[] = {
+ };
+ MODULE_DEVICE_TABLE(of, imx_uart_dt_ids);
+ 
++#define MAX_UART_NUMBER 5
++static unsigned int imx_tx_empty(struct uart_port *port);
++static unsigned char rs485_count[MAX_UART_NUMBER];
++
++static int __init imagic_parse_rs485(char *line)
++{
++    char* start = line;
++    char* end = NULL;
++    char* index = NULL;
++    int i = 0, tmp = 0;
++    memset(rs485_count, 0, MAX_UART_NUMBER);
++    for(i=0; i<MAX_UART_NUMBER; i++)
++    {
++	end = strchr(start, ',');
++	if(!end)
++	{
++		tmp = simple_strtoul(start, NULL, 10);
++		if(tmp >= MAX_UART_NUMBER || tmp <= 0)
++		{
++			return 1;
++		}
++		rs485_count[tmp] = 1;
++		break;
++	}
++	else
++	{
++		index = end;
++		end = NULL;
++		tmp = simple_strtoul(start, NULL, 10);
++		if(tmp >= MAX_UART_NUMBER || tmp <= 0)
++		{
++			start=index + 1;
++                        continue;
++		}
++		rs485_count[tmp] = 1;
++		start = index + 1;
++	}
++    }
++
++    printk("rs485 list : %x %x %x %x %x \n", rs485_count[0], rs485_count[1], rs485_count[2], rs485_count[3], rs485_count[4]);
++    return 1;
++}
++
++__setup("rs485=", imagic_parse_rs485);
++
++
++static int is_enable_gpio_ctrl_rs485(struct imx_port *sport)
++{
++	sport->is_gpio_ctrl_rs485 = 0;
++	if(sport->port.line >= MAX_UART_NUMBER || sport->port.line <= 0)
++	{
++		return 0;
++	}
++
++	if(rs485_count[sport->port.line])
++		sport->is_gpio_ctrl_rs485 = 1;
++
++	return sport->is_gpio_ctrl_rs485;
++}
++
++void rs485_flow_ctrl_init(struct imx_port *sport)
++{
++	int ret = 0;
++	sprintf(sport->rs485_gpio_name, "rs485 %d gpio", sport->port.line);
++	ret = gpio_request(sport->rs485_flow_ctrl_gpio, sport->rs485_gpio_name);
++	if(ret)
++	{
++		printk(KERN_ERR "Serial: rs485_flow_ctrl_init error\n");
++		return;
++	}
++
++	ret = gpio_direction_output(sport->rs485_flow_ctrl_gpio, 0);
++	if(ret)
++	{
++		printk(KERN_ERR "Serial: rs485_flow_ctrl_init gpio_direction_output error\n");
++		return;
++	}
++	printk(KERN_INFO "Serial: rs485 flow gpio : %d \n", sport->rs485_flow_ctrl_gpio);
++}
++
++static void rs485_set_rx(struct imx_port *sport)
++{
++	gpio_set_value(sport->rs485_flow_ctrl_gpio, 0);
++}
++
++static void rs485_set_tx(struct imx_port *sport)
++{
++	gpio_set_value(sport->rs485_flow_ctrl_gpio, 1);
++}
++
++
+ static inline unsigned uts_reg(struct imx_port *sport)
+ {
+ 	return sport->devdata->uts_reg;
+@@ -431,6 +529,9 @@ static inline void imx_transmit_buffer(struct imx_port *sport)
+ 	unsigned long temp;
+ 
+ 	if (sport->port.x_char) {
++		if(sport->is_gpio_ctrl_rs485)
++			rs485_set_tx(sport);
++
+ 		/* Send next char */
+ 		writel(sport->port.x_char, sport->port.membase + URTX0);
+ 		sport->port.icount.tx++;
+@@ -464,6 +565,9 @@ static inline void imx_transmit_buffer(struct imx_port *sport)
+ 
+ 	while (!uart_circ_empty(xmit) &&
+ 	       !(readl(sport->port.membase + uts_reg(sport)) & UTS_TXFULL)) {
++		if(sport->is_gpio_ctrl_rs485)
++                        rs485_set_tx(sport);
++
+ 		/* send xmit->buf[xmit->tail]
+ 		 * out the port here */
+ 		writel(xmit->buf[xmit->tail], sport->port.membase + URTX0);
+@@ -486,6 +590,13 @@ static void dma_tx_callback(void *data)
+ 	unsigned long flags;
+ 	unsigned long temp;
+ 
++	if(sport->is_gpio_ctrl_rs485)
++	{
++		temp = readl(sport->port.membase + UCR4);
++		temp |= UCR4_TCEN;
++		writel(temp, sport->port.membase + UCR4);
++	}
++
+ 	spin_lock_irqsave(&sport->port.lock, flags);
+ 
+ 	dma_unmap_sg(sport->port.dev, sgl, sport->dma_tx_nents, DMA_TO_DEVICE);
+@@ -555,6 +666,8 @@ static void imx_dma_tx(struct imx_port *sport)
+ 
+ 	dev_dbg(dev, "TX: prepare to send %lu bytes by DMA.\n",
+ 			uart_circ_chars_pending(xmit));
++		if(sport->is_gpio_ctrl_rs485)
++			rs485_set_tx(sport);
+ 
+ 	temp = readl(sport->port.membase + UCR1);
+ 	temp |= UCR1_TDMAEN;
+@@ -814,10 +927,25 @@ static irqreturn_t imx_int(int irq, void *dev_id)
+ 	unsigned int sts;
+ 	unsigned int sts2;
+ 	irqreturn_t ret = IRQ_NONE;
++	unsigned long temp;
+ 
+ 	sts = readl(sport->port.membase + USR1);
+ 	sts2 = readl(sport->port.membase + USR2);
+ 
++	if(sport->is_gpio_ctrl_rs485)
++	{
++		if( readl(sport->port.membase + UCR4) & UCR4_TCEN)
++		{
++			if(imx_tx_empty(&sport->port))
++			{
++				rs485_set_rx(sport);
++				temp = readl(sport->port.membase + UCR4);
++				temp &= ~(UCR4_TCEN);
++				writel(temp, sport->port.membase + UCR4);
++			}
++		}
++	}
++
+ 	if (sts & (USR1_RRDY | USR1_AGTIM)) {
+ 		if (sport->dma_is_enabled)
+ 			imx_dma_rxint(sport);
+@@ -825,7 +953,8 @@ static irqreturn_t imx_int(int irq, void *dev_id)
+ 			imx_rxint(irq, dev_id);
+ 		ret = IRQ_HANDLED;
+ 	}
+-
++	if(!sport->is_gpio_ctrl_rs485)
++	{
+ 	if ((sts & USR1_TRDY &&
+ 	     readl(sport->port.membase + UCR1) & UCR1_TXMPTYEN) ||
+ 	    (sts2 & USR2_TXDC &&
+@@ -833,7 +962,7 @@ static irqreturn_t imx_int(int irq, void *dev_id)
+ 		imx_txint(irq, dev_id);
+ 		ret = IRQ_HANDLED;
+ 	}
+-
++	}
+ 	if (sts & USR1_DTRD) {
+ 		unsigned long flags;
+ 
+@@ -2033,7 +2162,7 @@ static int serial_imx_probe_dt(struct imx_port *sport,
+ 		struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
+-	int ret;
++	int ret, rs485_flow_ctrl_gpio = 0;
+ 
+ 	sport->devdata = of_device_get_match_data(&pdev->dev);
+ 	if (!sport->devdata)
+@@ -2054,6 +2183,13 @@ static int serial_imx_probe_dt(struct imx_port *sport,
+ 	if (of_get_property(np, "fsl,dte-mode", NULL))
+ 		sport->dte_mode = 1;
+ 
++	rs485_flow_ctrl_gpio = of_get_named_gpio(np, "rs485-flow-ctrl-gpio", 0);
++	if (gpio_is_valid(rs485_flow_ctrl_gpio) && is_enable_gpio_ctrl_rs485(sport))
++	{
++		sport->rs485_flow_ctrl_gpio = rs485_flow_ctrl_gpio;
++		rs485_flow_ctrl_init(sport);
++	}
++
+ 	if (of_get_property(np, "rts-gpios", NULL))
+ 		sport->have_rtsgpio = 1;
+ 
+diff --git a/drivers/usb/chipidea/ci_hdrc_imx.c b/drivers/usb/chipidea/ci_hdrc_imx.c
+index 5f4a815..688d00e 100644
+--- a/drivers/usb/chipidea/ci_hdrc_imx.c
++++ b/drivers/usb/chipidea/ci_hdrc_imx.c
+@@ -14,6 +14,7 @@
+ #include <linux/module.h>
+ #include <linux/of_platform.h>
+ #include <linux/of_gpio.h>
++#include <linux/gpio.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/dma-mapping.h>
+@@ -251,6 +252,45 @@ static void imx_disable_unprepare_clks(struct device *dev)
+ 	}
+ }
+ 
++// IRIS Change - IMAGIC modifications
++static void imagic_init_usb(struct platform_device *pdev)
++{
++	int ret = 0, phy_reset, otg_host_mode_power;
++	struct device_node *np = pdev->dev.of_node;
++
++	phy_reset = of_get_named_gpio(np, "usb-hub-reset-gpios", 0);
++	if (gpio_is_valid(phy_reset))
++	{
++		ret = gpio_request(phy_reset, "hub-rst");
++		if (!ret) {
++			dev_info(&pdev->dev, "usb hub reset ...\n");
++			gpio_direction_output(phy_reset, 0);
++			msleep(10);
++			gpio_direction_output(phy_reset, 1);
++			gpio_free(phy_reset);
++		}
++		else
++		   dev_info(&pdev->dev, "failed to get USB HUB reset GPIO : %d errno : %d \n",
++		        phy_reset, ret);
++	}
++
++	otg_host_mode_power = of_get_named_gpio(np, "host-mode-power-gpios", 0);
++	if (gpio_is_valid(otg_host_mode_power))
++	{
++		ret = gpio_request(otg_host_mode_power, "otg host power");
++		if (!ret) {
++			dev_info(&pdev->dev, "usb otg host power default disable ...\n");
++			gpio_direction_output(otg_host_mode_power, 0);
++			gpio_free(otg_host_mode_power);
++		}
++		else
++		    dev_info(&pdev->dev, "failed to get otg host power GPIO : %d errno : %d \n",
++		        otg_host_mode_power, ret);
++	}
++
++}
++// IRIS Change - IMAGIC modifications
++
+ static int ci_hdrc_imx_probe(struct platform_device *pdev)
+ {
+ 	struct ci_hdrc_imx_data *data;
+@@ -277,6 +317,9 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
+ 	if (IS_ERR(data->usbmisc_data))
+ 		return PTR_ERR(data->usbmisc_data);
+ 
++	// IRIS Change - IMAGIC modifications
++	imagic_init_usb(pdev);
++
+ 	ret = imx_get_clks(&pdev->dev);
+ 	if (ret)
+ 		return ret;
+diff --git a/include/linux/misc/buzzer.h b/include/linux/misc/buzzer.h
+new file mode 100644
+index 0000000..75bbb1e
+--- /dev/null
++++ b/include/linux/misc/buzzer.h
+@@ -0,0 +1,24 @@
++/*
++ * buzzer.h -- support  gpio buzzer
++ *
++ *  Author 		jio
++ *  Email   		385426564@qq.com
++ *  Create time 	2012-11-28
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++
++#ifndef __BUZZER_H
++#define __BUZZER_H
++
++struct buzzer_platform_data
++{
++	unsigned long pin_number;             // the pin for buzzer
++};
++
++#endif
++
+diff --git a/include/linux/misc/watchdog.h b/include/linux/misc/watchdog.h
+new file mode 100644
+index 0000000..e7b0cb30
+--- /dev/null
++++ b/include/linux/misc/watchdog.h
+@@ -0,0 +1,25 @@
++/*
++ * watchdog.h -- support  gpio watchdog
++ *
++ *  Author 		jio
++ *  Email   		385426564@qq.com
++ *  Create time 	2012-11-28
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++
++#ifndef __WATCHDOG_H
++#define __WATCHDOG_H
++
++struct watchdog_platform_data
++{
++	unsigned long enable_pin;             // the pin for enable watchdog
++	unsigned long feeddog_pin;            // the pin for feed watchdog
++};
++
++#endif
++
+-- 
+2.7.4
+

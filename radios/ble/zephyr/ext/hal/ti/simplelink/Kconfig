@@ -1,0 +1,23 @@
+# Kconfig - CC3220 SDK HAL configuration
+
+config HAS_CC3220SDK
+	bool
+
+# Notes:
+# SimpleLink drivers require types (stdint.h) from NEWLIB_LIBC
+# Selecting ERRNO lets host driver use Zephyr's __errno
+config SIMPLELINK_HOST_DRIVER
+	bool "Build the SimpleLink WiFi Host Driver"
+	default n
+	depends on HAS_CC3220SDK
+	depends on MULTITHREADING
+	depends on NEWLIB_LIBC
+	select ERRNO
+	help
+	  Build the SimpleLink host driver
+
+# Kconfig - MSP432 SDK HAL configuration
+
+config HAS_MSP432P4XXSDK
+        bool
+        select HAS_CMSIS

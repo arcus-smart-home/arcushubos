@@ -1,0 +1,31 @@
+/*
+ * Copyright (c) 2018, Synopsys, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <emsk.dtsi>
+
+
+/ {
+	model = "em_starterkit-em9d";
+	compatible = "snps,em_starterkit-em9d", "snps,em_starterkit";
+
+	aliases {
+		uart-0 = &uart0;
+		uart-1 = &uart1;
+		uart-2 = &uart2;
+	};
+
+	chosen {
+		zephyr,sram = &dccm0;
+		zephyr,console = &uart1;
+	};
+};
+
+&uart1 {
+	status = "ok";
+	current-speed = <115200>;
+};

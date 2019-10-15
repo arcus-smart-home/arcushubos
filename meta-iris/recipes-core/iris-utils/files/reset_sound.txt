@@ -1,0 +1,4 @@
+# Double beep on factory reset
+F7, 40, 400
+F7, 0, 100
+F7, 40, 400

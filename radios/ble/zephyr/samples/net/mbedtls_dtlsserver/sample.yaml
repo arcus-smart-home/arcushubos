@@ -1,0 +1,7 @@
+sample:
+  name: DTLS Server
+tests:
+  test:
+    harness: net
+    depends_on: netif
+    tags: net

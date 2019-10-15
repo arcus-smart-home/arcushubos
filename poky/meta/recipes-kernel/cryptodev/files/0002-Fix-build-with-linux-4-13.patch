@@ -1,0 +1,21 @@
+diff -Naur cryptodev-linux-1.9-orig/ioctl.c cryptodev-linux-1.9/ioctl.c
+--- cryptodev-linux-1.9-orig/ioctl.c	2017-11-14 16:11:55.132920627 -0500
++++ cryptodev-linux-1.9/ioctl.c	2017-11-14 16:12:50.208525682 -0500
+@@ -1124,7 +1124,7 @@
+ 		.mode           = 0644,
+ 		.proc_handler   = proc_dointvec,
+ 	},
+-	{0, },
++	{},
+ };
+ 
+ static struct ctl_table verbosity_ctl_root[] = {
+@@ -1133,7 +1133,7 @@
+ 		.mode           = 0555,
+ 		.child          = verbosity_ctl_dir,
+ 	},
+-	{0, },
++	{},
+ };
+ static struct ctl_table_header *verbosity_sysctl_header;
+ static int __init init_cryptodev(void)

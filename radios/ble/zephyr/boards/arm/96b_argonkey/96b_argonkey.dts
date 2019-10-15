@@ -1,0 +1,98 @@
+/*
+ * Copyright (c) 2018 STMicroelectronics
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/stm32f412.dtsi>
+
+/ {
+	model = "Tocoding Argonkey 96boards";
+	compatible = "tocoding,argonkey", "st,stm32f412";
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		green_led_0: led@0 {
+			gpios = <&gpioc 13 GPIO_INT_ACTIVE_HIGH>;
+			label = "USR0 LED";
+		};
+		green_led_1: led@1 {
+			gpios = <&gpiob 2 GPIO_INT_ACTIVE_HIGH>;
+			label = "USR1 LED";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button: button@0 {
+			label = "User";
+			gpios = <&gpioa 2 GPIO_INT_ACTIVE_LOW>;
+		};
+	};
+
+	aliases {
+		led0 = &green_led_0;
+		led1 = &green_led_1;
+		sw0 = &user_button;
+	};
+};
+
+&usart1 {
+	current-speed = <115200>;
+	pinctrl-0 = <&usart1_pins_b>;
+	pinctrl-names = "default";
+	status = "ok";
+};
+
+&spi2 {
+	status = "ok";
+
+	/* ST Microelectronics LSM6DSL accel/gyro sensor */
+	lsm6dsl@1 {
+		compatible = "st,lsm6dsl-spi";
+		reg = <1>;
+		spi-max-frequency = <1000000>;
+		irq-gpios = <&gpiob 1 0>;
+		label = "LSM6DSL-SPI";
+	};
+};
+
+&i2c1 {
+	status = "ok";
+	clock-frequency = <I2C_BITRATE_FAST>;
+};
+
+&i2c2 {
+	status = "ok";
+	clock-frequency = <I2C_BITRATE_FAST>;
+
+	hts221@5f {
+		compatible = "st,hts221";
+		reg = <0x5f>;
+		label = "HTS221";
+	};
+
+	lps22hb-press@5d {
+		compatible = "st,lps22hb-press";
+		reg = <0x5d>;
+		label = "LPS22HB";
+	};
+
+	vl53l0x@29 {
+		compatible = "st,vl53l0x";
+		reg = <0x29>;
+		label = "VL53L0X";
+	};
+};
+
+&i2c3 {
+	status = "ok";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+};

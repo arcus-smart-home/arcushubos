@@ -1,0 +1,19 @@
+# Handle LTE USB dongle support
+
+# Huawei E3372h
+#  This device shows up as 12d1:1f01, but we mode switch it to 12d1:14dc
+#  for operation as a NAT'd Ethernet interface
+
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1f01", RUN+="/etc/udev/scripts/usb_lte.sh 12d1 14dc"
+
+ACTION=="remove", SUBSYSTEM=="usb", ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="14dc", RUN+="/etc/udev/scripts/usb_lte.sh"
+
+# QuecTel EC25-A mPCIe module
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="2c7c", ATTRS{idProduct}=="0125", RUN+="/etc/udev/scripts/usb_lte.sh 2c7c 0125"
+
+ACTION=="remove", SUBSYSTEM=="usb", ATTRS{idVendor}=="2c7c", ATTRS{idProduct}=="0125", RUN+="/etc/udev/scripts/usb_lte.sh"
+
+# ZTEWelink ME3630 mPCIe module - no longer supported
+#ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="1476", RUN+="/etc/udev/scripts/usb_lte.sh 19d2 1476"
+
+#ACTION=="remove", SUBSYSTEM=="usb", ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="1476", RUN+="/etc/udev/scripts/usb_lte.sh"

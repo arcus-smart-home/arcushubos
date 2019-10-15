@@ -1,0 +1,3 @@
+tests:
+  kernel.memory_pool:
+    tags: kernel mem_pool

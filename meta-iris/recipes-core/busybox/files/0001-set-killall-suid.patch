@@ -1,0 +1,16 @@
+diff -Naur busybox-1.24.1-orig/include/applets.src.h busybox-1.24.1/include/applets.src.h
+--- busybox-1.24.1-orig/include/applets.src.h	2018-07-03 15:10:37.568386651 -0400
++++ busybox-1.24.1/include/applets.src.h	2018-07-03 15:11:20.140223143 -0400
+@@ -198,9 +198,9 @@
+ IF_IPRULE(APPLET(iprule, BB_DIR_SBIN, BB_SUID_DROP))
+ IF_IPTUNNEL(APPLET(iptunnel, BB_DIR_SBIN, BB_SUID_DROP))
+ IF_KBD_MODE(APPLET(kbd_mode, BB_DIR_BIN, BB_SUID_DROP))
+-IF_KILL(APPLET(kill, BB_DIR_BIN, BB_SUID_DROP))
+-IF_KILLALL(APPLET_ODDNAME(killall, kill, BB_DIR_USR_BIN, BB_SUID_DROP, killall))
+-IF_KILLALL5(APPLET_ODDNAME(killall5, kill, BB_DIR_USR_SBIN, BB_SUID_DROP, killall5))
++IF_KILL(APPLET(kill, BB_DIR_BIN, BB_SUID_REQUIRE))
++IF_KILLALL(APPLET_ODDNAME(killall, kill, BB_DIR_USR_BIN, BB_SUID_REQUIRE, killall))
++IF_KILLALL5(APPLET_ODDNAME(killall5, kill, BB_DIR_USR_SBIN, BB_SUID_REQUIRE, killall5))
+ IF_KLOGD(APPLET(klogd, BB_DIR_SBIN, BB_SUID_DROP))
+ IF_LAST(APPLET(last, BB_DIR_USR_BIN, BB_SUID_DROP))
+ //IF_LENGTH(APPLET_NOFORK(length, length, BB_DIR_USR_BIN, BB_SUID_DROP, length))

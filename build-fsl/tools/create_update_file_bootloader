@@ -1,0 +1,63 @@
+#!/bin/sh
+
+#
+# Copyright 2019 Arcus Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+PREFIX='hubBLv3'
+BUILD_IMAGE="../tmp/sysroots-components/x86_64/iris-utils-native/usr/bin/build_image"
+
+# Remove existing update directory
+cd tmp/deploy/images/imxdimagic
+rm -rf update
+
+mkdir update
+
+# Copy in files
+cp u-boot-imxdimagic.imx update/
+cp zImage-imx6dl-imagic.dtb update/zImage-imx6dl-imagic.dtb
+cp zImage-imxdimagic.bin update/
+cp $1-imxdimagic.squashfs update/core-image-minimal-iris-imxdimagic.squashfs
+
+# Add in latest Zwave firmware
+ZWAVE_FIRMWARE=../../../../../radios/zwave/SDK/ProductPlus/Bin/SerialAPI_Controller_Static/serialapi_controller_static_ZW050x_US.hex
+srec_cat ${ZWAVE_FIRMWARE} -intel -o update/zwave-firmware.bin -binary
+
+# Add in latest Zigbee firmware - no need for non-hw flow control version
+# ZIGBEE_FIRMWARE_HWFLOW=../../../../../radios/zigbee/gecko_sdk/protocol/zigbee/ncp-images/efr32mg1b232f256gm32/ncp-uart-rts-cts-use-with-serial-uart-btl-6.2.3.gbl
+# cp ${ZIGBEE_FIRMWARE_HWFLOW} update/zigbee-firmware-hwflow.bin
+
+# Add in latest BLE firmware - no need for non hw-flow control version
+BLE_FIRMWARE_HWFLOW=../../../../../radios/ble/mcuboot/zephyr-1.12.0.bin
+cp ${BLE_FIRMWARE_HWFLOW} update/ble-firmware-hwflow.bin
+
+# Make sha256 checksum file
+cd update
+sha256sum * > sha256sums.txt
+
+# Make archive
+cd ..
+tar cvfz i2hubosv3_update_bootloader.bin update/
+
+# Create image file
+cd ../../../../tools
+$BUILD_IMAGE -p $PREFIX -c ALL ../tmp/deploy/images/imxdimagic/i2hubosv3_update_bootloader.bin
+cp ../tmp/deploy/images/imxdimagic/i2hubosv3_update_bootloader.bin /tftpboot
+
+echo "Update file with bootloader created." 1>&2
+
+# Copy to tftpboot directory
+cp -u $PREFIX* /tftpboot
+

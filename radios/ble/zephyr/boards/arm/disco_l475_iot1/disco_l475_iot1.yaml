@@ -1,0 +1,12 @@
+identifier: disco_l475_iot1
+name: B-L475E-IOT01A
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gccarmemb
+supported:
+  - i2c
+  - hts221
+ram: 96
+flash: 1024

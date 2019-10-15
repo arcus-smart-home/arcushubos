@@ -1,0 +1,32 @@
+# Kconfig - STM32 IWDG configuration
+#
+# Copyright (c) 2016 Open-RnD Sp. z o.o.
+# Copyright (c) 2017 RnDity Sp. z o.o.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menuconfig IWDG_STM32
+	bool "Independent Watchdog (IWDG) Driver for STM32 family of MCUs"
+	depends on SOC_FAMILY_STM32
+	help
+	  Enable IWDG driver for STM32 line of MCUs
+
+config IWDG_STM32_START_AT_BOOT
+	bool "Start IWDG during boot"
+	depends on IWDG_STM32
+	default y
+	help
+	  Enable this setting to allow IWDG to be automatically started
+	  during device initialization. Note that once IWDG is started
+	  it must be reloaded before the counter reaches 0, otherwise
+	  the MCU will be reset.
+
+config IWDG_STM32_TIMEOUT
+	int "Value for IWDG timeout in [us]"
+	depends on IWDG_STM32
+	default 100
+	range 100 26214400
+	 help
+	  Set timeout value for IWDG in microseconds.
+	  The min timeout supported is 0.1ms, the max timeout is 26214.4ms.

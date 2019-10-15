@@ -1,0 +1,95 @@
+#!/bin/sh
+
+#
+# Copyright 2019 Arcus Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+echo Setting up Hub Agent...
+
+# Does agent storage location exist?  If not, install base files
+# Also make sure agent launch script is not null - can happen
+#  if install was corrupted due to power loss
+if [ ! -e /data/agent ] || [ ! -s /data/agent/bin/iris-agent ]; then
+
+    # Make agent directory and untar base agent
+    rm -rf /data/agent
+    mkdir -p /data/agent
+    chmod 0777 /data/agent
+    cd /data/agent
+    tar xf /home/agent/iris-agent-hub
+
+    # Change file ownership
+    chown -R agent .
+    chgrp -R agent .
+
+    # Agent install is complete
+    echo Hub Agent has been installed...
+
+    # If agent data directory is missing, must have been a complete
+    #  factory default
+    if [ ! -e /data/iris ]; then
+        # Create factory_reset file to mark that we have started over
+        touch factory_reset
+
+        # Remove any log files that may have been left over from manufacturing
+        rm -f /data/log/messages*
+        rm -f /data/log/dmesg*
+        rm -f /data/zwave_*
+        rm -f /data/mfg_test_report.json
+    fi
+
+    # Sync filesystem to prevent data loss!!
+    sync
+
+    # Agent install is complete
+    echo Hub Agent has synced to filesystem ...
+else
+    # Make sure agent owns this code
+    cd /data/agent
+    chown -R agent .
+    chgrp -R agent .
+fi
+
+# Unpack jre libs - no longer doing this to save time...
+# mkdir -p /data/jre/libs
+# for F in `find /usr/lib/jvm/java-7-openjdk/ -name "*.pack.gz"`
+# do
+#    bf=`basename $F`
+#    name=`basename $F .pack.gz`
+#    if ! diff -q $F /data/jre/libs/$bf; then
+#        echo "Installing /data/jre/libs/$name.jar" 1>&2
+#        rm -f /data/jre/libs/$name.jar
+#        /usr/lib/jvm/java-7-openjdk/jre/bin/unpack200 $F /data/jre/libs/$name.jar
+#        # Copy file only after unpack has finished in case we are rebooted
+#        cp $F /data/jre/libs/$bf
+#        sync
+#    fi
+# done
+
+# Copy default collectd.conf file for possible agent modifications.
+# RE-ENABLE IF COLLECTD IS TURNED BACK ON!
+# cp /home/agent/etc/collectd.conf /var/run/collectd.conf
+
+# Set up authorized_keys file if found
+if [ -e /data/config/dropbear/authorized_keys ]; then
+    cp /data/config/dropbear/authorized_keys /var/run/authorized_keys
+else
+    touch /var/run/authorized_keys
+fi
+chmod 600 /var/run/authorized_keys
+
+# Launch IRIS Hub agent daemon
+irisagentd
+

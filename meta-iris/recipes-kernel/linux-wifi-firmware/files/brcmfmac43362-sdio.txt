@@ -1,0 +1,82 @@
+# Azurewave Release 2016/08/08
+# AW-NM288SM 802.11bgn
+# Sample variables file for bcm943362sdg_SCH_P309 (WLBGA)
+manfid=0x2d0
+prodid=0x492
+vendid=0x14e4
+devid=0x4343
+boardtype=0x0598
+
+# Board Revision is P309
+boardrev=0x1309
+boardnum=777
+xtalfreq=26000
+boardflags=0xa00
+sromrev=3
+wl0id=0x431b
+macaddr=00:11:22:33:44:55
+aa2g=1
+ag0=2
+maxp2ga0=70
+ofdm2gpo=0x22222222
+mcs2gpo0=0x4444
+mcs2gpo1=0x4444
+###pa0maxpwr=80
+
+#Same PA params for P304,P305, P306, P307, p308, p309
+#pa0b0=5483          ## TDK DEA162450BT-2181C1
+#pa0b1=64866
+#pa0b2=65356
+pa0b0=4531           ## Murata LFB182G45CL3D178
+pa0b1=64929
+pa0b2=65287
+pa0itssit=62
+pa1itssit=62
+
+#PA params for low power range
+#pa0b0_lo=2978
+#pa0b1_lo=-448
+#pa0b2_lo=-161
+#pmin=0
+#pmax=40
+
+#temp_based_dutycy_en=1
+#tx_duty_cycle_ofdm=100
+#tx_duty_cycle_cck=100
+#tx_ofdm_temp_0=115
+#tx_cck_temp_0=115
+#tx_ofdm_dutycy_0=40
+#tx_cck_dutycy_0=40
+#tx_ofdm_temp_1=255
+#tx_cck_temp_1=255
+#tx_ofdm_dutycy_1=40
+#tx_cck_dutycy_1=40
+
+#tx_tone_power_index=40
+#tx_tone_power_index.fab.3=48
+
+cckPwrOffset=5
+ccode=0
+rssismf2g=0xa
+rssismc2g=0x3
+rssisav2g=0x7
+triso2g=0
+noise_cal_enable_2g=0
+noise_cal_po_2g=4                     ### ORG is 0
+noise_cal_dbg.fab.3=1                 ###
+logen_mode=0x0,0x02,0x1b,0x0,0x1b     ### 
+noise_cal_high_gain.fab.3=76          ###
+noise_cal_nf_substract_val.fab.3=356  ###
+noise_cal_po_2g.fab.3=4               ###
+swctrlmap_2g=0x04040404,0x02020202,0x02020202,0x010101,0x1ff
+temp_add=29767
+temp_mult=425
+temp_q=10
+initxidx2g=45
+tssitime=1
+rfreg033=0x19
+rfreg033_cck=0x1f
+cckPwrIdxCorr=-8
+spuravoid_enable2g=1
+
+##pacalidx2g=45

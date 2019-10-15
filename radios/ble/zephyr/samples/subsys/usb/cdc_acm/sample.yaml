@@ -1,0 +1,11 @@
+sample:
+  name: CDC ACM USB
+tests:
+  usb.cdc-acm:
+    depends_on: usb_device
+    tags: usb
+    harness: console
+    harness_config:
+      type: one_line
+      regex:
+        - "Wait for DTR"

@@ -1,0 +1,35 @@
+From 1e621b22ef4d46f397bc132084099befc5405256 Mon Sep 17 00:00:00 2001
+Date: Wed, 20 Jun 2018 09:58:50 -0400
+Subject: [PATCH] Fix tag read issues
+
+---
+ Libraries/95HF/src/lib_iso15693pcd.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/Libraries/95HF/src/lib_iso15693pcd.c b/Libraries/95HF/src/lib_iso15693pcd.c
+index 0eaf1fb..661c6ae 100644
+--- a/Libraries/95HF/src/lib_iso15693pcd.c
++++ b/Libraries/95HF/src/lib_iso15693pcd.c
+@@ -568,7 +568,9 @@ uint8_t DataToSend[ISO15693_MAXLENGTH_READSINGLEBLOCK],
+ 
+ 	if (PCD_IsReaderResultCodeOk (SEND_RECEIVE,pResponse) == PCD_ERRORCODE_DEFAULT)
+ 		return ISO15693_ERRORCODE_DEFAULT;
+-
++	if (pResponse[2] != 0x00) {
++	    return ISO15693_ERRORCODE_DEFAULT;
++	}
+ 	return ISO15693_SUCCESSCODE;
+ 
+ 
+@@ -1022,7 +1024,7 @@ uint8_t Tag_error_check;
+ 
+ 	/* select 15693 protocol */
+ 	errchk(ISO15693_Init	(	));
+-
++	usleep(5000);
+ 	FlagsByteData = ISO15693_CreateRequestFlag 	(	ISO15693_REQFLAG_SINGLESUBCARRIER,
+ 													ISO15693_REQFLAG_HIGHDATARATE,
+ 													ISO15693_REQFLAG_INVENTORYFLAGSET,
+-- 
+2.7.4
+

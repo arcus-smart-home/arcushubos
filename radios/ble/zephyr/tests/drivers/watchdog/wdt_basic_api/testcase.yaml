@@ -1,0 +1,4 @@
+tests:
+  peripheral.watchdog:
+    depends_on: watchdog
+    tags: drivers watchdog

@@ -1,0 +1,7 @@
+sample:
+  name: SPI FRAM Module Sample
+tests:
+  test:
+    platform_whitelist: arduino_101
+    tags: apps
+    harness: fram

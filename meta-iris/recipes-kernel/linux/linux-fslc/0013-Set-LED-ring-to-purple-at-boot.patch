@@ -1,0 +1,97 @@
+From c533e3b914edfd880b890b7954525e4197557904 Mon Sep 17 00:00:00 2001
+Date: Fri, 8 Jun 2018 15:30:20 -0400
+Subject: [PATCH] Set LED ring to purple at boot
+
+---
+ arch/arm/boot/dts/imx6qdl-imagic.dtsi |  5 ++---
+ drivers/misc/mbi6023.c                | 35 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-imagic.dtsi b/arch/arm/boot/dts/imx6qdl-imagic.dtsi
+index 63e776c..8d1698f 100644
+--- a/arch/arm/boot/dts/imx6qdl-imagic.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-imagic.dtsi
+@@ -272,9 +272,8 @@
+ 
+ 			 gpios = <&gpio2 28 1>;	// WIFI
+ 		*/
+-		gpio-number = <2>;
+-		gpios = <&gpio3 22 GPIO_ACTIVE_HIGH>,		// USB_OTG_PWR
+-			<&gpio4 30 GPIO_ACTIVE_HIGH>;		// LED power enable
++		gpio-number = <1>;
++		gpios = <&gpio3 22 GPIO_ACTIVE_HIGH>;		// USB_OTG_PWR
+ 		otg-gpios = <&gpio1 28 GPIO_ACTIVE_HIGH>;	// otg
+ 		status = "okay";
+ 	};
+diff --git a/drivers/misc/mbi6023.c b/drivers/misc/mbi6023.c
+index f9c1ca7..d466ead 100644
+--- a/drivers/misc/mbi6023.c
++++ b/drivers/misc/mbi6023.c
+@@ -41,8 +41,13 @@
+ #define IMX_GPIO_NR(bank, nr)		(((bank) - 1) * 32 + (nr))
+ #define QY_IMX6S_LED_CKI        IMX_GPIO_NR(5 , 14)
+ #define QY_IMX6S_LED_SDI        IMX_GPIO_NR(5 , 15)
++#define QY_IMX6S_LED_EN         IMX_GPIO_NR(4 , 30)
++
+ #define MAX_INDEX               39 // 3 word control, 3x12 data words
+ 
++// IRIS Change - defer driver loading
++static int defer = 1;
++
+ typedef struct {
+ 	int  mbi6023[MAX_INDEX];
+ 	int  index;
+@@ -126,6 +131,12 @@ static int imx6_MBI6023_probe(struct platform_device *pdev)
+ 	int i ;
+ 	int level;
+ 
++        // IRIS Change - defer initial probe
++        if (defer) {
++            defer = 0;
++            return -EPROBE_DEFER;
++        }
++
+     printk(KERN_INFO"imx6_MBI6023: register...\n");
+ 
+     ret = misc_register(&MBI_6023_dev);
+@@ -138,6 +149,10 @@ static int imx6_MBI6023_probe(struct platform_device *pdev)
+ 	gpio_direction_output(QY_IMX6S_LED_CKI, 0);
+ 	gpio_request(QY_IMX6S_LED_SDI , "led_sdi");
+ 	gpio_direction_output(QY_IMX6S_LED_SDI , 0);
++	// IRIS Change - enable LED ring here
++	gpio_request(QY_IMX6S_LED_EN , "led_en");
++	gpio_direction_output(QY_IMX6S_LED_EN , 0);
++	gpio_set_value(QY_IMX6S_LED_EN, 1);
+ 	msleep(1);
+ 	 int data[]={
+ 	0xfc00,0xfc02,0x9002,	   //БъЭЗ
+@@ -157,6 +172,26 @@ static int imx6_MBI6023_probe(struct platform_device *pdev)
+ 			}
+ 		}
+ 
++	// IRIS Change - set ring to purple at boot
++	msleep(10);
++	GPIO_ATTR_AST initLEDs;
++	initLEDs.mbi6023[0] = 0xfc00;
++	initLEDs.mbi6023[1] = 0xfc02;
++	initLEDs.mbi6023[2] = 0x9002;
++	initLEDs.mbi6023[3] = initLEDs.mbi6023[6] = initLEDs.mbi6023[9] = 0xffff;
++	initLEDs.mbi6023[4] = initLEDs.mbi6023[7] = initLEDs.mbi6023[10] = 0xffff;
++	initLEDs.mbi6023[5] = initLEDs.mbi6023[8] = initLEDs.mbi6023[11] = 0x0000;
++	initLEDs.mbi6023[12] = initLEDs.mbi6023[15] = initLEDs.mbi6023[18] = 0xffff;
++	initLEDs.mbi6023[13] = initLEDs.mbi6023[16] = initLEDs.mbi6023[19] = 0xffff;
++	initLEDs.mbi6023[14] = initLEDs.mbi6023[17] = initLEDs.mbi6023[20] = 0x0000;
++	initLEDs.mbi6023[21] = initLEDs.mbi6023[24] = initLEDs.mbi6023[27] = 0xffff;
++	initLEDs.mbi6023[22] = initLEDs.mbi6023[25] = initLEDs.mbi6023[28] = 0xffff;
++	initLEDs.mbi6023[23] = initLEDs.mbi6023[26] = initLEDs.mbi6023[29] = 0x0000;
++	initLEDs.mbi6023[30] = initLEDs.mbi6023[33] = initLEDs.mbi6023[36] = 0xffff;
++	initLEDs.mbi6023[31] = initLEDs.mbi6023[34] = initLEDs.mbi6023[37] = 0xffff;
++	initLEDs.mbi6023[32] = initLEDs.mbi6023[35] = initLEDs.mbi6023[38] = 0x0000;
++	initLEDs.index = 39;
++	set_gpio_spi_input(&initLEDs);
+ 	return 0;
+ }
+ 
+-- 
+2.7.4
+

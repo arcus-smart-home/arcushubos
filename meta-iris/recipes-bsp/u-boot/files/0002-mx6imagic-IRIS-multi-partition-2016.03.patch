@@ -1,0 +1,162 @@
+From 7715aae26f65f5c681a56de30dae9ec25a7ef3f9 Mon Sep 17 00:00:00 2001
+Date: Sat, 24 Feb 2018 10:10:48 -0500
+Subject: [PATCH] mx6imagic IRIS multi partition 2016.03
+
+---
+ board/freescale/mx6imagic/mx6imagic.c | 99 +++++++++++++++++++++++++++++++++++
+ include/configs/mx6imagic_common.h    | 11 ++--
+ 2 files changed, 106 insertions(+), 4 deletions(-)
+
+diff --git a/board/freescale/mx6imagic/mx6imagic.c b/board/freescale/mx6imagic/mx6imagic.c
+index c9a3ef2..226445e 100644
+--- a/board/freescale/mx6imagic/mx6imagic.c
++++ b/board/freescale/mx6imagic/mx6imagic.c
+@@ -44,6 +44,10 @@
+ #endif
+ #endif /*CONFIG_FSL_FASTBOOT*/
+ 
++/* IRIS Changes */
++#include <fs.h>
++/* IRIS Changes */
++
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+ #define UART_PAD_CTRL  (PAD_CTL_PUS_100K_UP |			\
+@@ -1302,6 +1306,101 @@ void board_recovery_setup(void)
+ 
+ #endif /*CONFIG_FSL_FASTBOOT*/
+ 
++/* IRIS Changes */
++
++/* Simple atoi(), but also skip any '\n' that might be at end of file */
++static int local_atoi(char *p)
++{
++        int res = 0, i;
++        for (i = 0; (p[i] != '\0') && (p[i] != '\n'); i++) {
++                res = (res * 10) + (p[i] - '0');
++        }
++        return res;
++}
++
++#define BOOTINDEX_FILE  "bootindex"
++#define FLASH_DEV       "mmc"
++#define MMC_DEV         "2"
++#define FIRST_PART      "1\0"
++#define PART1           "2:1"
++#define SECOND_PART     "3\0"
++#define PART2           "2:3"
++#define MMCROOTFS1      "/dev/mmcblk2p2 ro"
++#define MMCROOTFS2      "/dev/mmcblk2p5 ro"
++#define MMCFSTYPE       "squashfs rootwait"
++
++/* Determine what partition to boot based on largest bootindex file value */
++int last_stage_init (void)
++{
++        int index1_found = 0, index2_found = 0, flip = 0;
++        int index1_val = -1, index2_val = -1, index_size = 0;
++        // This must be static for us with fs_read() below
++        static uint8_t cur_index[128];
++
++        /* Get index files */
++        if (fs_set_blk_dev(FLASH_DEV, PART1, FS_TYPE_EXT) == 0) {
++                fs_read(BOOTINDEX_FILE, (ulong)cur_index, 0, 0, &index_size);
++                if (index_size > 0) {
++                        index1_found = 1;
++                        index1_val = local_atoi((char*)cur_index);
++                        printf("Found Index 1: %d\n", index1_val);
++                } else {
++                        printf("Index 1 not found!\n");
++                }
++        } else {
++                printf("Error setting device to %s %s!\n",
++                       FLASH_DEV, PART2);
++        }
++        if (fs_set_blk_dev(FLASH_DEV, PART2, FS_TYPE_EXT) == 0) {
++                index_size = 0;
++                fs_read(BOOTINDEX_FILE, (ulong)cur_index, 0, 0, &index_size);
++                if (index_size > 0) {
++                        index2_found = 1;
++                        index2_val = local_atoi((char*)cur_index);
++                        printf("Found Index 2: %d\n", index2_val);
++                } else {
++                        printf("Index 2 not found!\n");
++                }
++        } else {
++                printf("Error setting device to %s %s!\n",
++                       FLASH_DEV, PART2);
++        }
++
++        /* Check reset button - if held, flip partitions */
++        gpio_request(122, "");
++        gpio_direction_input(122);
++        if (gpio_get_value(122) == 0) {
++            flip = 1;
++            printf("Flipping boot partition.\n");
++        }
++
++        /* Which partition should we use? */
++        if ((!index1_found && !index2_found) ||
++            (!index2_found) ||
++            ((index1_val > index2_val) && !flip) ||
++            ((index2_val > index1_val) && flip)) {
++                printf("Booting from first firmware update partition.\n");
++
++                /* Boot from first update partition */
++                setenv("mmcdev", MMC_DEV);
++                setenv("mmcpart", FIRST_PART);
++                setenv("mmcroot", MMCROOTFS1);
++                setenv("mmcrootfstype", MMCFSTYPE);
++        } else {
++                printf("Booting from second firmware update partition.\n");
++
++                /* Boot from second update partition */
++                setenv("mmcdev", MMC_DEV);
++                setenv("mmcpart", SECOND_PART);
++                setenv("mmcroot", MMCROOTFS2);
++                setenv("mmcrootfstype", MMCFSTYPE);
++        }
++
++        /* Set initial LED state?  FIXLATER, can we control LED ring yet? */
++
++        return 0;
++}
++/* IRIS Changes */
+ 
+ #ifdef CONFIG_SPL_BUILD
+ #include <spl.h>
+diff --git a/include/configs/mx6imagic_common.h b/include/configs/mx6imagic_common.h
+index 850877b..91e8798 100644
+--- a/include/configs/mx6imagic_common.h
++++ b/include/configs/mx6imagic_common.h
+@@ -36,6 +36,9 @@
+ /* MMC Configs */
+ #define CONFIG_SYS_FSL_ESDHC_ADDR      0
+ 
++/* IRIS Change - This is where we handle the partition selection */
++#define CONFIG_LAST_STAGE_INIT
++
+ #define CONFIG_CMD_PING
+ #define CONFIG_CMD_DHCP
+ #define CONFIG_CMD_MII
+@@ -174,14 +177,14 @@
+ 	EMMC_ENV	  \
+ 	"smp=" CONFIG_SYS_NOSMP "\0"\
+ 	"bootargs_mmc=setenv bootargs ${bootargs} " \
+-		"root=${mmcroot} rootwait rw fec_mac=dc:07:c1:00:ed:85\0" \
++		"root=${mmcroot} rootfstype=${mmcrootfstype} fec_mac=dc:07:c1:00:ed:85\0" \
+ 	"bootargs_base=setenv bootargs console=${console},${baudrate} ${smp} \0"\
+ 	"loadbootscript=" \
+-		"fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
++		"load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
+ 	"bootscript=echo Running bootscript from mmc ...; " \
+ 		"source\0" \
+-	"loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
+-	"loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
++	"loadimage=load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
++	"loadfdt=load mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}\0" \
+ 	"mmcboot=echo Booting from mmc ...; " \
+ 		"run bootargs_base bootargs_mmc; " \
+ 		"if test ${boot_fdt} = yes || test ${boot_fdt} = try; then " \
+-- 
+2.7.4
+

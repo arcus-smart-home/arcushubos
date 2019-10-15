@@ -1,0 +1,104 @@
+/*
+ * Copyright (c) 2017 I-SENSE group of ICCS
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/stm32f303.dtsi>
+
+/ {
+	model = "STMicroelectronics STM32F3DISCOVERY board";
+	compatible = "st,stm32f3discovery", "st,stm32f303";
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		red_led_3: led@0 {
+			gpios = <&gpioe 9 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD3";
+		};
+		blue_led_4: led@1 {
+			gpios = <&gpioe 8 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD4";
+		};
+		orange_led_5: led@2 {
+			gpios = <&gpioe 10 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD5";
+		};
+		green_led_6: led@3 {
+			gpios = <&gpioe 15 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD6";
+		};
+		green_led_7: led@4 {
+			gpios = <&gpiod 11 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD7";
+		};
+		orange_led_8: led@5 {
+			gpios = <&gpioe 14 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD8";
+		};
+		blue_led_9: led@6 {
+			gpios = <&gpioe 12 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD9";
+		};
+		red_led_10: led@7 {
+			gpios = <&gpioe 13 GPIO_INT_ACTIVE_HIGH>;
+			label = "User LD10";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button: button@0 {
+			label = "User";
+			gpios = <&gpioa 0 GPIO_INT_ACTIVE_LOW>;
+		};
+	};
+
+	aliases {
+		led0 = &green_led_6;
+		sw0 = &user_button;
+	};
+};
+
+&usart1 {
+	current-speed = <115200>;
+	pinctrl-0 = <&usart1_pins_d>;
+	pinctrl-names = "default";
+	status = "ok";
+};
+
+&usart2 {
+	current-speed = <115200>;
+	pinctrl-0 = <&usart2_pins_a>;
+	pinctrl-names = "default";
+	status = "ok";
+};
+
+&i2c1 {
+	status = "ok";
+	clock-frequency = <I2C_BITRATE_FAST>;
+};
+
+&i2c2 {
+	status = "ok";
+	clock-frequency = <I2C_BITRATE_FAST>;
+};
+
+&spi1 {
+	status = "ok";
+};
+
+&spi2 {
+	status = "ok";
+};
+
+&usb {
+	status = "ok";
+};

@@ -1,0 +1,91 @@
+# Kconfig - USB device stack configuration options
+
+#
+# Copyright (c) 2016 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menuconfig USB_DEVICE_STACK
+	bool
+	prompt "USB device stack"
+	depends on USB_DEVICE_DRIVER
+	default n
+	help
+	  Enable USB device stack.
+
+if USB_DEVICE_STACK
+
+config SYS_LOG_USB_DEVICE_LEVEL
+	int
+	prompt "Sets log level for the USB device stack"
+	default 0
+	depends on SYS_LOG
+	help
+	  This option sets log level for the USB device stack.
+
+	  Levels are:
+
+	  - 0 OFF, do not write
+
+	  - 1 ERROR, only write SYS_LOG_ERR
+
+	  - 2 WARNING, write SYS_LOG_WRN in addition to previous level
+
+	  - 3 INFO, write SYS_LOG_INF in addition to previous levels
+
+	  - 4 DEBUG, write SYS_LOG_DBG in addition to previous levels
+
+config USB_DEVICE_VID
+	hex
+	prompt "USB Vendor ID"
+	default 0x2FE3
+	help
+	  USB device vendor ID. MUST be configured by vendor.
+
+config USB_DEVICE_PID
+	hex
+	prompt "USB Product ID"
+	default 0x100
+	help
+	  USB device product ID. MUST be configured by vendor.
+
+config USB_DEVICE_MANUFACTURER
+	string
+	prompt "USB manufacturer name"
+	default "ZEPHYR"
+	help
+	  USB device Manufacturer string. MUST be configured by vendor.
+
+config USB_DEVICE_PRODUCT
+	string
+	prompt "USB product name"
+	default "USB-DEV"
+	help
+	  USB device Product string. MUST be configured by vendor.
+
+config USB_DEVICE_SN
+	string
+	prompt "USB serial number"
+	default "0.01"
+	help
+	  USB device SerialNumber string. MUST be configured by vendor.
+
+config USB_COMPOSITE_DEVICE
+	bool
+	prompt "Enable composite device driver"
+	depends on USB
+	default n
+	help
+	  Enable composite USB device driver.
+
+config USB_COMPOSITE_BUFFER_SIZE
+	int
+	prompt "Set buffer size for Class Handler"
+	depends on USB_COMPOSITE_DEVICE
+	default 64
+	default 256 if USB_DEVICE_NETWORK_RNDIS
+
+source "subsys/usb/class/Kconfig"
+
+endif # USB_DEVICE_STACK

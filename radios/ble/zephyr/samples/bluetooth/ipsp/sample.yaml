@@ -1,0 +1,13 @@
+sample:
+  description: TBD
+  name: TBD
+tests:
+  test:
+    harness: bluetooth
+    platform_whitelist: qemu_x86 qemu_cortex_m3
+    tags: bluetooth net
+  test_zep1656:
+    harness: bluetooth
+    extra_args: CONF_FILE="prj_zep1656.conf"
+    platform_whitelist: qemu_x86 qemu_cortex_m3
+    tags: bluetooth net

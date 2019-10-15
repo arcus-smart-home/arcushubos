@@ -1,0 +1,15 @@
+tests:
+  peripheral.uart:
+    tags: drivers
+    filter: CONFIG_UART_CONSOLE
+    harness: keyboard
+  peripheral.poll:
+    extra_args: CONF_FILE=prj_poll.conf
+    tags: drivers
+    filter: CONFIG_UART_CONSOLE
+    harness: keyboard
+  peripheral.shell:
+    extra_args: CONF_FILE=prj_shell.conf
+    tags: drivers
+    filter: CONFIG_UART_CONSOLE
+    harness: keyboard

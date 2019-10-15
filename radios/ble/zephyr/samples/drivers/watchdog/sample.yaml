@@ -1,0 +1,6 @@
+sample:
+  name: Watchdog Driver Sample
+tests:
+  test:
+    tags: drivers
+    depends_on: watchdog

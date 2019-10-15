@@ -1,0 +1,40 @@
+From 69bbe00e5f902ffc8696abd910da8e57863ff803 Mon Sep 17 00:00:00 2001
+Date: Sat, 19 May 2018 07:11:36 -0400
+Subject: [PATCH] Fix to Samsung K4B4G1646E-BYMA DDR3-1866
+
+---
+ board/freescale/mx6imagic/mx6dlimagic.cfg | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/board/freescale/mx6imagic/mx6dlimagic.cfg b/board/freescale/mx6imagic/mx6dlimagic.cfg
+index 67e4b5c..7f52c3a 100644
+--- a/board/freescale/mx6imagic/mx6dlimagic.cfg
++++ b/board/freescale/mx6imagic/mx6dlimagic.cfg
+@@ -80,17 +80,18 @@ DATA 4	0x020e0484 0x00000028
+ DATA 4	0x020e0488 0x00000028
+ DATA 4	0x020e048c 0x00000028
+ DATA 4	0x021b0800 0xa1390003
+-DATA 4	0x021b080c 0x00500054
+-DATA 4	0x021b0810 0x0044004B
++//fix to samsung K4B4G1646E-BYMA DDR3
++DATA 4	0x021b080c 0x00440046
++DATA 4	0x021b0810 0x00380042
+ DATA 4	0x021b480c 0x001F001F
+ DATA 4	0x021b4810 0x001F001F
+-DATA 4	0x021b083c 0x023C023C
+-DATA 4	0x021b0840 0x0228022C
++DATA 4	0x021b083c 0x0244024C
++DATA 4	0x021b0840 0x02340234
+ DATA 4	0x021b483c 0x4201020C
+ DATA 4	0x021b4840 0x01660172
+-DATA 4	0x021b0848 0x40444A4A
++DATA 4	0x021b0848 0x464C4E4C
+ DATA 4	0x021b4848 0x4A4F5049
+-DATA 4	0x021b0850 0x32302A2E
++DATA 4	0x021b0850 0x383A3238
+ DATA 4	0x021b4850 0x3238372B
+ DATA 4	0x021b081c 0x33333333
+ DATA 4	0x021b0820 0x33333333
+-- 
+2.7.4
+

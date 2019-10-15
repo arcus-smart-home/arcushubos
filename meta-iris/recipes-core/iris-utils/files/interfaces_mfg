@@ -1,0 +1,18 @@
+# /etc/network/interfaces -- configuration file for ifup(8), ifdown(8)
+
+# The loopback interface
+auto lo
+iface lo inet loopback
+
+# Use a static address for mfg case
+auto eth0
+iface eth0 inet static
+     address 192.168.1.63
+     network 192.168.1.0
+     netmask 255.255.255.0
+     broadcast 192.168.1.255
+     gateway 192.168.1.1
+
+iface usb0 inet dhcp
+iface wlan0 inet dhcp
+

@@ -1,0 +1,79 @@
+From 3ef0975662cb437ac9b9887e2bcd49acf88b3e66 Mon Sep 17 00:00:00 2001
+Date: Sat, 19 Dec 2015 06:00:37 -0500
+Subject: [PATCH] Disable Ethernet MDIX
+
+---
+ drivers/net/ethernet/ti/davinci_mdio.c |  5 +++++
+ drivers/net/phy/smsc.c                 | 17 +++++++++++++++++
+ include/linux/smscphy.h                |  6 ++++++
+ 3 files changed, 28 insertions(+)
+
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index 0cca9de..824931a 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -400,6 +400,11 @@ static int davinci_mdio_probe(struct platform_device *pdev)
+ 			dev_info(dev, "phy[%d]: device %s, driver %s\n",
+ 				 phy->addr, dev_name(&phy->dev),
+ 				 phy->drv ? phy->drv->name : "unknown");
++			// IRIS CHANGES
++			// Call config_init to disable MDIX
++			if (phy->drv->config_init)
++				 phy->drv->config_init(phy);
++			// IRIS CHANGES
+ 		}
+ 	}
+ 
+diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
+index 11f3481..b3f2d2e 100644
+--- a/drivers/net/phy/smsc.c
++++ b/drivers/net/phy/smsc.c
+@@ -43,6 +43,22 @@ static int smsc_phy_ack_interrupt(struct phy_device *phydev)
+ 
+ static int smsc_phy_config_init(struct phy_device *phydev)
+ {
++        // IRIS CHANGES
++#if 1
++	// Disable MDIX
++	int rc = phy_read(phydev, MII_LAN8710_SCSI);
++	if (rc < 0)
++		return rc;
++	rc = phy_write(phydev, MII_LAN8710_SCSI,
++		rc | MII_LAN8710_SCSI_AMDIXCTRL);
++	if (rc < 0)
++		return rc;
++	rc = phy_write(phydev, MII_LAN8710_SCSI,
++		rc | MII_LAN8710_SCSI_CHANNELSEL);
++	pr_err("phy[lan8710]: Disabling Auto-MDIX support\n");
++	if (rc < 0)
++		return rc;
++#else	// IRIS CHANGES
+ 	int rc = phy_read(phydev, MII_LAN83C185_SPECIAL_MODES);
+ 	if (rc < 0)
+ 		return rc;
+@@ -76,6 +92,7 @@ static int smsc_phy_config_init(struct phy_device *phydev)
+ 		       rc | MII_LAN83C185_EDPWRDOWN);
+ 	if (rc < 0)
+ 		return rc;
++#endif // IRIS CHANGES
+ 
+ 	return smsc_phy_ack_interrupt (phydev);
+ }
+diff --git a/include/linux/smscphy.h b/include/linux/smscphy.h
+index f4bf16e..ca6d3d5 100644
+--- a/include/linux/smscphy.h
++++ b/include/linux/smscphy.h
+@@ -27,4 +27,10 @@
+ #define MII_LAN83C185_MODE_POWERDOWN 0xC0 /* Power Down mode */
+ #define MII_LAN83C185_MODE_ALL       0xE0 /* All capable mode */
+ 
++// IRIS CHANGES
++#define MII_LAN8710_SCSI  27 /* Special Control/Status register */
++#define MII_LAN8710_SCSI_AMDIXCTRL (1<<15) /* Flag to disable Auto-MDIX */
++#define MII_LAN8710_SCSI_CHANNELSEL (1<<13) /* Channel select */
++// IRIS CHANGES
++
+ #endif /* __LINUX_SMSCPHY_H__ */
+-- 
+1.9.1
+

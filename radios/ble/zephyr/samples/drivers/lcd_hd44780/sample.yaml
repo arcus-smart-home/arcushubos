@@ -1,0 +1,8 @@
+sample:
+  name: Display text strings on HD44780 based 20x4 LCD controller
+tests:
+  test:
+    platform_whitelist: arduino_due
+    tags: samples
+    harness: display
+    depends_on: gpio

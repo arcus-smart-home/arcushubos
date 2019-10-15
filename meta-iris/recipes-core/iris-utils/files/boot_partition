@@ -1,0 +1,97 @@
+#!/bin/sh
+
+#
+# Copyright 2019 Arcus Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Mount update partitions to determine which to use
+mkdir -p /tmp/kernel1
+mkdir -p /tmp/kernel2
+if ! mount /dev/kern1 /tmp/kernel1; then
+    echo "Error mounting kernel1 partition!" 1>&2
+    exit 1
+fi
+if ! mount /dev/kern2 /tmp/kernel2; then
+    echo "Error mounting kernel2 partition!" 1>&2
+    exit 1
+fi
+
+# Look at bootindex files
+index1=-1
+index2=-1
+while read x1
+do
+    index1=$x1
+done < /tmp/kernel1/bootindex
+while read x1
+do
+    index2=$x1
+done < /tmp/kernel2/bootindex
+
+# echo "Bootindex1 = $index1" 1>&2
+# echo "Bootindex2 = $index2" 1>&2
+
+if [ "$1" = "invalidate" ]; then
+    if [ $index1 -gt $index2 ]; then
+	rm -f /tmp/kernel1/bootindex
+    else
+	rm -f /tmp/kernel2/bootindex
+    fi
+    echo "Current partition has been invalidated!" 1>&2
+elif [ "$1" = "flip" ]; then
+    if [ $index1 -gt $index2 ]; then
+        bootdir=/tmp/kernel2
+	echo "Will now boot from 2nd partition" 1>&2
+        updateindex=$((index1 + 1))
+    else
+        bootdir=/tmp/kernel1
+	echo "Will now boot from 1st partition" 1>&2
+    	updateindex=$((index2 + 1))
+    fi
+elif [ "$1" = "1" ]; then
+    bootdir=/tmp/kernel1
+    if [ $index1 -gt $index2 ]; then
+	echo "Will continue to boot from 1st partition" 1>&2
+        updateindex=$((index1))
+    else
+	echo "Will now boot from 1st partition" 1>&2
+    	updateindex=$((index2 + 1))
+    fi
+elif [ "$1" = "2" ]; then
+    bootdir=/tmp/kernel2
+    if [ $index1 -gt $index2 ]; then
+	echo "Will now boot from 2nd partition" 1>&2
+        updateindex=$((index1 + 1))
+    else
+	echo "Will continue to boot from 2nd partition" 1>&2
+    	updateindex=$((index2))
+    fi
+fi
+
+# Last step - update bootindex value
+if [ "$1" != "invalidate" ]; then
+    echo $updateindex > ${bootdir}/bootindex
+fi
+sync
+
+# Unmount kernel partitions
+umount /tmp/kernel1
+umount /tmp/kernel2
+
+# Remove mount points
+sync
+rm -rf /tmp/kernel1
+rm -rf /tmp/kernel2
+

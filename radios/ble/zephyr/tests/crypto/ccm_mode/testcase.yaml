@@ -1,0 +1,3 @@
+tests:
+  crypto.ccm_mode:
+    tags: crypto aes ccm

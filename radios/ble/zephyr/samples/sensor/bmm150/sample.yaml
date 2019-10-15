@@ -1,0 +1,7 @@
+sample:
+  name: BMM150 Sensor Sample
+tests:
+  test:
+    harness: sensor
+    tags: samples sensor
+    depends_on: gpio i2c

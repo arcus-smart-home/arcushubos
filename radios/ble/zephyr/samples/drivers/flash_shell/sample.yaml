@@ -1,0 +1,9 @@
+sample:
+  description: Shell commands for inspecting flash driver
+    behavior
+  name: Flash shell
+tests:
+  test:
+    platform_whitelist: 96b_carbon frdm_k64f frdm_kw41z frdm_kl25z
+    tags: apps
+    harness: keyboard

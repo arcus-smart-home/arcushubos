@@ -1,0 +1,3 @@
+tests:
+  crypto.ctr_prng:
+    tags: crypto ctr prng

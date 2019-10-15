@@ -1,0 +1,62 @@
+/*
+ * Copyright (c) 2017, Erwin Rol <erwin@erwinrol.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/stm32f407.dtsi>
+
+/ {
+	model = "Olimex STM32-E407 board";
+	compatible = "olimex,stm32-e407", "st,stm32f407";
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,ccm = &ccm0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		green_led_1: led@0 {
+			gpios = <&gpioc 13 GPIO_INT_ACTIVE_HIGH>;
+			label = "LED1";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button: button@0 {
+			label = "Key";
+			gpios = <&gpioa 0 GPIO_INT_ACTIVE_LOW>;
+		};
+	};
+
+	aliases {
+		led0 = &green_led_1;
+		sw0 = &user_button;
+	};
+};
+
+&usart1 {
+	current-speed = <115200>;
+	pinctrl-0 = <&usart1_pins_a>;
+	pinctrl-names = "default";
+	status = "ok";
+};
+
+&usart3 {
+	current-speed = <115200>;
+	pinctrl-0 = <&usart3_pins_a>;
+	pinctrl-names = "default";
+	status = "ok";
+};
+
+&usart6 {
+	current-speed = <115200>;
+	pinctrl-0 = <&usart6_pins_b>;
+	pinctrl-names = "default";
+	status = "ok";
+};

@@ -1,0 +1,559 @@
+From 5f36fd31ac1d6d80161c918e0fdc9925ca95849a Mon Sep 17 00:00:00 2001
+Date: Wed, 18 Apr 2018 09:54:14 -0400
+Subject: [PATCH] IRIS mods
+
+---
+ Libraries/95HF/inc/drv_spi.h              |  14 ++
+ Libraries/95HF/inc/drv_uart.h             |   4 +-
+ Libraries/95HF/src/drv_95HF.c             | 259 +++++++++++++++++++++++++++++-
+ Libraries/95HF/src/drv_spi.c              |  63 +++++++-
+ Libraries/95HF/src/lib_iso15693pcd.c      |  15 +-
+ Projects/ST95HF_ETEC/inc/common.h         |   6 +
+ Projects/ST95HF_ETEC/inc/hw_config.h      |   2 +
+ Projects/ST95HF_ETEC/inc/lib_ndef.h       |   4 +
+ Projects/ST95HF_ETEC/inc/main.h           |   2 +
+ Projects/ST95HF_ETEC/inc/stm32f30x_conf.h |   3 +-
+ 10 files changed, 365 insertions(+), 7 deletions(-)
+ create mode 100644 Projects/ST95HF_ETEC/inc/lib_ndef.h
+
+diff --git a/Libraries/95HF/inc/drv_spi.h b/Libraries/95HF/inc/drv_spi.h
+index d113c62..a5eb292 100644
+--- a/Libraries/95HF/inc/drv_spi.h
++++ b/Libraries/95HF/inc/drv_spi.h
+@@ -27,6 +27,19 @@
+ 
+ #define SPI_RESPONSEBUFFER_SIZE		255
+ 
++#ifdef IRIS
++typedef const uint8_t uc8;
++typedef uint8_t u8;
++typedef const uint16_t uc16;
++typedef const uint32_t uc32;
++
++void SPI_SendByte(uint8_t data);
++void SPI_SendWord(uint16_t data);
++
++uint8_t SPI_SendReceiveByte(uint8_t data);
++void SPI_SendReceiveBuffer(uc8 *pCommand, uint8_t length, uint8_t *pResponse);
++
++#else
+ void SPI_SendByte(SPI_TypeDef* SPIx, uint8_t data);
+ void SPI_SendWord(SPI_TypeDef* SPIx, uint16_t data);
+ 
+@@ -35,6 +48,7 @@ void 		SPI_SendReceiveBuffer	(SPI_TypeDef* SPIx, uc8 *pCommand, uint8_t length,
+ #ifdef USE_DMA
+ void SPI_SendReceiveBufferDMA(SPI_TypeDef* SPIx, uc8 *pCommand, uint8_t length, uint8_t *pResponse); 
+ #endif /* USE_DMA */
++#endif
+ 
+ #endif /* __SPI_H */
+ 
+diff --git a/Libraries/95HF/inc/drv_uart.h b/Libraries/95HF/inc/drv_uart.h
+index b06d30a..d53f3c2 100644
+--- a/Libraries/95HF/inc/drv_uart.h
++++ b/Libraries/95HF/inc/drv_uart.h
+@@ -28,13 +28,13 @@
+ 
+ #define UART_RESPONSEBUFFER_SIZE		255
+ 
+-
++#ifndef IRIS
+ /* UART functions */
+ void 		UART_SendByte		(USART_TypeDef* USARTx, uint8_t data) ;
+ uint8_t UART_ReceiveByte	(USART_TypeDef* USARTx);
+ void 		UART_SendBuffer		(USART_TypeDef* USARTx, uc8 *pCommand, uint8_t length); 
+ void 		UART_ReceiveBuffer	(USART_TypeDef* USARTx, uint8_t *pResponse, uint8_t length);
+-
++#endif
+ 
+ 
+ #endif /* __UART_H */
+diff --git a/Libraries/95HF/src/drv_95HF.c b/Libraries/95HF/src/drv_95HF.c
+index a17e666..4a873ff 100644
+--- a/Libraries/95HF/src/drv_95HF.c
++++ b/Libraries/95HF/src/drv_95HF.c
+@@ -57,14 +57,270 @@ uint8_t				u95HFBuffer [RFTRANS_95HF_MAX_BUFFER_SIZE+3];
+ /** 
+  *  @brief This uTimeOut variable is used as a timeout duting the communication with the RF tranceiver 
+  */
+-extern volatile bool							uDataReady; 
++extern volatile bool							uDataReady;
++#ifdef IRIS
++uint8_t						uTimeOut;
++#else
+ __IO uint8_t						uTimeOut;
++#endif
+ bool EnableTimeOut = true;
+ 
+ 
+ /* ConfigStructure */ 										 
+ drv95HF_ConfigStruct			drv95HFConfig;
+ 
++#ifdef IRIS
++#include <unistd.h>
++#include <fcntl.h>
++#include <sys/ioctl.h>
++#include <linux/types.h>
++#include <linux/spi/spidev.h>
++#include <common.h>
++
++static uint8_t bits = 8;
++#define SPI_DEV       "/dev/spidev1.0"
++
++#define SPI_IOC_IRQ_IN          _IOW(SPI_IOC_MAGIC, 6, __u8)
++#define SPI_IOC_CSO_LOW          _IOW(SPI_IOC_MAGIC, 7, __u8)
++#define SPI_IOC_CSO_HIG          _IOW(SPI_IOC_MAGIC, 8, __u8)
++#define SPI_IOC_GET_VALUE          _IOW(SPI_IOC_MAGIC, 9, __u8)
++
++/* PCD/PICC global memory space */
++
++/* TT1 (PCD only)*/
++uint8_t TT1Tag[NFCT1_MAX_TAGMEMORY];
++
++/* TT2 */
++uint8_t TT2Tag[NFCT2_MAX_TAGMEMORY];
++
++/* TT3 */
++uint8_t TT3Tag[NFCT3_MAX_TAGMEMORY];
++uint8_t *TT3AttribInfo = TT3Tag, *TT3NDEFfile = &TT3Tag[NFCT3_ATTRIB_INFO_SIZE];
++
++/* TT4 */
++uint8_t CardCCfile [NFCT4_MAX_CCMEMORY];
++uint8_t CardNDEFfileT4A [NFCT4_MAX_NDEFMEMORY];
++uint8_t CardNDEFfileT4B [NFCT4_MAX_NDEFMEMORY];
++
++/* TT5 (PCD only)*/
++uint8_t TT5Tag[NFCT5_MAX_TAGMEMORY];
++
++void drv95HF_InitConfigStructure (void)
++{
++    drv95HFConfig.uInterface      = RFTRANS_95HF_INTERFACE_SPI;
++    drv95HFConfig.uSpiMode        = RFTRANS_95HF_SPI_POLLING;
++    drv95HFConfig.uState          = RFTRANS_95HF_STATE_POWERUP;
++    drv95HFConfig.uCurrentProtocol    = RFTRANS_95HF_PROTOCOL_UNKNOWN;
++    drv95HFConfig.uMode           = RFTRANS_95HF_MODE_UNKNOWN;
++}
++
++void drv95HF_SendIRQINPulse(void)
++{
++    if (drv95HFConfig.uInterface == RFTRANS_95HF_INTERFACE_SPI) {
++        /* Send a pulse on IRQ_IN */
++        int fd;
++	fd = open(SPI_DEV, O_RDWR);
++	if (fd >= 0) {
++            ioctl(fd, SPI_IOC_IRQ_IN, &bits);
++	    close(fd);
++	}
++    }
++}
++
++void drv95HF_ReceiveSPIResponse(uint8_t *pData)
++{
++    uint8_t DummyBuffer[MAX_BUFFER_SIZE];
++
++    /* Select 95HF transceiver over SPI */
++    int fd;
++    fd = open(SPI_DEV, O_RDWR);
++    if (fd >= 0) {
++        ioctl(fd, SPI_IOC_CSO_LOW, &bits);
++    }
++    /* Request a response from 95HF transceiver */
++    SPI_SendReceiveByte(RFTRANS_95HF_COMMAND_RECEIVE);
++
++    /* Recover the "Command" byte */
++    pData[RFTRANS_95HF_COMMAND_OFFSET] = SPI_SendReceiveByte(DUMMY_BYTE);
++
++    if(pData[RFTRANS_95HF_COMMAND_OFFSET] == 0x55) {
++        pData[RFTRANS_95HF_LENGTH_OFFSET]  = 0x00;
++        /* In case we were in listen mode error code cancelled by user (0x85 0x00) must be retrieved */
++        pData[RFTRANS_95HF_LENGTH_OFFSET+1] = SPI_SendReceiveByte(DUMMY_BYTE);
++        pData[RFTRANS_95HF_LENGTH_OFFSET+2] = SPI_SendReceiveByte(DUMMY_BYTE);
++  } else if(pData[RFTRANS_95HF_COMMAND_OFFSET] == 0xFF) {
++        pData[RFTRANS_95HF_LENGTH_OFFSET]  = 0x00;
++        pData[RFTRANS_95HF_LENGTH_OFFSET+1] = SPI_SendReceiveByte(DUMMY_BYTE);
++        pData[RFTRANS_95HF_LENGTH_OFFSET+2] = SPI_SendReceiveByte(DUMMY_BYTE);
++  } else {
++      /* Recover the "Length" byte */
++      pData[RFTRANS_95HF_LENGTH_OFFSET]  = SPI_SendReceiveByte(DUMMY_BYTE);
++      /* Checks the data length */
++      if(pData[RFTRANS_95HF_LENGTH_OFFSET] != 0x00)
++          SPI_SendReceiveBuffer(DummyBuffer, pData[RFTRANS_95HF_LENGTH_OFFSET], &pData[RFTRANS_95HF_DATA_OFFSET]);
++    }
++
++    /* Deselect xx95HF over SPI */
++    if (fd >= 0) {
++        ioctl(fd, SPI_IOC_CSO_HIG, &bits);
++        close(fd);
++    }
++}
++
++
++static int8_t drv95HF_SPIPollingCommand( void )
++{
++    uint8_t Polling_Status = 0;
++    int fd;
++    fd = open(SPI_DEV, O_RDWR);
++    if (fd < 0) {
++        return RFTRANS_95HF_ERRORCODE_DEFAULT;
++    }
++
++    if (drv95HFConfig.uSpiMode == RFTRANS_95HF_SPI_POLLING) {
++        do {
++            /* Low level on NSS  */
++            ioctl(fd, SPI_IOC_CSO_LOW, &bits);
++            usleep(2000);
++
++            /*  poll the 95HF transceiver until he's ready ! */
++            Polling_Status  = SPI_SendReceiveByte(RFTRANS_95HF_COMMAND_POLLING);
++            Polling_Status &= RFTRANS_95HF_FLAG_DATA_READY_MASK;
++
++        } while( Polling_Status != RFTRANS_95HF_FLAG_DATA_READY  );
++
++        /* High level on NSS  */
++        ioctl(fd, SPI_IOC_CSO_HIG, &bits);
++    } else if (drv95HFConfig.uSpiMode == RFTRANS_95HF_SPI_INTERRUPT) {
++        int ret =-1;
++        int i=1000;
++        while(i) {
++            ret = ioctl(fd, SPI_IOC_GET_VALUE, &bits);
++            if(ret==0)
++                break;
++            usleep(1000);
++            i--;
++        }
++        if(i==0)
++            return RFTRANS_95HF_POLLING_TIMEOUT;
++    }
++    close(fd);
++    return RFTRANS_95HF_SUCCESS_CODE;
++}
++
++void drv95HF_SendSPICommand(const uint8_t *pData)
++{
++    uint8_t DummyBuffer[MAX_BUFFER_SIZE];
++    int fd;
++    fd = open(SPI_DEV, O_RDWR);
++    /* Select xx95HF over SPI */
++    if (fd >= 0) {
++        ioctl(fd, SPI_IOC_CSO_LOW, &bits);
++    }
++    /* Send a sending request to xx95HF  */
++    SPI_SendReceiveByte(RFTRANS_95HF_COMMAND_SEND);
++
++    if(*pData == 0x55) {
++        /* Send a sending request to xx95HF */
++        SPI_SendReceiveByte(0x55);
++    } else {
++        /* Transmit the buffer over SPI */
++        SPI_SendReceiveBuffer(pData, pData[RFTRANS_95HF_LENGTH_OFFSET]+RFTRANS_95HF_DATA_OFFSET, DummyBuffer);
++    }
++
++    /* Deselect xx95HF over SPI  */
++    if (fd >= 0) {
++        ioctl(fd, SPI_IOC_CSO_HIG, &bits);
++        close(fd);
++    }
++}
++
++
++int8_t drv95HF_SendReceive(const uint8_t *pCommand, uint8_t *pResponse)
++{
++    uint8_t command = *pCommand;
++
++    if(drv95HFConfig.uInterface == RFTRANS_95HF_INTERFACE_SPI) {
++        /* First step  - Sending command        */
++        drv95HF_SendSPICommand(pCommand);
++        /* Second step - Polling        */
++        if (drv95HF_SPIPollingCommand( ) != RFTRANS_95HF_SUCCESS_CODE) {
++            *pResponse = RFTRANS_95HF_ERRORCODE_TIMEOUT;
++            return RFTRANS_95HF_POLLING_TIMEOUT;
++        }
++        /* Third step  - Receiving bytes */
++        drv95HF_ReceiveSPIResponse(pResponse);
++    }
++
++    /* After listen command is sent an interrupt will raise when data from RF will be received */
++    /*  if(command == LISTEN) {
++        if(drv95HFConfig.uSpiMode == RFTRANS_95HF_SPI_INTERRUPT) {
++            drvInt_Enable_RFEvent_IRQ( );
++        }
++        }*/
++    return RFTRANS_95HF_SUCCESS_CODE;
++}
++
++static void drv95HF_SendSPIResetByte(void)
++{
++    /* Send reset control byte */
++    SPI_SendReceiveByte(RFTRANS_95HF_COMMAND_RESET);
++}
++
++void drv95HF_ResetSPI(void)
++{
++    int fd;
++    fd = open(SPI_DEV, O_RDWR);
++    if (fd < 0) {
++        return;
++    }
++    /* Deselect Rftransceiver over SPI */
++    ioctl(fd, SPI_IOC_CSO_HIG, &bits);
++    usleep(1000);
++    /* Select 95HF device over SPI */
++    ioctl(fd, SPI_IOC_CSO_LOW, &bits);
++    /* Send reset control byte  */
++    drv95HF_SendSPIResetByte();
++    /* Deselect 95HF device over SPI */
++    ioctl(fd, SPI_IOC_CSO_HIG, &bits);
++    close(fd);
++    usleep(3000);
++    /* send a pulse on IRQ_in*/
++    drv95HF_SendIRQINPulse();
++    usleep(3000);  /* mandatory before issuing a new command */
++
++    drv95HFConfig.uState = RFTRANS_95HF_STATE_READY;
++}
++
++uint8_t drv95HF_GetSerialInterface(void)
++{
++    return drv95HFConfig.uInterface;
++}
++
++void drv95HF_InitilizeSerialInterface ( void )
++{
++}
++
++void drv95HF_InitializeUART (uc32 BaudRate)
++{
++}
++
++void delay_ms(uint16_t delay)
++{
++    usleep(1000*delay);
++}
++
++void delayHighPriority_ms(uint16_t delay)
++{
++    usleep(1000*delay);
++}
++
++void delay_us(uint16_t delay)
++{
++    usleep(delay);
++}
++#else
++
+ /* drv95HF_Private_Functions */
+ static void drv95HF_RCCConfigSPI						( void );
+ static void drv95HF_GPIOConfigSPI						( void );
+@@ -800,6 +1056,7 @@ void drv95HF_Idle(uc8 WU_source, uc8 mode)
+ 	
+ }
+ 
++#endif /* IRIS */
+ 
+ /**
+  * @}
+diff --git a/Libraries/95HF/src/drv_spi.c b/Libraries/95HF/src/drv_spi.c
+index aa3a1e3..a1e452b 100644
+--- a/Libraries/95HF/src/drv_spi.c
++++ b/Libraries/95HF/src/drv_spi.c
+@@ -91,7 +91,66 @@ static void RFTRANS_InitializeDMA(uint8_t length, uint8_t *pResponse, uc8 *pComm
+ 
+ #endif /* USE_DMA */
+ 
+- 
++#ifdef IRIS
++#include <unistd.h>
++#include <fcntl.h>
++#include <sys/ioctl.h>
++#include <linux/types.h>
++#include <linux/spi/spidev.h>
++
++#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
++
++static uint8_t bits = 8;
++static uint32_t speed = 1000000;
++static uint16_t delay = 0;
++#define SPI_DEV       "/dev/spidev1.0"
++
++
++static uint8_t  transfer(int fd,uint8_t data)
++{
++    int ret;
++    uint8_t tx[] = {
++      0x01,
++    };
++    tx[0] = data;
++    uint8_t rx[ARRAY_SIZE(tx)] = {0, };
++    struct spi_ioc_transfer tr = {
++        .tx_buf = (unsigned long)tx,
++        .rx_buf = (unsigned long)rx,
++        .len = ARRAY_SIZE(tx),
++        .delay_usecs = delay,
++        .speed_hz = speed,
++        .bits_per_word = bits,
++    };
++
++    ret = ioctl(fd, SPI_IOC_MESSAGE(1), &tr);
++    if (ret < 1) {
++        return 0;
++    }
++    //printf("%.2X \n", rx[0]);
++    return rx[0];
++}
++
++uint8_t SPI_SendReceiveByte(uint8_t data)
++{
++    uint8_t ret_value = 0;
++    int fd = open(SPI_DEV, O_RDWR);
++    if (fd >= 0) {
++        ret_value=transfer(fd,data);
++        close(fd);
++    }
++    return ret_value;
++}
++
++void SPI_SendReceiveBuffer(const uint8_t *pCommand, uint8_t length, uint8_t *pResponse)
++{
++    uint8_t i;
++    for(i=0; i<length; i++) {
++        pResponse[i] = SPI_SendReceiveByte(pCommand[i]);
++    }
++}
++
++#else
+  /**
+   * @}
+   */
+@@ -197,6 +256,8 @@ void SPI_SendReceiveBufferDMA(SPI_TypeDef* SPIx, uc8 *pCommand, uint8_t length,
+ 
+ #endif /* USE_DMA */
+ 
++#endif /* IRIS */
++
+ /**
+  * @}
+  */ 
+diff --git a/Libraries/95HF/src/lib_iso15693pcd.c b/Libraries/95HF/src/lib_iso15693pcd.c
+index d280541..1cf90ca 100644
+--- a/Libraries/95HF/src/lib_iso15693pcd.c
++++ b/Libraries/95HF/src/lib_iso15693pcd.c
+@@ -50,8 +50,13 @@ static int16_t ISO15693_Inventory16Slots ( uc8 Flags , uc8 AFI, uc8 MaskLength,
+ /* Command functions --- */
+ static int8_t ISO15693_CreateRequestFlag (uc8 SubCarrierFlag,uc8 DataRateFlag,uc8 InventoryFlag,uc8 ProtExtFlag,uc8 SelectOrAFIFlag,uc8 AddrOrNbSlotFlag,uc8 OptionFlag,uc8 RFUFlag);
+ static int8_t ISO15693_StayQuiet(uc8 Flags,uc8 *UIDin);
++#ifdef IRIS
++int8_t ISO15693_ReadSingleBlock ( uc8 Flags, uc8 *UID, uc16 BlockNumber,uint8_t *pResponse );
++int8_t ISO15693_WriteSingleBlock ( uc8 Flags, uc8 *UIDin, uc16 BlockNumber,uc8 *DataToWrite,uint8_t *pResponse );
++#else
+ static int8_t ISO15693_ReadSingleBlock ( uc8 Flags, uc8 *UID, uc16 BlockNumber,uint8_t *pResponse );
+ static int8_t ISO15693_WriteSingleBlock ( uc8 Flags, uc8 *UIDin, uc16 BlockNumber,uc8 *DataToWrite,uint8_t *pResponse );
++#endif
+ static int8_t ISO15693_ReadMultipleBlock (uc8 Flags, uc8 *UIDin, uint16_t BlockNumber, uc8 NbBlock, uint8_t *pResponse );
+ static int8_t ISO15693_SendEOF ( uint8_t *pResponse );
+ /* Is functions --- */
+@@ -435,7 +440,10 @@ Error:
+ * @retval 	ISO15693_SUCCESSCODE	: 	PCD  returns a succesful code
+ * @retval 	ISO15693_ERRORCODE_DEFAULT	: 	 PCD  returns an error code
+ */
+-static int8_t ISO15693_ReadSingleBlock (uc8 Flags, uc8 *UIDin, uc16 BlockNumber,uint8_t *pResponse )
++#ifndef IRIS
++static
++#endif
++int8_t ISO15693_ReadSingleBlock (uc8 Flags, uc8 *UIDin, uc16 BlockNumber,uint8_t *pResponse )
+ {
+ uint8_t DataToSend[ISO15693_MAXLENGTH_READSINGLEBLOCK],
+ 		NthByte=0;
+@@ -477,7 +485,10 @@ uint8_t DataToSend[ISO15693_MAXLENGTH_READSINGLEBLOCK],
+ * @retval 	ISO15693_SUCCESSCODE	: 	PCD  returns a succesful code
+ * @retval 	ISO15693_ERRORCODE_DEFAULT	: 	 PCD  returns an error code
+ */
+-static int8_t ISO15693_WriteSingleBlock(uc8 Flags, uc8 *UIDin, uc16 BlockNumber,uc8 *DataToWrite,uint8_t *pResponse )
++#ifndef IRIS
++static
++#endif
++int8_t ISO15693_WriteSingleBlock(uc8 Flags, uc8 *UIDin, uc16 BlockNumber,uc8 *DataToWrite,uint8_t *pResponse )
+ {
+ uint8_t DataToSend[MAX_BUFFER_SIZE],
+ 		NthByte=0,
+diff --git a/Projects/ST95HF_ETEC/inc/common.h b/Projects/ST95HF_ETEC/inc/common.h
+index a873acf..5b95ce4 100644
+--- a/Projects/ST95HF_ETEC/inc/common.h
++++ b/Projects/ST95HF_ETEC/inc/common.h
+@@ -23,9 +23,15 @@
+ #define _COMMON_H
+ 
+ /* Includes ------------------------------------------------------------------*/
++#ifdef IRIS
++#include "miscellaneous.h"
++typedef const uint8_t uc8;
++#define __IO
++#else
+ #include "stm32f30x.h"
+ #include "miscellaneous.h"
+ #include "stm32f30x_conf.h"
++#endif
+ 
+ /* Exported types ------------------------------------------------------------*/
+ typedef  void (*pFunction)(void);
+diff --git a/Projects/ST95HF_ETEC/inc/hw_config.h b/Projects/ST95HF_ETEC/inc/hw_config.h
+index 058cad5..0fd15d9 100644
+--- a/Projects/ST95HF_ETEC/inc/hw_config.h
++++ b/Projects/ST95HF_ETEC/inc/hw_config.h
+@@ -126,7 +126,9 @@ void Interrupts_Config						( void );
+ void Set_USBClock									( void );
+ void Enter_LowPowerMode						( void );
+ void Leave_LowPowerMode						( void );
++#ifndef IRIS
+ void USB_Cable_Config 						(FunctionalState NewState);
++#endif
+ void USB_Disconnect_Config				( void );
+ #ifdef USE_MSD_DRIVE
+ void Get_SerialNum								( void );
+diff --git a/Projects/ST95HF_ETEC/inc/lib_ndef.h b/Projects/ST95HF_ETEC/inc/lib_ndef.h
+new file mode 100644
+index 0000000..804e82a
+--- /dev/null
++++ b/Projects/ST95HF_ETEC/inc/lib_ndef.h
+@@ -0,0 +1,4 @@
++
++// FIX FIX FIX
++#define NDEF_ERROR_MEMORY_INTERNAL -1
++#define NDEF_ACTION_COMPLETED       0
+diff --git a/Projects/ST95HF_ETEC/inc/main.h b/Projects/ST95HF_ETEC/inc/main.h
+index 6b99347..1e6cda0 100644
+--- a/Projects/ST95HF_ETEC/inc/main.h
++++ b/Projects/ST95HF_ETEC/inc/main.h
+@@ -30,7 +30,9 @@
+ #define __MAIN_H
+ 
+ /* Includes ------------------------------------------------------------------*/
++#ifndef IRIS
+ #include "stm32f30x.h"
++#endif
+ #include "stdint.h"
+ 
+ /* Exported types ------------------------------------------------------------*/
+diff --git a/Projects/ST95HF_ETEC/inc/stm32f30x_conf.h b/Projects/ST95HF_ETEC/inc/stm32f30x_conf.h
+index 11ea43a..bc6d30a 100644
+--- a/Projects/ST95HF_ETEC/inc/stm32f30x_conf.h
++++ b/Projects/ST95HF_ETEC/inc/stm32f30x_conf.h
+@@ -29,7 +29,7 @@
+ #ifndef __STM32F30X_CONF_H
+ #define __STM32F30X_CONF_H
+ 
+-      
++#ifndef IRIS
+ /* Includes ------------------------------------------------------------------*/
+ /* Comment the line below to disable peripheral header file inclusion */
+ #include "stm32f30x_adc.h"
+@@ -79,6 +79,7 @@
+ #else
+   #define assert_param(expr) ((void)0)
+ #endif /* USE_FULL_ASSERT */
++#endif /* IRIS */
+ 
+ #endif /* __STM32F30X_CONF_H */
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# If agent logrotate file exists, append to current file
+if [ -f /data/agent/conf/logrotate.conf ]; then
+    cat /etc/logrotate.conf /data/agent/conf/logrotate.conf > /var/run/logrotate.conf
+    /usr/sbin/logrotate /var/run/logrotate.conf
+else
+    /usr/sbin/logrotate /etc/logrotate.conf
+fi
+
+EXITVALUE=$?
+if [ $EXITVALUE != 0 ]; then
+    /usr/bin/logger -t logrotate "ALERT exited abnormally with [$EXITVALUE]"
+fi
+exit 0

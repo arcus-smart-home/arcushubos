@@ -1,0 +1,339 @@
+# Kconfig - general architecture configuration options
+
+#
+# Copyright (c) 2014-2015 Wind River Systems, Inc.
+# Copyright (c) 2015 Intel Corporation
+# Copyright (c) 2016 Cadence Design Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+
+choice
+	prompt "Architecture"
+	default X86
+
+config ARC
+	bool "ARC architecture"
+	select HAS_DTS
+
+config ARM
+	bool "ARM architecture"
+	select ARCH_HAS_THREAD_ABORT
+
+config X86
+	bool "x86 architecture"
+	select ATOMIC_OPERATIONS_BUILTIN
+
+config NIOS2
+	bool "Nios II Gen 2 architecture"
+	select ATOMIC_OPERATIONS_C
+
+config RISCV32
+	bool "RISCV32 architecture"
+
+config XTENSA
+	bool "Xtensa architecture"
+
+config ARCH_POSIX
+	bool "POSIX (native) architecture"
+	select ATOMIC_OPERATIONS_BUILTIN
+	select ARCH_HAS_CUSTOM_SWAP_TO_MAIN
+	select ARCH_HAS_CUSTOM_BUSY_WAIT
+	select ARCH_HAS_THREAD_ABORT
+	select NATIVE_APPLICATION
+
+endchoice
+
+
+menu "General Architecture Options"
+
+config HW_STACK_PROTECTION
+	bool "Hardware Stack Protection"
+	depends on ARCH_HAS_STACK_PROTECTION
+	help
+	  Select this option to enable hardware-based platform features to
+	  catch stack overflows when the system is running in privileged
+	  mode. If CONFIG_USERSPACE is not enabled, the system is always
+	  running in privileged mode.
+
+	  Note that this does not necessarily prevent corruption and assertions
+	  about the overall system state when a fault is triggered cannot be
+	  made.
+
+config USERSPACE
+	bool "User mode threads (EXPERIMENTAL)"
+	depends on ARCH_HAS_USERSPACE
+	help
+	  When enabled, threads may be created or dropped down to user mode,
+	  which has significantly restricted permissions and must interact
+	  with the kernel via system calls. See Zephyr documentation for more
+	  details	about this feature.
+
+	  If a user thread overflows its stack, this will be caught and the
+	  kernel itself will be shielded from harm. Enabling this option
+	  may or may not catch stack overflows when the system is in
+	  privileged mode or handling a system call; to ensure these are always
+	  caught, enable CONFIG_HW_STACK_PROTECTION.
+
+	  This feature is under heavy development and APIs related to it are
+	  subject to change, even if declared non-private.
+
+config PRIVILEGED_STACK_SIZE
+	int "Size of privileged stack"
+	default 256
+	default 384 if ARC
+	depends on ARCH_HAS_USERSPACE
+	help
+	  This option sets the privileged stack region size that will be used
+	  in addition to the user mode thread stack.  During normal execution,
+	  this region will be inaccessible from user mode.  During system calls,
+	  this region will be utilized by the system call.
+
+config STACK_GROWS_UP
+	bool "Stack grows towards higher memory addresses"
+	default n
+	help
+	  Select this option if the architecture has upward growing thread
+	  stacks. This is not common.
+
+config MAX_THREAD_BYTES
+	int "Bytes to use when tracking object thread permissions"
+	default 2
+	depends on USERSPACE
+	help
+	  Every kernel object will have an associated bitfield to store
+	  thread permissions for that object. This controls the size of the
+	  bitfield (in bytes) and imposes a limit on how many threads can
+	  be created in the system.
+
+config DYNAMIC_OBJECTS
+	bool "Allow kernel objects to be allocated at runtime"
+	default n
+	depends on USERSPACE
+	help
+	Enabling this option allows for kernel objects to be requested from
+	the calling thread's resource pool, at a slight cost in performance
+	due to the supplemental run-time tables required to validate such
+	objects.
+
+	Objects allocated in this way can be freed with a supervisor-only
+	API call, or when the number of references to that object drops to
+	zero.
+
+config SIMPLE_FATAL_ERROR_HANDLER
+	prompt "Simple system fatal error handler"
+	bool
+	default n
+	default y if !MULTITHREADING
+	help
+	  Provides an implementation of _SysFatalErrorHandler() that hard hangs
+	  instead of aborting the faulting thread, and does not print anything,
+	  for footprint-concerned systems. Only enable this option if you do not
+	  want debug capabilities in case of system fatal error.
+
+menu "Interrupt Configuration"
+#
+# Interrupt related configs
+#
+config GEN_ISR_TABLES
+	bool
+	prompt "Use generated IRQ tables"
+	default n
+	help
+	  This option controls whether a platform uses the gen_isr_tables
+	  script to generate its interrupt tables. This mechanism will create
+	  an appropriate hardware vector table and/or software IRQ table.
+
+config GEN_IRQ_VECTOR_TABLE
+	bool
+	prompt "Generate an interrupt vector table"
+	default y
+	depends on GEN_ISR_TABLES
+	help
+	  This option controls whether a platform using gen_isr_tables
+	  needs an interrupt vector table created. Only disable this if the
+	  platform does not use a vector table at all, or requires the vector
+	  table to be in a format that is not an array of function pointers
+	  indexed by IRQ line. In the latter case, the vector table must be
+	  supplied by the application or architecture code.
+
+config GEN_SW_ISR_TABLE
+	bool
+	prompt "Generate a software ISR table"
+	default y
+	depends on GEN_ISR_TABLES
+	help
+	  This option controls whether a platform using gen_isr_tables
+	  needs a software ISR table table created. This is an array of struct
+	  _isr_table_entry containing the interrupt service routine and supplied
+	  parameter.
+
+config GEN_IRQ_START_VECTOR
+	int
+	default 0
+	depends on GEN_ISR_TABLES
+	help
+	  On some architectures, part of the vector table may be reserved for
+	  system exceptions and is declared separately from the tables
+	  created by gen_isr_tables.py. When creating these tables, this value
+	  will be subtracted from CONFIG_NUM_IRQS to properly size them.
+	  This is a hidden option which needs to be set per architecture and
+	  left alone.
+
+
+config IRQ_OFFLOAD
+	bool "Enable IRQ offload"
+	default n
+	help
+	  Enable irq_offload() API which allows functions to be synchronously
+	  run in interrupt context. Mainly useful for test cases.
+
+endmenu # Interrupt configuration
+
+endmenu
+
+#
+# Architecture Capabilities
+#
+config ARCH_HAS_STACK_PROTECTION
+	bool
+
+config ARCH_HAS_USERSPACE
+	bool
+
+config ARCH_HAS_EXECUTABLE_PAGE_BIT
+	bool
+
+#
+# Other architecture related options
+#
+
+config ARCH_HAS_THREAD_ABORT
+	bool
+
+#
+# Hidden PM feature configs which are to be selected by
+# individual SoC.
+#
+config SYS_POWER_LOW_POWER_STATE_SUPPORTED
+	# Hidden
+	bool
+	default n
+	help
+	  This option signifies that the target supports the SYS_POWER_LOW_POWER_STATE
+	  configuration option.
+
+config SYS_POWER_DEEP_SLEEP_SUPPORTED
+	# Hidden
+	bool
+	default n
+	help
+	  This option signifies that the target supports the SYS_POWER_DEEP_SLEEP
+	  configuration option.
+
+config BOOTLOADER_CONTEXT_RESTORE_SUPPORTED
+	# Hidden
+	bool
+	default n
+	help
+	  This option signifies that the target has options of bootloaders
+	  that support context restore upon resume from deep sleep
+
+
+# End hidden CPU family configs
+#
+
+config CPU_HAS_FPU
+	bool
+	default n
+	help
+	  This option is enabled when the CPU has hardware floating point
+	  unit.
+
+config CPU_HAS_MPU
+	bool
+	# Omit prompt to signify "hidden" option
+	default n
+	help
+	  This option is enabled when the CPU has a Memory Protection Unit (MPU).
+
+config MPU_REQUIRES_POWER_OF_TWO_ALIGNMENT
+	bool
+	# Omit prompt to signify "hidden" option
+	default n
+	help
+	  This option is enabled when the MPU requires a power of two alignment
+	  and size for MPU regions.
+
+
+menu "Floating Point Options"
+depends on CPU_HAS_FPU
+
+config FLOAT
+	bool
+	prompt "Floating point registers"
+	default n
+	help
+	  This option allows threads to use the floating point registers.
+	  By default, only a single thread may use the registers.
+
+	  Disabling this option means that any thread that uses a
+	  floating point register will get a fatal exception.
+
+config FP_SHARING
+	bool
+	prompt "Floating point register sharing"
+	depends on FLOAT
+	default n
+	help
+	  This option allows multiple threads to use the floating point
+	  registers.
+
+endmenu
+
+#
+# End hidden PM feature configs
+#
+
+config ARCH
+	string
+	help
+	  System architecture string.
+
+config SOC
+	string
+	help
+	  SoC name which can be found under arch/<arch>/soc/<soc name>.
+	  This option holds the directory name used by the build system to locate
+	  the correct linker and header files for the SoC. This option will go away
+	  once all SoCs are using family/series structure.
+
+config SOC_SERIES
+	string
+	help
+	  SoC series name which can be found under arch/<arch>/soc/<family>/<series>.
+	  This option holds the directory name used by the build system to locate
+	  the correct linker and header files.
+
+config SOC_FAMILY
+	string
+	help
+	  SoC family name which can be found under arch/<arch>/soc/<family>.
+	  This option holds the directory name used by the build system to locate
+	  the correct linker and header files.
+
+config BOARD
+	string
+	help
+	  This option holds the name of the board and is used to locate the files
+	  related to the board in the source tree (under boards/).
+	  The Board is the first location where we search for a linker.ld file,
+	  if not found we look for the linker file in
+	  arch/<arch>/soc/<family>/<series>
+
+
+# $ENV_VAR_ARCH might be a glob pattern
+gsource "arch/$ENV_VAR_ARCH/Kconfig"
+
+source "boards/Kconfig"

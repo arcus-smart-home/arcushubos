@@ -1,0 +1,40 @@
+To build mcuboot boot loader (for Nordic 52840):
+
+- cd i2hubos/radios/ble/mcuboot/boot/zephyr/
+- mkdir build && cd build
+- cmake -GNinja -DBOARD=nrf52840_pca10056 ..
+- ninja
+
+The output is in build/zephyr/zephyr.hex
+
+This file can be renamed to indicate the build version.
+
+
+To build Zephyr application (again for Nordic 52840)
+
+- cd i2hubos/radios/ble/zephyr/samples/bluetooth/hci_uart
+- mkdir build && cd build
+- cmake -GNinja -DBOARD=nrf52840_pca10056 ..
+- ninja
+
+The output is in build/zephyr/zephyr.hex
+
+
+To create a signed Zephyr application image (from above created binary):
+
+./scripts/imgtool.py sign --key iris.pem --header-size 0x200 --align 8 --version 1.2 --included-header ../zephyr/samples/bluetooth/hci_uart/build/zephyr/zephyr.bin signed.bin
+
+Rename signed.bin to particular version file (e.g. zephyr-1.11.1.bin)
+
+
+To install mcuboot and zephyr:
+
+Use JFlashLite to:
+
+- Clear entire flash
+- Install mcboot hex file (e.g. mcuboot-1.1.1.hex) without specifying address
+- Install Zephyr file (e.g. zephyr-1.11.1.bin) at 0x0C000 (first flash slot)
+
+
+Once mcuboot has been installed, hubOS "ble_prog" can be used to
+install updates to the Zephyr code.

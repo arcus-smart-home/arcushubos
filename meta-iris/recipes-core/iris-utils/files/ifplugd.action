@@ -1,0 +1,13 @@
+set -e
+
+# Check for valid arguments
+if [ -z "$1" ] || [ -z "$2" ] ; then
+    echo "ifplugd: Incorrect arguments" > /dev/stderr
+    exit 1
+fi
+
+# Handle up and down of interface
+[ "$2" = "up" ] && exec /sbin/ifup $1
+[ "$2" = "down" ] && exec /sbin/ifdown $1
+
+exit 1

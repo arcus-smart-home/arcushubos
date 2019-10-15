@@ -1,0 +1,30 @@
+---
+title: ARMv6-M NVIC Interrupt Controller
+version: 0.1
+
+description: >
+    This binding describes the ARMv6-M Nested Vectored Interrupt Controller.
+
+properties:
+    compatible:
+      category: required
+      type: string
+      description: compatible strings
+      constraint: "arm,v6m-nvic"
+
+    reg:
+      category: required
+      type: int
+      description: mmio register space
+      generation: define
+
+    arm,num-irq-priority-bits:
+      category: required
+      type: int
+      description: number of bits of IRQ priorities
+      generation: define
+
+"#cells":
+  - irq
+  - priority
+...

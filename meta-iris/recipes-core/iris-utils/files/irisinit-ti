@@ -1,0 +1,262 @@
+#!/bin/sh
+
+#
+# Copyright 2019 Arcus Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+echo Setting up needed gpios... 
+
+# Make directory for gpio links
+mkdir /tmp/io
+chmod 777 /tmp/io
+
+cd /sys/class/gpio
+
+# Setup button as input
+echo 44 > export
+cd gpio44
+echo in > direction
+echo both > edge
+ln -s /sys/class/gpio/gpio44/value /tmp/io/resetBtnValue
+ln -s /sys/class/gpio/gpio44/edge /tmp/io/resetBtnEdge
+cd ..
+
+# Set up Zigbee reset line
+echo 48 > export
+cd gpio48
+echo out > direction
+chmod 0666 value
+echo 1 > value
+ln -s /sys/class/gpio/gpio48/value /tmp/io/zigbeeReset
+cd ..
+
+# Set up Zwave reset line
+echo 49 > export
+cd gpio49
+echo out > direction
+chmod 0666 value
+echo 1 > value
+ln -s /sys/class/gpio/gpio49/value /tmp/io/zwaveReset
+cd ..
+
+# Set up Bluetooth reset line
+echo 90 > export
+cd gpio90
+echo out > direction
+chmod 0666 value
+echo 1 > value
+ln -s /sys/class/gpio/gpio90/value /tmp/io/bleReset
+cd ..
+
+# Set up Bluetooth programming data line
+echo 93 > export
+cd gpio93
+echo out > direction
+chmod 0666 value
+echo 0 > value
+cd ..
+
+# Set up Bluetooth programming clock line
+echo 94 > export
+cd gpio94
+echo out > direction
+chmod 0666 value
+echo 0 > value
+cd ..
+
+# Set up USB0 over-current as input
+echo 116 > export
+cd gpio116
+echo in > direction
+echo both > edge
+cd ..
+
+# Set up USB1 over-current as input
+echo 58 > export
+cd gpio58
+echo in > direction
+echo both > edge
+cd ..
+
+# Set up battery hold gpio
+echo 117 > export
+cd gpio117
+echo out > direction
+# Wait a moment before setting the default to 1 to prevent the battery
+#  regulator hold from being switched too quickly, which led to boot up issues
+sleep 1
+echo 1 > value
+cd ..
+
+echo Done with gpio setup
+
+# Set up buzzer
+echo Setup buzzer pwm
+cd /sys/class/pwm/pwmchip0
+echo 1 > export
+chmod 0666 -R pwm1
+cd pwm1
+echo 0 > enable
+ln -s /sys/class/pwm/pwmchip0/pwm1/period /tmp/io/pwmPeriod
+ln -s /sys/class/pwm/pwmchip0/pwm1/duty_cycle /tmp/io/pwmDutyCycle
+ln -s /sys/class/pwm/pwmchip0/pwm1/enable /tmp/io/pwmEnable
+cd ..
+
+echo Done with pwm setup
+
+# Allow agent to access watchdog devs
+chmod 666 /dev/watchdog*
+
+# Create ledMode file
+touch /tmp/ledMode
+chmod 0666 /tmp/ledMode
+
+# Create writable media mount point
+mkdir -p /tmp/media
+
+# Check /mfg partition
+umount /mfg
+e2fsck -p /dev/mmcblk0p7
+if [ $? -le 2 ]; then
+    echo "Manufacturing partition is clean"
+else
+    echo "ERROR - manufacturing partition is not clean!"
+fi
+mount /dev/mmcblk0p7 /mfg
+
+# Create certs, keys and config mfg directories
+mkdir -p /mfg/config
+mkdir -p /mfg/certs
+mkdir -p /mfg/keys
+
+# If HubID files exists, use it as hostname
+if [ -e /mfg/config/hubID ]; then
+    hostname -F /mfg/config/hubID
+fi
+
+# Update eth0 MAC address
+if [ -e /mfg/config/macAddr1 ]; then
+    macEth0=$(cat /mfg/config/macAddr1);
+    ifconfig eth0 down
+    ifconfig eth0 hw ether $macEth0
+    ifconfig eth0 up
+fi
+
+# Copy all /mfg data then unmount
+mkdir -p /tmp/mfg
+cp -r /mfg/ /tmp/
+rm -rf /tmp/mfg/lost+found
+chmod 0555 -R /tmp/mfg/
+chmod 0444 /tmp/mfg/config/*
+chmod 0444 /tmp/mfg/certs/*
+chmod 0444 /tmp/mfg/keys/*
+umount /mfg
+
+# Copy flash size to /tmp/mfg/hwFlashSize to avoid having agent look
+#  in sys filesystem, translate into bytes (512 bytes/block)
+flashSize=$(cat /sys/class/block/mmcblk0/size)
+flashSize=`expr $flashSize \* 512`
+echo ${flashSize} > /tmp/mfg/config/hwFlashSize
+echo "Flash size: " ${flashSize}
+
+# Check /data partition
+umount /data
+e2fsck -p /dev/mmcblk0p8
+if [ $? -le 2 ]; then
+    echo "Data partition is clean"
+else
+    echo "ERROR - data partition is not clean!  Will need to reformat..."
+    if mkfs.ext4 -q -F -E stripe-width=4096 -L data /dev/mmcblk0p8; then
+        echo "Formatted data partition" 1>&2
+    else
+	echo "Could not format data partition!" 1>&2
+    fi
+fi
+mount /dev/mmcblk0p8 /data
+
+# Create links to paritions to avoid direct reference to particular
+#  mmcblkxpy in the code
+ln -s /dev/mmcblk0p2 /dev/kern1
+ln -s /dev/mmcblk0p3 /dev/fs1
+ln -s /dev/mmcblk0p5 /dev/kern2
+ln -s /dev/mmcblk0p6 /dev/fs2
+ln -s /dev/mmcblk0p7 /dev/mfg
+ln -s /dev/mmcblk0p8 /dev/data
+
+# Create config and firmware /data directories
+mkdir -p /data/config
+mkdir -p /data/firmware
+mkdir -p /data/log
+chmod 0777 /data
+chmod 0777 /data/config
+chmod 0777 /data/firmware
+chmod 0666 /data/firmware/*
+chmod 0777 /data/log
+
+# Create timestamp if it doesn't exist
+if [ ! -e /data/config/timestamp ]; then
+    touch /data/config/timestamp
+else
+    timeStamp=$(cat /data/config/timestamp);
+    echo "Current Timestamp: $timeStamp"
+fi
+
+# Create timezone files if they doesn't exist - default to UTC
+if [ ! -e /data/config/timezone ]; then
+    echo "UTC" > /data/config/timezone
+    chmod 0777 /data/config/timezone
+fi
+if [ ! -e /data/config/localtime ]; then
+    rm -f /data/config/localtime
+    ln -s /usr/share/zoneinfo/Etc/UTC /data/config/localtime
+fi
+
+# Load crypto device module
+modprobe cryptodev
+
+# Create link to securetty (for console port login control)
+# We do not allow console login for release image (with java support)
+#  unless there is an override file
+if [ -e /usr/bin/java ] && ! [ -e /data/config/enable_console ]; then
+    cp /home/root/etc/securetty_noconsole /var/run/securetty
+else
+    cp /home/root/etc/securetty /var/run/securetty
+fi
+
+# Create link to hosts file so we can make changes if necessary
+cp /home/root/etc/hosts /var/run/hosts
+
+# We don't need very large stacks for our daemons
+ulimit -S -s 512
+
+# Make sure we reboot on a kernel oops
+sysctl -w kernel.panic=3
+sysctl -w kernel.panic_on_oops=1
+
+# Launch IRIS init handler - will become a daemon
+irisinitd
+
+# Launch IRIS auto firmware updater - will become a daemon
+# No longer needed - hub agent will handle updates
+# auto_updated
+
+# Launch battery daemon
+batteryd
+
+# Launch ifplugd to keep track of interface up/down handling
+/etc/init.d/ifplugd start
+
+# Start watcher to restart other daemons if they fail
+dwatcher

@@ -1,0 +1,62 @@
+# Kconfig - C library
+
+#
+# Copyright (c) 2016 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menu "C Library"
+depends on !NATIVE_APPLICATION
+
+config NEWLIB_LIBC
+	bool
+	prompt "Build with newlib c library"
+	help
+	  Build with newlib library. The newlib library is expected to be
+	  part of the SDK in this case.
+
+config NEWLIB_LIBC_ALIGNED_HEAP_SIZE
+	int
+	prompt "Newlib aligned heap size"
+	depends on MPU_REQUIRES_POWER_OF_TWO_ALIGNMENT
+	depends on NEWLIB_LIBC
+	depends on USERSPACE
+	default 0
+	help
+	  If user mode is enabled, and MPU hardware has requirements that
+	  regions be sized to a power of two and aligned to their size,
+	  and user mode threads need to access this heap, then this is necessary
+	  to properly define an MPU region for the heap.
+
+	  If this is left at 0, then remaining system RAM will be used for this
+	  area and it may not be possible to program it as an MPU region.
+
+config NEWLIB_LIBC_FLOAT_PRINTF
+	bool "Build with newlib float printf"
+	default n
+	depends on NEWLIB_LIBC
+	help
+	  Build with floating point printf enabled. This will increase the size of
+	  the image.
+
+config NEWLIB_LIBC_FLOAT_SCANF
+	bool "Build with newlib float scanf"
+	default n
+	depends on NEWLIB_LIBC
+	help
+	  Build with floating point scanf enabled. This will increase the size of
+	  the image.
+
+config STDOUT_CONSOLE
+	bool
+	prompt "Send stdout to console"
+	depends on CONSOLE_HAS_DRIVER
+	default n
+	default y if NEWLIB_LIBC
+	help
+	  This option directs standard output (e.g. printf) to the console
+	  device, rather than suppressing it entirely. See also EARLY_CONSOLE
+	  option.
+
+endmenu

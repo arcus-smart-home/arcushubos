@@ -1,0 +1,11 @@
+#!/bin/sh
+LOG=/var/log/ntpd.log
+NTPD_CONF=/tmp/ntpd.conf
+
+echo "Running ntpd: $(date -R)" >> $LOG
+# If we have config via DHCP, use it
+if [ -e "$NTPD_CONF" ] ; then
+    /usr/sbin/ntpd -nqN $(cat "$NTPD_CONF") >> $LOG 2<&1
+else
+    /usr/sbin/ntpd -nqN -p 0.north-america.pool.ntp.org -p 1.north-america.pool.ntp.org -p 2.north-america.pool.ntp.org -p 3.north-america.pool.ntp.org >> $LOG 2<&1
+fi

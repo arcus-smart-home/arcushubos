@@ -1,0 +1,105 @@
+From 4e707ca6676e2bb36352b6282e563ce34bdfdc3d Mon Sep 17 00:00:00 2001
+From: Oliver Neukum <oneukum@xxxxxxxx>
+Date: Wed, 25 Nov 2015 12:26:59 +0100
+Subject: [PATCH] usbnet: fix debugging output for work items
+
+usbnet uses a common work handler for all events. Thus multiple
+events can be scheduled at a single time. An inability to schedule
+a work item is not an error provided the corresponding flag is set
+before an attempt to schedule the work is made.
+
+Signed-off-by: Oliver Neukum <oneukum@xxxxxxxx>
+---
+ drivers/net/usb/usbnet.c | 34 ++++++++++++++++++++++++----------
+ 1 file changed, 24 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index 0744bf2..5229369 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -444,19 +444,25 @@ static enum skb_state defer_bh(struct usbnet *dev, struct sk_buff *skb,
+ 	return old_state;
+ }
+ 
+-/* some work can't be done in tasklets, so we use keventd
++/* some work can't be done in tasklets, so we use work items
+  *
+- * NOTE:  annoying asymmetry:  if it's active, schedule_work() fails,
+- * but tasklet_schedule() doesn't.  hope the failure is rare.
++ * Order is important to prevent from events being lost
++ * a work item can be scheduled while it is being processed
++ * so we need to make sure the flag is always set before
++ * a work item is scheduled. A failure to schedule is not
++ * an error, as the work handler will do all jobs.
++ * For that reason a work handler with nothing to do is not
++ * a bug. It just has lost the race.
+  */
+-void usbnet_defer_kevent (struct usbnet *dev, int work)
++void usbnet_defer_kevent(struct usbnet *dev, int event)
+ {
+-	set_bit (work, &dev->flags);
++	set_bit (event, &dev->flags);
+ 	if (!schedule_work (&dev->kevent)) {
+-		if (net_ratelimit())
+-			netdev_err(dev->net, "kevent %d may have been dropped\n", work);
++		netdev_dbg(dev->net,
++			"kevent %d, but work  already scheduled\n",
++			event);
+ 	} else {
+-		netdev_dbg(dev->net, "kevent %d scheduled\n", work);
++		netdev_dbg(dev->net, "kevent %d scheduled\n", event);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(usbnet_defer_kevent);
+@@ -1099,6 +1105,7 @@ usbnet_deferred_kevent (struct work_struct *work)
+ 
+ 	/* usb_clear_halt() needs a thread context */
+ 	if (test_bit (EVENT_TX_HALT, &dev->flags)) {
++		netdev_dbg(dev->net, "event EVENT_TX_HALT processing\n");
+ 		unlink_urbs (dev, &dev->txq);
+ 		status = usb_autopm_get_interface(dev->intf);
+ 		if (status < 0)
+@@ -1119,6 +1126,7 @@ fail_pipe:
+ 		}
+ 	}
+ 	if (test_bit (EVENT_RX_HALT, &dev->flags)) {
++		netdev_dbg(dev->net, "event EVENT_RX_HALT processing\n");
+ 		unlink_urbs (dev, &dev->rxq);
+ 		status = usb_autopm_get_interface(dev->intf);
+ 		if (status < 0)
+@@ -1143,6 +1151,7 @@ fail_halt:
+ 		struct urb	*urb = NULL;
+ 		int resched = 1;
+ 
++		netdev_dbg(dev->net, "event EVENT_RX_MEMORY processing\n");
+ 		if (netif_running (dev->net))
+ 			urb = usb_alloc_urb (0, GFP_KERNEL);
+ 		else
+@@ -1168,6 +1177,7 @@ fail_lowmem:
+ 		int			retval = 0;
+ 
+ 		clear_bit (EVENT_LINK_RESET, &dev->flags);
++		netdev_dbg(dev->net, "event EVENT_LINK_RESET processing\n");
+ 		status = usb_autopm_get_interface(dev->intf);
+ 		if (status < 0)
+ 			goto skip_reset;
+@@ -1187,11 +1197,15 @@ skip_reset:
+ 		__handle_link_change(dev);
+ 	}
+ 
+-	if (test_bit (EVENT_LINK_CHANGE, &dev->flags))
++	if (test_bit (EVENT_LINK_CHANGE, &dev->flags)) {
++		netdev_dbg(dev->net, "event EVENT_LINK_CHANGE processing\n");
+ 		__handle_link_change(dev);
++	}
+ 
+-	if (test_bit (EVENT_SET_RX_MODE, &dev->flags))
++	if (test_bit (EVENT_SET_RX_MODE, &dev->flags)) {
++		netdev_dbg(dev->net, "event EVENT_SET_RX_MODE processing\n");
+ 		__handle_set_rx_mode(dev);
++	}
+ 
+ 
+ 	if (dev->flags)
+-- 
+2.1.4

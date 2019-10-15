@@ -1,0 +1,8 @@
+sample:
+  name: MPU Test
+tests:
+  test:
+    arch_whitelist: arm
+    filter: CONFIG_CPU_HAS_MPU
+    tags: samples
+    harness: keyboard

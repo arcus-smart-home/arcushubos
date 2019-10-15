@@ -1,0 +1,360 @@
+diff -Naur u-boot-orig/arch/arm/lib/spl.c u-boot/arch/arm/lib/spl.c
+--- u-boot-orig/arch/arm/lib/spl.c	2016-05-06 09:00:47.028945607 -0400
++++ u-boot/arch/arm/lib/spl.c	2016-05-06 09:03:50.000940752 -0400
+@@ -32,6 +32,12 @@
+  */
+ void __weak board_init_f(ulong dummy)
+ {
++        /* IRIS Changes */
++        /* Delay for a moment to avoid hang on reset --
++         see: http://e2e.ti.com/support/arm/sitara_arm/f/791/t/328908 */
++        udelay(50000);
++        /* IRIS Changes */
++
+ 	/* Clear the BSS. */
+ 	memset(__bss_start, 0, __bss_end - __bss_start);
+ 
+diff -Naur u-boot-orig/board/ti/am335x/board.c u-boot/board/ti/am335x/board.c
+--- u-boot-orig/board/ti/am335x/board.c	2016-05-06 09:00:47.068945606 -0400
++++ u-boot/board/ti/am335x/board.c	2016-05-06 09:33:31.200893493 -0400
+@@ -32,6 +32,9 @@
+ #include <watchdog.h>
+ #include <environment.h>
+ #include "board.h"
++/* IRIS Changes */
++#include <fs.h>
++/* IRIS Changes */
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+@@ -48,6 +51,17 @@
+  */
+ static int read_eeprom(struct am335x_baseboard_id *header)
+ {
++/* IRIS Changes */
++#if 1
++        /* Force to a BeagleBone black which we are similar to
++           since we lack an actual EEPROM to hold board info */
++        header->magic = 0xEE3355AA;
++        strcpy(header->name, "A335BNLT");
++        strcpy(header->version, "00B1");
++        return 0;
++#endif
++/* IRIS Changes */
++
+ 	/* Check if baseboard eeprom is available */
+ 	if (i2c_probe(CONFIG_SYS_I2C_EEPROM_ADDR)) {
+ 		puts("Could not probe the EEPROM; something fundamentally "
+@@ -683,3 +697,106 @@
+ #endif
+ 
+ #endif /* CONFIG_DM_ETH */
++
++/* IRIS Changes */
++
++/* Simple atoi(), but also skip any '\n' that might be at end of file */
++static int local_atoi(char *p)
++{
++        int res = 0, i;
++        for (i = 0; (p[i] != '\0') && (p[i] != '\n'); i++) {
++                res = (res * 10) + (p[i] - '0');
++        }
++        return res;
++}
++
++#define BOOTINDEX_FILE  "bootindex"
++#define FLASH_DEV       "mmc"
++#define MMC_DEV         "1"
++#define FIRST_PART      "1:2"
++#define SECOND_PART     "1:5"
++#define MMCROOTFS1      "/dev/mmcblk0p3 ro"
++#define MMCROOTFS2      "/dev/mmcblk0p6 ro"
++#define MMCFSTYPE       "squashfs rootwait"
++
++/* Determine what partition to boot based on largest bootindex file value */
++int last_stage_init (void)
++{
++        int index1_found = 0, index2_found = 0, flip = 0;
++        int index1_val = -1, index2_val = -1, index_size = 0;
++        // This must be static for us with fs_read() below
++        static uint8_t cur_index[128];
++
++        /* Get index files */
++        if (fs_set_blk_dev(FLASH_DEV, FIRST_PART, FS_TYPE_EXT) == 0) {
++                fs_read(BOOTINDEX_FILE, (ulong)cur_index, 0, 0, &index_size);
++                if (index_size > 0) {
++                        index1_found = 1;
++                        index1_val = local_atoi((char*)cur_index);
++                        printf("Found Index 1: %d\n", index1_val);
++                } else {
++                        printf("Index 1 not found!\n");
++                }
++        } else {
++                printf("Error setting device to %s %s!\n",
++                       FLASH_DEV, FIRST_PART);
++        }
++        if (fs_set_blk_dev(FLASH_DEV, SECOND_PART, FS_TYPE_EXT) == 0) {
++                index_size = 0;
++                fs_read(BOOTINDEX_FILE, (ulong)cur_index, 0, 0, &index_size);
++                if (index_size > 0) {
++                        index2_found = 1;
++                        index2_val = local_atoi((char*)cur_index);
++                        printf("Found Index 2: %d\n", index2_val);
++                } else {
++                        printf("Index 2 not found!\n");
++                }
++        } else {
++                printf("Error setting device to %s %s!\n",
++                       FLASH_DEV, SECOND_PART);
++        }
++
++        /* Check reset button - if held, flip partitions */
++        gpio_request(44, "");
++        gpio_direction_input(44);
++        if (gpio_get_value(44) == 0) {
++            flip = 1;
++            printf("Flipping boot partition.\n");
++        }
++
++        /* Which partition should we use? */
++        if ((!index1_found && !index2_found) ||
++            (!index2_found) ||
++            ((index1_val > index2_val) && !flip) ||
++            ((index2_val > index1_val) && flip)) {
++                printf("Booting from first firmware update partition.\n");
++
++                /* Boot from first update partition */
++                setenv("mmcdev", MMC_DEV);
++                setenv("bootpart", FIRST_PART);
++                setenv("mmcroot", MMCROOTFS1);
++                setenv("mmcrootfstype", MMCFSTYPE);
++        } else {
++                printf("Booting from second firmware update partition.\n");
++
++                /* Boot from second update partition */
++                setenv("mmcdev", MMC_DEV);
++                setenv("bootpart", SECOND_PART);
++                setenv("mmcroot", MMCROOTFS2);
++                setenv("mmcrootfstype", MMCFSTYPE);
++        }
++
++        /* Set initial LED state - all on */
++        gpio_request(53, "");
++        gpio_direction_output(53, 0);
++        gpio_set_value(53, 1);
++        gpio_request(54, "");
++        gpio_direction_output(54, 0);
++        gpio_set_value(54, 1);
++        gpio_request(55, "");
++        gpio_direction_output(55, 0);
++        gpio_set_value(55, 1);
++
++        return 0;
++}
++/* IRIS Changes */
+diff -Naur u-boot-orig/include/configs/am335x_evm.h u-boot/include/configs/am335x_evm.h
+--- u-boot-orig/include/configs/am335x_evm.h	2016-05-06 09:00:47.156945604 -0400
++++ u-boot/include/configs/am335x_evm.h	2016-05-06 10:46:42.728776975 -0400
+@@ -92,13 +92,44 @@
+ 	func(PXE, pxe, na) \
+ 	func(DHCP, dhcp, na)
+ 
++/* IRIS Change */
++#if 0
+ #define CONFIG_BOOTCOMMAND \
+ 	"run findfdt; " \
+ 	"run distro_bootcmd"
++#else
++#define CONFIG_BOOTCOMMAND \
++	"mmc dev 1; "	   \
++	"mmc rescan; "	   \
++	"run loaduimage; " \
++	"run loadfdt; "	   \
++	"run mmcargs; "    \
++	"if bootm ${loadaddr} - ${fdtaddr}; then "  \
++	   "echo Booting Linux...;"   \
++	"else " \
++	   "echo Boot error - trying other partition...;"   \
++	   "if test $bootpart = 1:2; then "  \
++	       "echo Booting from second partition;"	\
++	       "setenv bootpart 1:5; "	 \
++	       "setenv mmcroot /dev/mmcblk0p6 ro; "  \
++	    "else " \
++	       "echo Booting from first partition;"	\
++	       "setenv bootpart 1:2; "	 \
++	       "setenv mmcroot /dev/mmcblk0p3 ro; "  \
++	    "fi;" \
++	    "run loaduimage; " \
++	    "run loadfdt; " \
++	    "run mmcboot; " \
++	"fi;" \
++
++#endif
+ 
+ #include <config_distro_bootcmd.h>
+ 
+ #ifndef CONFIG_SPL_BUILD
++/* IRIS Change - pass in quiet kernel bootarg via optargs, remove
++    a lot of stuff we don't need */
++#if 0
+ #define CONFIG_EXTRA_ENV_SETTINGS \
+ 	DEFAULT_LINUX_BOOT_ENV \
+ 	DEFAULT_MMC_TI_ARGS \
+@@ -198,6 +229,60 @@
+ 	NETARGS \
+ 	DFUARGS \
+ 	BOOTENV
++#else
++/*
++ * We setup defaults based on constraints from the Linux kernel, which should
++ * also be safe elsewhere.  We have the default load at 32MB into DDR (for
++ * the kernel), FDT above 128MB (the maximum location for the end of the
++ * kernel), and the ramdisk 512KB above that (allowing for hopefully never
++ * seen large trees).  We say all of this must be within the first 256MB
++ * as that will normally be within the kernel lowmem and thus visible via
++ * bootm_size and we only run on platforms with 256MB or more of memory.
++ */
++#define DEFAULT_LINUX_BOOT_ENV \
++       "loadaddr=0x82000000\0" \
++       "kernel_addr_r=0x82000000\0" \
++       "fdtaddr=0x88000000\0" \
++       "fdt_addr_r=0x88000000\0" \
++       "rdaddr=0x88080000\0" \
++       "ramdisk_addr_r=0x88080000\0" \
++       "bootm_size=0x10000000\0"
++
++#define CONFIG_EXTRA_ENV_SETTINGS \
++       DEFAULT_LINUX_BOOT_ENV \
++       "bootdir=/boot\0" \
++       "bootfile=uImage\0" \
++       "fdtfile=am335x-boneblack.dtb\0"        \
++       "console=ttyO0,115200n8\0" \
++       "optargs=lpj=4980736 quiet mtdoops.mtddev=omap2.nand\0" \
++       "silent=1\0" \
++       "loaduimage=load mmc ${bootpart} ${loadaddr} ${bootdir}/${bootfile}\0" \
++       "loadfdt=load mmc ${bootpart} ${fdtaddr} ${bootdir}/${fdtfile}\0" \
++       "mmcdev=1\0" \
++       "mmcroot=/dev/mmcblk0p3 ro\0" \
++       "mmcrootfstype=ext4 rootwait\0" \
++       "bootpart=1:2\0" \
++       "mmcargs=setenv bootargs console=${console} " \
++               "${optargs} " \
++               "root=${mmcroot} " \
++               "rootfstype=${mmcrootfstype}\0" \
++       "netargs=setenv bootargs console=${console} " \
++               "${optargs} " \
++               "root=/dev/nfs " \
++               "nfsroot=${serverip}:${rootpath},${nfsopts} rw " \
++               "ip=dhcp\0" \
++       "mmcboot=echo Booting from mmc ...; " \
++               "run mmcargs; " \
++               "bootm ${loadaddr} - ${fdtaddr}\0" \
++       "netboot=echo Booting from network ...; " \
++               "setenv autoload no; " \
++               "dhcp; " \
++               "tftp ${loadaddr} ${bootfile}; " \
++               "tftp ${fdtaddr} ${fdtfile}; " \
++               "run netargs; " \
++               "bootm ${loadaddr} - ${fdtaddr}\0" \
++
++#endif
+ #endif
+ 
+ 
+@@ -222,12 +307,17 @@
+ /* SPL */
+ #ifndef CONFIG_NOR_BOOT
+ #define CONFIG_SPL_POWER_SUPPORT
++
++/* IRIS Change - disable unneeded support */
++#if 0
+ #define CONFIG_SPL_YMODEM_SUPPORT
+ 
+ /* Bootcount using the RTC block */
+ #define CONFIG_BOOTCOUNT_LIMIT
+ #define CONFIG_BOOTCOUNT_AM33XX
+ #define CONFIG_SYS_BOOTCOUNT_BE
++/* IRIS Change - disable unneeded support */
++#endif
+ 
+ /* USB gadget RNDIS */
+ #define CONFIG_SPL_MUSB_NEW_SUPPORT
+@@ -297,6 +387,8 @@
+ #define CONFIG_SYS_TEXT_BASE		0x08000000
+ #endif
+ 
++/* IRIS Change - disable USB related support */
++#if 0
+ /*
+  * USB configuration.  We enable MUSB support, both for host and for
+  * gadget.  We set USB0 as peripheral and USB1 as host, based on the
+@@ -423,6 +515,8 @@
+ 	DFU_ALT_INFO_RAM \
+ 	DFU_ALT_INFO_NAND
+ #endif
++/* IRIS Change - disable USB related support */
++#endif
+ 
+ /*
+  * Default to using SPI for environment, etc.
+@@ -453,6 +547,9 @@
+ 					"128k(u-boot-env2),3464k(kernel)," \
+ 					"-(rootfs)"
+ #elif defined(CONFIG_EMMC_BOOT)
++/* IRIS Change - no need for OS_BOOT support at the moment */
++#undef CONFIG_SPL_OS_BOOT
++/* IRIS Change */
+ #undef CONFIG_ENV_IS_NOWHERE
+ #define CONFIG_ENV_IS_IN_MMC
+ #define CONFIG_SPL_ENV_SUPPORT
+diff -Naur u-boot-orig/include/configs/ti_am335x_common.h u-boot/include/configs/ti_am335x_common.h
+--- u-boot-orig/include/configs/ti_am335x_common.h	2016-05-06 09:00:47.156945604 -0400
++++ u-boot/include/configs/ti_am335x_common.h	2016-05-06 09:55:54.112857862 -0400
+@@ -17,7 +17,13 @@
+ #define CONFIG_SYS_CACHELINE_SIZE       64
+ #define CONFIG_MAX_RAM_BANK_SIZE	(1024 << 20)	/* 1GB */
+ #define CONFIG_SYS_TIMERBASE		0x48040000	/* Use Timer2 */
++/* IRIS Change - disable RTC related support but enable last_stage_init */
++#if 1
++/* This is where we handle the partition selection */
++#define CONFIG_LAST_STAGE_INIT
++#else
+ #define CONFIG_SPL_AM33XX_ENABLE_RTC32K_OSC
++#endif
+ 
+ #include <asm/arch/omap.h>
+ 
+@@ -38,7 +44,10 @@
+ #define CONFIG_BOOTP_SUBNETMASK
+ #define CONFIG_NET_RETRY_COUNT         10
+ #define CONFIG_CMD_PING
++/* IRIS Change - don't need TI CPSW support */
++#if 0
+ #define CONFIG_DRIVER_TI_CPSW		/* Driver for IP block */
++#endif
+ #define CONFIG_MII			/* Required in net/eth.c */
+ 
+ /*
+diff -Naur u-boot-orig/include/configs/ti_armv7_common.h u-boot/include/configs/ti_armv7_common.h
+--- u-boot-orig/include/configs/ti_armv7_common.h	2016-05-06 09:00:47.156945604 -0400
++++ u-boot/include/configs/ti_armv7_common.h	2016-05-06 10:53:38.052765955 -0400
+@@ -29,6 +29,19 @@
+ #define CONFIG_SETUP_MEMORY_TAGS
+ #define CONFIG_INITRD_TAG
+ 
++/* IRIS Change - disable boot prompt */
++#if 1
++#undef CONFIG_BOOTDELAY
++#define CONFIG_BOOTDELAY                -2
++
++/* Disable u-boot console output for security reasons */
++#define CONFIG_SILENT_CONSOLE
++#define CONFIG_SYS_DEVICE_NULLDEV
++#define CONFIG_SILENT_CONSOLE_UPDATE_ON_RELOC
++#define CONFIG_SILENT_U_BOOT_ONLY
++#endif
++/* IRIS Change */
++
+ /*
+  * Our DDR memory always starts at 0x80000000 and U-Boot shall have
+  * relocated itself to higher in memory by the time this value is used.

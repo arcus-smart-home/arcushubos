@@ -1,0 +1,7 @@
+sample:
+  name: getchar sample
+tests:
+  test:
+    filter: CONFIG_UART_CONSOLE and CONFIG_SERIAL_SUPPORT_INTERRUPT
+    tags: samples
+    harness: keyboard

@@ -1,0 +1,212 @@
+#!/bin/sh
+
+#
+# Copyright 2019 Arcus Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+#
+# The following values are returned:
+#
+#  0 - Connection successful
+#  1 - Bad password (WPA only)
+#  2 - No IP address
+#  3 - No gateway connection
+# -1 - Other script error
+#
+
+WPACFG=/tmp/wpa_supplicant.conf
+WIFICFG=/tmp/testWifi.cfg
+WPALOG=/tmp/wpa.log
+duration=30
+CHECK_HUB_URL="http://104.46.102.172/check-hub"
+CHECK_TIMEOUT=5
+
+# Need to have at least the first two arguments
+if [ "$#" -lt 2 ]; then
+    echo "Incorrect arguments!" 1>&2
+    exit -1
+fi
+
+# Was duration provided?
+if [ "$#" -eq 3 ]; then
+    duration=$3
+fi
+
+# Get interface
+INTF=$1
+
+# Get current default route info
+CURR_GW=`ip route | grep default | grep -v metric | awk '{print $3}'`
+
+# Need to have a config file
+if [ ! -f $2 ]; then
+    echo "Wireless test configuration is not present, cannot test!" 1>&2
+    exit -1
+fi
+
+# Copy config for testing
+cp $2 $WIFICFG
+
+# Get config
+SSID="$(cat $WIFICFG | grep ssid | sed 's/^.*: //')"
+SECURITY="$(cat $WIFICFG | grep security | sed 's/^.*: //')"
+KEY="$(cat $WIFICFG | grep key | sed 's/^.*: //')"
+
+# Need to have a SSID to try connection
+if [ "$SSID" == "" ]; then
+    echo "Wireless configuration is not valid, cannot test!" 1>&2
+    exit -1
+fi
+
+# Kill any existing connection
+if [ -f /var/run/udhcpc.wlan0.pid ]; then
+    kill -9 $(cat /var/run/udhcpc.wlan0.pid) > /dev/null 2>&1
+fi
+/sbin/ifdown $INTF > /dev/null 2>&1
+/usr/bin/killall wpa_supplicant > /dev/null 2>&1
+/sbin/ifconfig $INTF down > /dev/null 2>&1
+ip addr flush dev $INTF > /dev/null 2>&1
+sleep 1
+
+# Setup depend on mode
+/sbin/ifconfig $INTF up
+case $SECURITY in
+    *WPA* )
+	/usr/bin/wpa_passphrase "$SSID" "$KEY" > $WPACFG
+	/usr/sbin/wpa_supplicant -B -D wext -i $INTF -c $WPACFG -f $WPALOG
+	/sbin/ifup $INTF &
+	;;
+
+    *WEP* )
+	# Use wpa_supplicant for WEP config as well as there are issues
+	#  switching to WEP (using iwconfig) after wpa_supplicant has been
+	#  running
+	KEYLEN=`echo -n $KEY | wc -m`
+	if [ $KEYLEN == 5 ] || [ $KEYLEN == 13 ]; then
+	    KEYSTR="\"$KEY\""
+	else
+	    KEYSTR=$KEY
+	fi
+	cat > $WPACFG << EOF
+network={
+        ssid="$SSID"
+        key_mgmt=NONE
+        wep_key0=$KEYSTR
+        wep_tx_keyidx=0
+}
+EOF
+	/usr/sbin/wpa_supplicant -B -D wext -i $INTF -c $WPACFG -f $WPALOG
+	/sbin/ifup $INTF &
+	;;
+
+    * )
+	/sbin/iwconfig $INTF mode Managed
+	/sbin/iwconfig $INTF essid "$SSID"
+	/sbin/ifup $INTF &
+	;;
+esac
+
+# Did we get an address?
+result=-1
+count=1
+while [ $count -lt $duration ] && [ $result == -1 ] ; do
+    # Did we get an address?
+    ifconfig $INTF | grep -q "inet addr"
+    if [ "$?" == 0 ]; then
+	echo "Wireless connection successful!" 1>&2
+	result=0
+	break
+    fi
+
+    # Check for password failure for WPA
+    case $SECURITY in
+	*WPA* )
+	    cat $WPALOG | grep -q "WRONG_KEY"
+	    if [ "$?" == 0 ]; then
+		echo "Wireless WPA password failure!" 1>&2
+		result=1
+		break
+	    fi
+	    ;;
+	* )
+	    ;;
+    esac
+    count=`expr $count + 1`
+    sleep 1
+done
+
+# In WEP case, see if we connected to check for bad password
+if [ $count == $duration ]; then
+    case $SECURITY in
+	*WEP* )
+	    iw dev $INTF link | grep -q "Connected to"
+	    if [ "$?" == 0 ]; then
+		echo "Wireless WEP password failure!" 1>&2
+		result=1
+	    fi
+	    ;;
+	* )
+	    ;;
+    esac
+fi
+
+# Did we timeout?
+if [ $count == $duration ] && [ $result == -1 ]; then
+    echo "Wireless failed to get an address!" 1>&2
+    result=2
+fi
+
+# If we connected, try to reach server URL
+if [ $result == 0 ]; then
+    /usr/bin/curl -m $CHECK_TIMEOUT --interface $INTF $CHECK_HUB_URL
+    if [ "$?" != 0 ]; then
+	echo "Wireless unable to reach Internet!" 1>&2
+	result=3
+    else
+	echo "Successful test of internet connection!" 1>&2
+    fi
+else
+    # Cleanup DHCP client
+    kill -9 $(cat /var/run/udhcpc.wlan0.pid) > /dev/null 2>&1
+fi
+
+# Bring down wifi interface
+/sbin/ifdown $INTF > /dev/null 2>&1
+/usr/bin/killall wpa_supplicant > /dev/null 2>&1
+sleep 1
+
+# Bring back up so we can scan again
+/sbin/ifconfig $INTF up
+
+# Cleanup config
+rm -f $WPACFG
+rm -f $WIFICFG
+rm -f $WPALOG
+
+# Restore default route if we connected
+if [ $result == 0 ] || [ $result == 3 ]; then
+    while ip route del default 2>/dev/null ; do
+	:
+    done
+    if [ -n "$CURR_GW" ]; then
+	ip route add default via $CURR_GW metric 0
+    fi
+fi
+
+# Return result of test
+exit $result
+
+
+

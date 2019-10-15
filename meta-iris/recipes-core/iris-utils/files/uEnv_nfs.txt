@@ -1,0 +1,18 @@
+serverip=192.168.1.180
+ipaddr=192.168.1.189
+rootpath=/nfs
+
+# Choose one...
+#mmcORtftp=load mmc ${mmcdev}:${mmcpart}
+mmcORtftp=tftp
+
+mmcrootfstype=ext4 rootwait fixrtc
+console=ttyO0,115200n8
+
+loadkernel=${mmcORtftp} ${loadaddr} ${kernel_file}
+loadfdt=${mmcORtftp} ${fdtaddr} ${fdtfile}
+loadfiles=run loadkernel; run loadfdt
+
+mmcargs=setenv bootargs console=${console} root=/dev/nfs rw nfsroot=${serverip}:${rootpath} ip=${ipaddr}
+uenvcmd=run loadfiles; run mmcargs; bootm ${loadaddr} - ${fdtaddr}
+

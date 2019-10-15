@@ -1,0 +1,44 @@
+# Zephyr Kernel Configuration
+CONFIG_ARM=y
+CONFIG_SOC_SERIES_STM32F1X=y
+
+# Platform Configuration
+CONFIG_SOC_STM32F107XC=y
+CONFIG_BOARD_STM3210C_EVAL=y
+
+# General Kernel Options
+CONFIG_CORTEX_M_SYSTICK=y
+# 72MHz system clock
+CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=72000000
+
+# Serial Drivers
+CONFIG_SERIAL=y
+CONFIG_UART_INTERRUPT_DRIVEN=y
+# enable console
+CONFIG_CONSOLE=y
+CONFIG_UART_CONSOLE=y
+
+# Pinmux Driver
+CONFIG_PINMUX=y
+
+# GPIO Controller
+CONFIG_GPIO=y
+
+# RCC configuration
+CONFIG_CLOCK_CONTROL=y
+# Clock configuration for Cube Clock control driver
+CONFIG_CLOCK_STM32_HSE_CLOCK=8000000
+CONFIG_CLOCK_STM32_SYSCLK_SRC_PLL=y
+# use HSE as PLL input
+CONFIG_CLOCK_STM32_PLL_SRC_HSE=y
+CONFIG_CLOCK_STM32_PLL_SRC_PLL2=n
+# however, the board does not have an external oscillator, so just use
+# the 8MHz clock signal coming from integrated STLink
+CONFIG_CLOCK_STM32_HSE_BYPASS=y
+# produce 72MHz clock at PLL output
+CONFIG_CLOCK_STM32_PLL_PREDIV1=1
+CONFIG_CLOCK_STM32_PLL_MULTIPLIER=9
+CONFIG_CLOCK_STM32_AHB_PRESCALER=1
+# APB1 clock must not to exceed 36MHz limit
+CONFIG_CLOCK_STM32_APB1_PRESCALER=2
+CONFIG_CLOCK_STM32_APB2_PRESCALER=1

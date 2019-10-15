@@ -1,0 +1,7 @@
+sample:
+  name: SPI Flash Sample
+tests:
+  test:
+    platform_whitelist: arduino_101
+    tags: apps
+    depends_on: spi

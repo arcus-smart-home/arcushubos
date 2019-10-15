@@ -1,0 +1,12 @@
+tests:
+  benchmark.application:
+    arch_whitelist: x86 arm
+    min_flash: 34
+    min_ram: 32
+    tags: benchmark
+    slow: true
+    timeout: 300
+  benchmark.application.posix:
+    arch_whitelist: posix
+    min_ram: 32
+    tags: benchmark

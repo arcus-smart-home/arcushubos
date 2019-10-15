@@ -1,0 +1,22 @@
+diff -Naur bluez-5.46-orig/src/bluetooth.conf bluez-5.46/src/bluetooth.conf
+--- bluez-5.46-orig/src/bluetooth.conf	2015-03-11 06:01:57.000000000 -0400
++++ bluez-5.46/src/bluetooth.conf	2018-03-26 12:10:57.371022837 -0400
+@@ -28,14 +28,11 @@
+     <allow send_destination="org.bluez"/>
+   </policy>
+ 
+-  <!-- allow users of lp group (printing subsystem) to 
+-       communicate with bluetoothd -->
+-  <policy group="lp">
+-    <allow send_destination="org.bluez"/>
+-  </policy>
+-
+   <policy context="default">
+-    <deny send_destination="org.bluez"/>
++    <allow send_destination="org.bluez"/>    
++    <allow send_interface="org.bluez.GattService1"/>
++    <allow send_interface="org.bluez.GattCharacteristic1"/>
++    <allow send_interface="org.bluez.GattDescriptor1"/>
+   </policy>
+ 
+ </busconfig>

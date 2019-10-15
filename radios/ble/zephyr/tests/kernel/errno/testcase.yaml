@@ -1,0 +1,10 @@
+common:
+  arch_exclude: xtensa
+  min_ram: 32
+  tags: core
+tests:
+  kernel.common.errno:
+    tags: core
+  kernel.common.errno.newlib:
+    extra_configs:
+      - CONFIG_NEWLIB_LIBC=y

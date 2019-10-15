@@ -1,0 +1,4 @@
+tests:
+  filesystem.multifs:
+    platform_whitelist: qemu_x86
+    tags: nffs fatfs fs

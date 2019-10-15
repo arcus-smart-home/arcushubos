@@ -1,0 +1,39 @@
+# Kconfig - General configuration options
+
+#
+# Copyright (c) 2017 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+choice
+	prompt "POSIX Configuration Selection"
+	depends on ARCH_POSIX
+
+	gsource "arch/posix/soc/*/Kconfig.soc"
+endchoice
+
+menu "POSIX (native) Options"
+	depends on ARCH_POSIX
+
+config ARCH
+	default "posix"
+
+config ARCH_DEFCONFIG
+	string
+	default "arch/posix/defconfig"
+
+config ARCH_POSIX_RECOMMENDED_STACK_SIZE
+	int
+	depends on ARCH_POSIX
+	default 24
+	help
+	  In bytes, stack size for Zephyr threads meant only for the POSIX
+	  architecture.
+	  (In this architecture only part of the thread status is kept in the Zephyr
+	  thread stack, the real stack is the native underlying pthread stack.
+	  Therefore the allocated stack can be limited to this size)
+
+gsource "arch/posix/soc/*/Kconfig"
+
+endmenu

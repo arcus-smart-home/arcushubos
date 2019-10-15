@@ -1,0 +1,4 @@
+tests:
+  kernel.memory_protection.mmu:
+    platform_whitelist: qemu_x86
+    tags: kernel

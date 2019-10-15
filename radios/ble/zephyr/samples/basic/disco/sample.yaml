@@ -1,0 +1,7 @@
+sample:
+  name: Disco Lights
+tests:
+  test:
+    platform_whitelist: nucleo_f103rb nucleo_f401re
+    tags: samples
+    depends_on: gpio

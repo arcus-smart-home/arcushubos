@@ -1,0 +1,1637 @@
+#
+# IRIS Changes to Open Source Software for i2hubos project
+#
+
+
+IRIS Changes to poky
+
+Import of Yocto 2.4.3 (poky-rocko-18.0.3) release
+ ...
+339 files changed, 20706 insertions(+), 19848 deletions(-)
+
+Import of Yocto 2.4.2 (poky-rocko-18.0.2) release
+ ...
+342 files changed, 17421 insertions(+), 16791 deletions(-)
+
+Assume keytool is at /usr/bin/keytool rather than a package specific path
+ poky/meta/recipes-support/ca-certificates/ca-certificates_20170717.bb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Import of Yocto 2.4.1 (poky-rocko-18.0.1) release
+ ...
+ 213 files changed, 6466 insertions(+), 4365 deletions(-)
+
+Cleaned up some items missed in merge but caught in file diff
+ poky/meta/conf/bitbake.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Added IRIS changes to latest ca-certificates 20170717 recipe
+ .../ca-certificates/ca-certificates_20170717.bb              | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+Removed alsamixer from base packages
+ poky/meta/recipes-core/packagegroups/packagegroup-base.bb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Trim size of wpa-supplicant for our needs
+ .../wpa-supplicant/wpa-supplicant/defconfig        | 34 +++++++++++-----------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
+
+Removed vfat and alsa from Beaglebone MACHINE_FEATURES
+ poky/meta-yocto-bsp/conf/machine/beaglebone.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+We still want to use uImage rather than zImage output
+ poky/meta-yocto-bsp/conf/machine/beaglebone.conf | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Added in patch to fix 4.13+ cryptodev module build issue
+ .../cryptodev/cryptodev-module_1.9.bb               |  1 +
+ .../files/0002-Fix-build-with-linux-4-13.patch      | 21 +++++++++++++++++++++
+ 2 files changed, 22 insertions(+)
+
+Import of Yocto 2.4.0 (poky-rocko-18.0.0) release
+ ...
+ 2492 files changed, 117039 insertions(+), 123435 deletions(-)
+
+Import of Yocto 2.3.2 (poky-pyro-17.0.2) release
+ ...
+ 252 files changed, 8526 insertions(+), 1300 deletions(-)
+
+Import of Yocto 2.3.0 (poky-pyro-17.0.0) release
+ ...
+ 2850 files changed, 106061 insertions(+), 150068 deletions(-)
+
+Import of Yocto 2.2.2 (poky-morty-16.0.2) release
+ ...
+ 219 files changed, 18188 insertions(+), 872 deletions(-)
+
+Go back to where we used to install cacerts file
+ .../recipes-support/ca-certificates/ca-certificates_20160104.bb     | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Import of Yocto 2.2.1 (poky-morty-16.0.1) release
+ ...
+ 230 files changed, 6069 insertions(+), 2819 deletions(-)
+
+Import of Yocto 2.2.0 (poky-morty-16.0.0) release
+ ...
+ 2759 files changed, 115681 insertions(+), 104669 deletions(-)
+
+Update to last checkin - use java-8-oracle keytool instead
+ poky/meta/recipes-support/ca-certificates/ca-certificates_20160104.bb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Update keytool to java-8 version
+ poky/meta/recipes-support/ca-certificates/ca-certificates_20160104.bb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Import of Yocto 2.1.2 (poky-krogoth-15.0.2) release candidate
+ ...
+ 208 files changed, 12069 insertions(+), 826 deletions(-)
+
+Install cacerts in java-8-openjdk/lib/security/ now that /jre is gone
+ .../recipes-support/ca-certificates/ca-certificates_20160104.bb     | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Update to 4.4.26 kernel to get "Dirty COW" fix
+ .../recipes-kernel/linux/linux-yocto_4.4.bbappend    | 17 ++++++++++-------
+ poky/meta/recipes-kernel/linux/linux-yocto-rt_4.4.bb |  6 +++---
+ .../recipes-kernel/linux/linux-yocto-tiny_4.4.bb     |  6 +++---
+ poky/meta/recipes-kernel/linux/linux-yocto_4.4.bb    | 20 ++++++++++----------
+ 4 files changed, 26 insertions(+), 23 deletions(-)
+
+Move cacerts updates to java-8-openjdk install directory
+ poky/meta/recipes-support/ca-certificates/ca-certificates_20130610.bb | 6 +++--
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Import of Yocto 2.1.1 (poky-krogoth-15.0.1) release
+ ...
+ 224 files changed, 9336 insertions(+), 1025 deletions(-)
+
+Update to kernel 4.4.11 for beaglebone builds
+ .../recipes-kernel/linux/linux-yocto_4.4.bbappend              | 14 +++++++---
+ poky/meta/recipes-kernel/linux/linux-yocto-rt_4.4.bb           | 17 ++++++++++
+ poky/meta/recipes-kernel/linux/linux-yocto-tiny_4.4.bb         |  6 +++---
+ poky/meta/recipes-kernel/linux/linux-yocto_4.4.bb              | 20 ++++++++++-
+ 4 files changed, 33 insertions(+), 24 deletions(-)
+
+Merged in Iris patches to latest version of ca-certificates package
+ poky/meta/recipes-support/ca-certificates/ca-certificates_20160104.bb | 12 ++++
+ 1 file changed, 12 insertions(+)
+
+Merged our changes from nss 3.15.1 recipe to new 3.21 one
+ poky/meta/recipes-support/nss/nss_3.21.bb | 60 +++++++++++++++++++++++++------
+ 1 file changed, 37 insertions(+), 23 deletions(-)
+
+Import of Yocto 2.1 "Krogoth" release (poky-krogoth-15.0.0)
+ ...
+ 3046 files changed, 114856 insertions(+), 145056 deletions(-)
+
+Import of Yocto 2.0.1 "Jethro" release (poky-fido-14.0.1)
+ ...
+ 306 files changed, 15796 insertions(+), 1235 deletions(-)
+
+Import of Yocto 2.0.0 "Jethro" release (poky-fido-14.0.0)
+ ...
+ 2850 files changed, 151517 insertions(+), 168418 deletions(-)
+
+Import of Yocto 1.8.1 "Fido" release (poky-fido-13.0.1)
+ ...
+ 346 files changed, 10680 insertions(+), 3036 deletions(-)
+
+Import of Yocto 1.8.0 "Fido" release (poky-fido-13.0.0)
+ ...
+ 2131 files changed, 86487 insertions(+), 221350 deletions(-)
+
+Import of Yocto 1.7.3 release (poky-dizzy-12.0.3)
+ ...
+ 96 files changed, 3748 insertions(+), 288 deletions(-)
+
+Import of Yocto 1.7.2 release (poky-dizzy-12.0.2)
+ ...
+ 178 files changed, 7119 insertions(+), 705 deletions(-)
+
+Import of Yocto 1.7.1 release (poky-dizzy-12.0.1)
+ ...
+ 261 files changed, 8420 insertions(+), 645 deletions(-)
+
+Import of Yocto 1.7.0 release (poky-dizzy-12.0.0)
+ ...
+ 2469 files changed, 121767 insertions(+), 110089 deletions(-)
+
+Port 22 (SSH) is left open after boot in some cases
+ poky/meta/recipes-core/dropbear/dropbear/init       | 16 +++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletions(-)
+
+Removed NSS SSL support to avoid memory leaks
+ poky/meta/recipes-support/nss/nss.inc | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+When creating keystore, do not leave around temporary files
+ poky/meta/recipes-support/ca-certificates/ca-certificates_20130610.bb | 1 +
+ 1 file changed, 1 insertion(+)
+
+Create java keystore file using ca-certificate certs
+ .../ca-certificates/ca-certificates_20130610.bb                | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+Disable "auto" mode for eth0 in interfaces file
+ poky/meta/recipes-core/init-ifupdown/init-ifupdown-1.0/interfaces | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Hardware crypto extensions exposed to Java
+ poky/meta/recipes-support/nss/nss.inc | 6 ------
+ 1 file changed, 6 deletions(-)
+
+Cleaned up rtc related error messages on boot and shutdown
+ poky/meta/conf/bitbake.conf | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Final release image size cleanup - trim nss libraries
+ poky/meta/recipes-support/nss/nss.inc | 102 ++++++++++++++++++++--------------
+ 1 file changed, 61 insertions(+), 41 deletions(-)
+
+Final release image size cleanup - remove usbutils-ids
+ poky/meta/recipes-bsp/usbutils/usbutils_007.bb | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+Rolled poky u-boot patch into our patch to make further patches easier
+ poky/meta/recipes-bsp/u-boot/u-boot_2013.07.bb | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+Enable USB drive auto-mounting
+ poky/meta/recipes-core/udev/udev-extraconf/mount.blacklist |  1 +
+ poky/meta/recipes-core/udev/udev-extraconf/mount.sh        | 14 +++++++-------
+ 2 files changed, 8 insertions(+), 7 deletions(-)
+
+Modified dropbear configuration so key is kept in /data partition
+ poky/meta/recipes-core/dropbear/dropbear/dropbear@.service   | 2 +-
+ poky/meta/recipes-core/dropbear/dropbear/dropbearkey.service | 4 ++--
+ poky/meta/recipes-core/dropbear/dropbear/init                | 6 +++---
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+
+
+IRIS Changes to meta-openembedded
+
+Latest update to meta-openembedded "rocko" branch, circa 18.0.3 release
+ ...
+ 23 files changed, 250 insertions(+), 97 deletions(-)
+
+Latest update to meta-openembedded "rocko" branch
+ ...
+ 2136 files changed, 55233 insertions(+), 52413 deletions(-)
+
+Latest update to meta-openembedded "pyro" branch
+ ...
+ 1881 files changed, 49298 insertions(+), 17778 deletions(-)
+
+Latest update to meta-openembedded "morty" branch, circa 2.2.2 build
+ ...
+ 35 files changed, 590 insertions(+), 81 deletions(-)
+
+Latest update to meta-openembedded "morty" branch, circa 2.2.1 build
+ ...
+ 167 files changed, 2064 insertions(+), 757 deletions(-)
+
+Update to meta-openembedded "morty" branch circa 2.2.0 release
+ ...
+ 1253 files changed, 31680 insertions(+), 13515 deletions(-)
+
+Latest update to meta-openembedded "krogoth" branch circa Yocto 2.1.2 release
+ ...
+ 3050 files changed, 5034 insertions(+), 38825 deletions(-)
+
+Latest update to meta-openembedded "krogoth" branch (circa 5/1/16)
+ ...
+ 4351 files changed, 16006 insertions(+), 146874 deletions(-)
+
+Latest update to meta-openembedded "jethro" branch
+ ...
+ 1162 files changed, 122597 insertions(+), 1128 deletions(-)
+
+Latest update to meta-openembedded "fido" branch
+ ...
+  686 files changed, 24611 insertions(+), 693 deletions(-)
+
+Latest update to meta-openembedded "dizzy" branch
+ ...
+  1089 files changed, 54515 insertions(+), 1575 deletions(-)
+
+Last update to meta-openembedded "daisy" branch
+ meta-openembedded/meta-oe/recipes-navigation/gdal/gdal_1.10.1.bb | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+Import of meta-openembedded daisy snapshot
+ 2044 files changed, 159915 insertions(+)
+
+
+
+IRIS Changes to meta-freescale
+
+Import of latest "Rocko" branch support from FSL Community BSP, circa 18.0.3
+ ...
+ 101 files changed, 1653 insertions(+), 2994 deletions(-)
+
+Import of latest "Rocko" branch support from FSL Community BSP
+ ...
+ 433 files changed, 41660 insertions(+)
+
+
+
+IRIS Changes to meta-freescale-3rdparty
+
+Import of latest "Rocko" branch support from FSL Community BSP, circa 18.0.3
+ meta-freescale-3rdparty/conf/machine/apalis-imx6.conf                  | 3 +--
+ meta-freescale-3rdparty/conf/machine/colibri-vf.conf                   | 2 +-
+ meta-freescale-3rdparty/conf/machine/imx7s-warp.conf                   | 3 +++
+ .../recipes-bsp/broadcom-nvram-config/broadcom-nvram-config.inc        | 2 +-
+ meta-freescale-3rdparty/recipes-kernel/linux/linux-boundary_4.1.15.bb  | 2 +-
+ meta-freescale-3rdparty/recipes-kernel/linux/linux-warp7/defconfig     | 1 +
+ 6 files changed, 8 insertions(+), 5 deletions(-)
+
+Moved imx6qmq machine configuration to meta-iris/conf/machine
+ meta-freescale-3rdparty/conf/machine/imx6qmq.conf | 33 -----------------------
+ 1 file changed, 33 deletions(-)
+
+Remove vfat from MACHINE_FEATURES as well due to GPLv3 license issues
+ meta-freescale-3rdparty/conf/machine/imx6qmq.conf | 3 +++
+ 1 file changed, 3 insertions(+)
+
+Move imx6qmq machine configuration to meta-freescale-3rdparty
+ meta-freescale-3rdparty/conf/machine/imx6qmq.conf | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+Cleaned up machine config files (wandboard) for new Yocto
+ meta-freescale-3rdparty/conf/machine/wandboard.conf | 8 +-------
+ 1 file changed, 1 insertions(+), 7 deletions(-)
+
+Import of latest "Rocko" branch support from FSL Community BSP
+ ...
+ 215 files changed, 22935 insertions(+)
+
+
+
+IRIS Changes to meta-iris/conf
+
+Switch to mp3 format audio files to reduce size of hubOS image
+ meta-iris/conf/distro/poky-iris-fsl.conf | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+Updates to LTE support to handle Quectel module and Huawei dongle on v3 hub
+ meta-iris/conf/distro/poky-iris-fsl.conf | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Hub Image production build - remove Quectel connection manager
+ meta-iris/conf/distro/poky-iris-fsl.conf | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Enable bluetooth/bluez5 support for build
+ meta-iris/conf/distro/poky-iris-fsl.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Add NFC diagnostics and initial hubOS support
+ meta-iris/conf/distro/poky-iris-fsl.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Build 2016.03 u-boot with GS imxdimagic patches for initial testing
+ meta-iris/conf/machine/imxdimagic.conf | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Added back in linux-wifi-firmware to fsl target
+ meta-iris/conf/distro/poky-iris-fsl.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Updated u-boot configuration name for imxdimagic target
+ meta-iris/conf/machine/imxdimagic.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Update dtb file for IMX-D-IMAGIC board
+ meta-iris/conf/machine/imxdimagic.conf | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+Rename recently added target to imxdimagic to match GS naming
+ meta-iris/conf/machine/imx6iris.conf   | 30 ------------------------------
+ meta-iris/conf/machine/imxdimagic.conf | 30 ++++++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 30 deletions(-)
+
+First pass at adding a new machine target for GS next hw spin
+ meta-iris/conf/distro/poky-iris-fsl.conf |  2 +-
+ meta-iris/conf/machine/imx6iris.conf     | 30 ++++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 1 deletion(-)
+
+Moved imx6qmq machine configuration to meta-iris/conf/machine
+ meta-iris/conf/machine/imx6qmq.conf | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+Removed vfat (for license issues) and some firmware-imx-* packages (space)
+ meta-iris/conf/distro/poky-iris-fsl.conf | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+Remove X11 package for space reasons and vfat for licensing ones
+ meta-iris/conf/distro/poky-iris-ti.conf | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+Use 4.12 kernel for now, will update to 4.14 LTS down the road
+ meta-iris/conf/distro/poky-iris-ti.conf | 3 +++
+ 1 file changed, 3 insertions(+)
+
+Added rtc and busybox-hwclock packages to new hub builds
+ meta-iris/conf/distro/poky-iris-fsl.conf | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Added libqmi to NXP build - for LTE modem control
+ meta-iris/conf/distro/poky-iris-fsl.conf | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Added initial wireless interface support
+ meta-iris/conf/distro/poky-iris-fsl.conf | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Create ti and fsl distros to simplify per-platform config
+ meta-iris/conf/distro/poky-iris-fsl.conf | 63 ++++++++++++++++++++++++++++++++
+ meta-iris/conf/distro/poky-iris-ti.conf  | 57 +++++++++++++++++++++++++++++
+ meta-iris/conf/distro/poky-iris.conf     | 57 -----------------------------
+ 3 files changed, 120 insertions(+), 57 deletions(-)
+
+Added support for building Wandboard sdcard image for initial testing
+ meta-iris/conf/distro/poky-iris.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Swap to standard u-boot rather than ti-staging one, clean up warnings
+ meta-iris/conf/distro/poky-iris.conf | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+Added back in some libc support to our distro required by latest code
+ meta-iris/conf/distro/poky-iris.conf | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+Enabled Icedtea 2.6.5 for openjdk version
+ meta-iris/conf/distro/poky-iris.conf | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Update to use openjdk-7-jre version 95b0-2.6.4
+ meta-iris/conf/distro/poky-iris.conf | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+Force readline to version 5.2 to avoid GPLv3 issues
+ meta-iris/conf/distro/poky-iris.conf | 3 +++
+ 1 file changed, 3 insertions(+)
+
+TI AM3352 MPU Speed is not set to maximum value for ...
+ meta-iris/conf/distro/poky-iris.conf | 3 +++
+ 1 file changed, 3 insertions(+)
+
+Update IcedTea to 2.5.5 package
+ meta-iris/conf/distro/poky-iris.conf | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Added in a few libc packages that are needed to build collectd support
+ meta-iris/conf/distro/poky-iris.conf | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Final release image size cleanup - libc reductions
+ meta-iris/conf/distro/poky-iris.conf | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
+
+Harden u-boot and Linux prior to release
+ meta-iris/conf/distro/poky-iris.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Java build clean up effort - down to about 37M total image size
+ meta-iris/conf/distro/poky-iris.conf | 5 -----
+ 1 file changed, 5 deletions(-)
+
+Support for openjdk 1.7.0_75, with icedtea v2.5.4
+ meta-iris/conf/distro/poky-iris.conf | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+Added back in multiarch and various libc packages I had removed recently...
+ meta-iris/conf/distro/poky-iris.conf | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
+
+Added i2c-tools package to the builds
+ meta-iris/conf/distro/poky-iris.conf | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Cleaned up some of the libc support we don't need and removed 3g for now
+ meta-iris/conf/distro/poky-iris.conf | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
+Removed bluetooth build support for now...
+ meta-iris/conf/distro/poky-iris.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Added Lowe's copyright boilerplate to files that we created
+ meta-iris/conf/distro/poky-iris.conf | 13 +++++++++++++
+ meta-iris/conf/layer.conf            | 13 +++++++++++++
+ 2 files changed, 26 insertions(+)
+
+Add udev-extraconf support to the build so we notice USB disks
+ meta-iris/conf/distro/poky-iris.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Determine flash partition design
+ meta-iris/conf/distro/poky-iris.conf | 3 +++
+ 1 file changed, 3 insertions(+)
+
+Added back in USB host support - was lost with initialy poky-iris distro add
+ meta-iris/conf/distro/poky-iris.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Create simple manufacturing shell app
+ meta-iris/conf/layer.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+Further changes to reduce size of image - still need to sort out X11 issues
+ meta-iris/conf/distro/poky-iris.conf | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+Initial pass at meta-iris recipes - new core-image-minimal-iris target
+ meta-iris/conf/distro/poky-iris.conf | 15 +++++++++++++++
+ meta-iris/conf/layer.conf            | 11 +++++++++++
+ 2 files changed, 26 insertions(+)
+
+
+
+IRIS Changes to meta-iris/recipes-bsp
+
+v3 Hub: Update DDR settings to match patches from manufacturer
+ meta-iris/recipes-bsp/u-boot/files/0006-Update-to-Micron-DDR-settings.patch | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imxgs.bb                                |  1 +
+ 2 files changed, 50 insertions(+)
+
+Hub Image production build - updates to secure u-boot for production
+ .../u-boot/files/0005-Lockdown-for-production.patch | 21 +++++++++------------
+ meta-iris/recipes-bsp/u-boot/u-boot-imxgs.bb        |  3 +--
+ 2 files changed, 10 insertions(+), 14 deletions(-)
+
+Hub Image production build - secure u-boot for production
+ .../files/0005-Lockdown-for-production.patch       | 53 ++++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imxgs.bb       |  2 +
+ 2 files changed, 55 insertions(+)
+
+Patch from GS to fix issue with Samsung DDR
+ ...-Fix-to-Samsung-K4B4G1646E-BYMA-DDR3-1866.patch | 40 ++++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imxgs.bb       |  1 +
+ 2 files changed, 41 insertions(+)
+
+Applied DDR patches from GS for latest memory chip
+ .../u-boot/files/0003-REV-B-DDR-Support.patch      | 181 +++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imxgs.bb       |   1 +
+ 2 files changed, 182 insertions(+)
+
+Added IRIS multi-partition support to 2016.03 u-boot for GS
+ ...02-mx6imagic-IRIS-multi-partition-2016.03.patch | 163 +++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imxgs.bb       |   1 +
+ 2 files changed, 164 insertions(+)
+
+Build 2016.03 u-boot with GS imxdimagic patches for initial testing
+ .../0001-imxdimagic-platform-support-2016.03.patch | 4017 ++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imxgs.bb       |   27 +
+ 2 files changed, 4044 insertions(+)
+
+Fixed mmc dev in recent u-boot patch to add multi-partition support
+ .../0005-mx6imagic-IRIS-multi-partition.patch      | 162 +++++++++++++++++++++
+ .../files/0005-mx6imagic-IRIS-multi-platform.patch | 162 ---------------------
+ meta-iris/recipes-bsp/u-boot/u-boot-imx_%.bbappend |   2 +-
+ 3 files changed, 163 insertions(+), 163 deletions(-)
+
+Added Iris multi-partition support to new u-boot mx6imagic target
+ .../files/0005-mx6imagic-IRIS-multi-platform.patch | 162 +++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imx_%.bbappend |   1 +
+ 2 files changed, 163 insertions(+)
+
+Added support for mx6imagic u-boot target
+ .../files/0004-mx6imagic-board-support.patch       | 4320 ++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imx_%.bbappend |    1 +
+ 2 files changed, 4321 insertions(+)
+
+Rename recently added target to imxdimagic to match GS naming
+ meta-iris/recipes-bsp/u-boot/u-boot-imx_%.bbappend | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+First pass at adding a new machine target for GS next hw spin
+ meta-iris/recipes-bsp/u-boot/u-boot-imx_%.bbappend | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+OSS patch clean up for imx6qmq board
+ ...0001-IRIS-support-for-multiple-partitions.patch |   1 -
+ .../files/0001-imx6qmq-tweaks-for-eval-board.patch | 107 +++++++++++++
+ .../0002-imx6qmq-Added-IRIS-multi-partition.patch  | 168 ++++++++++++++++++++
+ .../u-boot/files/0003-Use-SD4-for-eMMC.patch       |   3 +-
+ meta-iris/recipes-bsp/u-boot/u-boot-imx_%.bbappend |   4 +-
+ 5 files changed, 278 insertions(+), 282 deletions(-)
+
+Changed kernel partitions to ext2 rather than fat16
+ ...2-imx6qmq-Added-IRIS-multi-partition.patch | 31 ++++++++++++++--------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
+
+Update u-boot-imx patches to support 2017.03 imx release
+ .../0001-imx6qmq-tweaks-for-eval-board.patch       | 97 +++++++++++----------
+ .../0002-imx6qmq-Added-IRIS-multi-partition.patch  | 43 +++++-----
+ .../u-boot/files/0003-Use-SD4-for-eMMC.patch       | 98 ++++++++++++++++++----
+ 3 files changed, 156 insertions(+), 82 deletions(-)
+
+Update to u-boot 2017.09 sources - not tested yet
+ ...0001-IRIS-support-for-multiple-partitions.patch | 75 +++++++++-------------
+ 1 file changed, 32 insertions(+), 43 deletions(-)
+
+Added support for SD4 as eMMC is u-boot for imx6qmq proto
+ .../u-boot/files/0003-Use-SD4-for-eMMC.patch       | 92 ++++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imx_%.bbappend |  1 +
+ 2 files changed, 93 insertions(+)
+
+Update IRIS multiple partition patch to handle eMMC partition values
+ .../files/0002-imx6qmq-Added-IRIS-multi-partition.patch   | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+Added reset switch check and initial LED state to u-boot patch
+ ...Q-Added-IRIS-changed-for-multiple-paritio.patch | 162 ---------------------
+ ...2-imx6qmq-Added-IRIS-multi-partition.patch      | 161 ++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imx_%.bbappend |   2 +-
+ 3 files changed, 162 insertions(+), 163 deletions(-)
+
+Added in IRIS multiple partition support to imx6qmq u-boot
+ .../0001-imx6qmq-tweaks-for-eval-board.patch       | 103 +++++++++++++
+ .../0002-imx6qmq-tweaks-for-eval-board.patch       | 103 -------------
+ ...Q-Added-IRIS-changed-for-multiple-paritio.patch | 162 +++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imx_%.bbappend |   5 +-
+ 4 files changed, 267 insertions(+), 106 deletions(-)
+
+Initial support for imx6qmq target
+ meta-iris/recipes-bsp/u-boot/u-boot-fslc_%.bbappend | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+imx6qmq u-boot modifications for their eval board
+ .../0002-imx6qmq-tweaks-for-eval-board.patch       | 103 +++++++++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-imx_%.bbappend |  10 ++
+ 2 files changed, 113 insertions(+)
+
+Avoid build issues with TI build due to recent changes
+ meta-iris/recipes-bsp/u-boot/u-boot-fslc_%.bbappend | 2 ++
+ 1 file changed, 2 insertions(+)
+
+Patched u-boot-fslc code to add Iris partition support
+ ...0001-IRIS-support-for-multiple-partitions.patch | 172 +++++++++++++++++++++
+ .../recipes-bsp/u-boot/u-boot-fslc_%.bbappend      |   6 +
+ 2 files changed, 178 insertions(+)
+
+First pass of u-boot 2016.03 support for our hardware
+ .../u-boot/files/0001-Iris-patches-2016.03.patch          | 360 ++++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot_2016.03.bb            |  42 +++
+ 2 files changed, 402 insertions(+)
+
+Remove support for u-boot 2013.07 in our code
+ meta-iris/recipes-bsp/u-boot/u-boot_2013.07.bbappend | 5 -----
+ 1 file changed, 5 deletions(-)
+
+TI AM3352 MPU Speed is not set to maximum value
+ .../u-boot/files/0001-Iris-patches-2013.10.patch   | 417 +++++++++++++++++++++
+ 1 file changed, 417 insertions(+)
+
+TI AM3358 MPU Speed is not set to maximum value
+ .../u-boot/u-boot-ti-staging_2013.10.bb            | 24 +++++++++++++
+ meta-iris/recipes-bsp/u-boot/u-boot-ti.inc         | 41 ++++++++++++++++++++++
+ 2 files changed, 65 insertions(+)
+
+Bootloader support for flipping Linux partition if reset
+ .../u-boot/files/0001-Iris-patches.patch           | 25 +++++++++++++++-------
+ 1 file changed, 17 insertions(+), 8 deletions(-)
+
+More u-boot speed up items and security tweaks
+ .../u-boot/files/0001-Iris-patches.patch           | 61 +++++++++++++++-------
+ 1 file changed, 41 insertions(+), 20 deletions(-)
+
+Turn on all our LEDs in u-boot so they aren't off during initial boot
+ .../u-boot/files/0001-Iris-patches.patch           | 24 ++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
+
+Added support in u-boot for trying other partition if boot fails
+ .../u-boot/files/0001-Iris-patches.patch           | 74 +++++++++++++++-------
+ 1 file changed, 50 insertions(+), 24 deletions(-)
+
+Speed up u-boot boot process by removing more support we really do not need
+ .../u-boot/files/0001-Iris-patches.patch           | 248 +++++++++++++++------
+ 1 file changed, 175 insertions(+), 73 deletions(-)
+
+Harden u-boot and Linux prior to release
+ .../u-boot/files/0001-Iris-patches.patch           | 30 ++++++++++++++--------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
+
+Pass in "quiet" option to kernel boot flags - reduces console log display
+ .../u-boot/files/0001-Iris-patches.patch           | 30 ++++++++++++++--------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
+
+Disable USB support in U-boot
+ .../u-boot/files/0001-Iris-patches.patch           | 75 ++++++++++++++++++++--
+ 1 file changed, 70 insertions(+), 5 deletions(-)
+
+Rolled poky u-boot patch into our patch to make further patches easier
+ .../u-boot/files/0001-Iris-patches.patch           | 62 +++++++++++++++++++---
+ 1 file changed, 56 insertions(+), 6 deletions(-)
+
+Investigate restart hang on EPR1 hardware
+ .../u-boot/files/0001-Iris-patches.patch           | 24 +++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
+
+U-boot changes for EPR1 - disable RTC and force in board name
+ .../0001-Add-dual-image-booting-support.patch      | 129 -----------------
+ .../u-boot/files/0001-Iris-patches.patch           | 161 +++++++++++++++++++++
+ .../recipes-bsp/u-boot/u-boot_2013.07.bbappend     |   2 +-
+ 3 files changed, 162 insertions(+), 130 deletions(-)
+
+Create flash formatter script and image to boot from
+ .../files/0001-Add-dual-image-booting-support.patch   | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
+
+Add boot loader support for dual images
+ .../0001-Add-dual-image-booting-support.patch      | 126 +++++++++++++++++++++
+ .../recipes-bsp/u-boot/u-boot_2013.07.bbappend     |   5 +
+ 2 files changed, 131 insertions(+)
+
+
+
+IRIS Changes to meta-iris/recipes-devtools
+
+Upgrade to latest omapconf code (top of master) to avoid compiler issues
+ meta-iris/recipes-devtools/omapconf/omapconf_git.bb | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Added omapconf package for debug of TI settings
+ .../recipes-devtools/omapconf/omapconf_git.bb      | 25 ++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+Fixed how e2fsprogs are built to remove duplicate copies of applications
+ meta-iris/recipes-devtools/e2fsprogs/e2fsprogs_%.bbappend | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+
+
+IRIS Changes to meta-iris/recipes-extended
+
+Switch to mp3 format audio files to reduce size of hubOS image
+ meta-iris/recipes-extended/sox/sox_14%.bbappend | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+Ability to test wifi-connection
+ meta-iris/recipes-extended/wpa-supplicant/files/defconfig            | 552 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ meta-iris/recipes-extended/wpa-supplicant/wpa-supplicant_2%.bbappend |   5 +
+ 2 files changed, 557 insertions(+)
+
+Removed Bluez tools that use readline due to GPLv3 license issues
+ meta-iris/recipes-extended/bluez5/bluez5_%.bbappend | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+Added recipe to extend bluez5 support for our needs
+ .../recipes-extended/bluez5/bluez5_%.bbappend      | 18 ++++++
+ .../bluez5/files/0001-Allow-GATT-access.patch      | 22 ++++++++
+ .../recipes-extended/bluez5/files/bluetooth.init   | 66 ++++++++++++++++++++++
+ 3 files changed, 106 insertions(+)
+
+Fixed typo in a disable flag
+ meta-iris/recipes-extended/alsa/alsa-lib_1%.bbappend | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Disable building alsamixer now that it has been removed from base packages
+ meta-iris/recipes-extended/alsa/alsa-utils_1%.bbappend | 1 +
+ 1 file changed, 1 insertion(+)
+
+Trimmed alsa support to reduce image size
+ meta-iris/recipes-extended/alsa/alsa-lib_1%.bbappend   | 13 +++++++++++++
+ meta-iris/recipes-extended/alsa/alsa-utils_1%.bbappend | 16 ++++++++++++++++
+ 2 files changed, 29 insertions(+)
+
+Removed MBIM support to trim size of libqmi package
+ meta-iris/recipes-extended/libqmi/libqmi_1%.bbappend | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+Build wpa-supplicant with openssl rather than GnuTLS to save space
+ meta-iris/recipes-extended/wpa-supplicant/wpa-supplicant_2%.bbappend | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+Build curl without GnuTLS to save space
+ meta-iris/recipes-extended/curl/curl_7%.bbappend | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+HACK - remove IRIS clean up attempt for now due to build errors
+ .../recipes-extended/libxml2/libxml2_%.bbappend    | 50 +++++++++++-----------
+ 1 file changed, 25 insertions(+), 25 deletions(-)
+
+Avoid explicit use of mmcblkXpY references by adding links at boot
+ meta-iris/recipes-extended/collectd/files/collectd.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Move extended recipes to later versions
+ .../collectd/collectd_5.5.0.bbappend               | 44 ----------------------
+ .../collectd/collectd_5.7.2.bbappend               | 44 ++++++++++++++++++++++
+ meta-iris/recipes-extended/nspr/nspr_4.12.bbappend |  3 --
+ meta-iris/recipes-extended/nspr/nspr_4.16.bbappend |  3 ++
+ .../rrdtool/rrdtool_1.5.4.bbappend                 | 22 -----------
+ .../rrdtool/rrdtool_1.6.0.bbappend                 | 22 +++++++++++
+ 6 files changed, 69 insertions(+), 69 deletions(-)
+
+Cleaned up localtime error messages in boot log
+ meta-iris/recipes-extended/tzdata/tzdata_2016i.bb | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Update to i2c-tools to v3.1.2
+ .../recipes-extended/i2c-tools/i2c-tools_3.1.0.bb  | 22 ----------------------
+ .../recipes-extended/i2c-tools/i2c-tools_3.1.2.bb  | 22 ++++++++++++++++++++++
+ 2 files changed, 22 insertions(+), 22 deletions(-)
+
+Update to tzdata 2016i package
+ meta-iris/recipes-extended/tzdata/tzdata_2016g.bb | 61 -----------------------
+ meta-iris/recipes-extended/tzdata/tzdata_2016i.bb | 61 +++++++++++++++++++++++
+ 2 files changed, 61 insertions(+), 61 deletions(-)
+
+Cleaned up localtime error messages in boot log
+ meta-iris/recipes-extended/tzdata/tzdata_2016g.bb | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletions(-)
+
+Upgraded to tzdata 2016g package
+ meta-iris/recipes-extended/tzdata/tzdata_2013i.bb | 54 --------------------
+ meta-iris/recipes-extended/tzdata/tzdata_2016g.bb | 61 +++++++++++++++++++++++
+ 2 files changed, 61 insertions(+), 54 deletions(-)
+
+Merged in iris-4g-hilink branch with initial Huawae LTE dongle support
+ meta-iris/recipes-extended/usb-modeswitch/usb-modeswitch_%.bbappend | 10 ++++
+ 1 file changed, 10 insertions(+)
+
+Attempt to remove perl dependencies in rrdtool package
+ meta-iris/recipes-extended/rrdtool/rrdtool_1.5.4.bbappend | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+Removed dependency on perl in nspr
+ meta-iris/recipes-extended/nspr/nspr_4.12.bbappend | 3 +++
+ 1 file changed, 3 insertions(+)
+
+Removed collectd v5.2.2 support
+ .../recipes-extended/collectd/collectd_5.2.2.bbappend     | 45 ---------------
+ 1 file changed, 45 deletions(-)
+
+Removed rrdtool v1.4.7 support
+ meta-iris/recipes-extended/rrdtool/rrdtool_1.4.7.bbappend | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+Fixed collectd patch support - libgcrypt remove now handled in base code
+ meta-iris/recipes-extended/collectd/collectd_%.bbappend   | 45 ----------------
+ .../recipes-extended/collectd/collectd_5.2.2.bbappend     | 45 ++++++++++++++++
+ .../recipes-extended/collectd/collectd_5.5.0.bbappend     | 44 ++++++++++++++++
+ 3 files changed, 89 insertions(+), 45 deletions(-)
+
+Tweaked libxml2 "--without..." feature flags to minimize library
+ meta-iris/recipes-extended/libxml2/libxml2_%.bbappend | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+Missed a file in last rrdtool commit
+ meta-iris/recipes-extended/rrdtool/rrdtool_1.4.7.bbappend | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Moved to v1.5.4 of rrdtool
+ .../rrdtool/files/remove-xml-support.patch                | 86 ---------------
+ .../rrdtool/files/remove-xml-support_1.4.7.patch          | 86 +++++++++++++++
+ meta-iris/recipes-extended/rrdtool/rrdtool_%.bbappend     | 15 -----
+ meta-iris/recipes-extended/rrdtool/rrdtool_1.4.7.bbappend | 15 +++++
+ meta-iris/recipes-extended/rrdtool/rrdtool_1.5.4.bbappend | 13 ++++
+ 5 files changed, 114 insertions(+), 101 deletions(-)
+
+Errors seen in hubOS system log due to incorrect ping host
+ meta-iris/recipes-extended/collectd/files/collectd.conf | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+Added recipe to support stripped down timezone data in hubOS
+ meta-iris/recipes-extended/tzdata/tzdata_2013i.bb | 54 +++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+
+Add more collectd support needed by hub agent
+ .../recipes-extended/collectd/collectd_%.bbappend  |   9 +-
+ .../recipes-extended/collectd/files/collectd.conf  | 105 ++++++++++-----------
+ 2 files changed, 59 insertions(+), 55 deletions(-)
+
+Add more collectd support ... enabled additional plugins
+ meta-iris/recipes-extended/collectd/collectd_%.bbappend | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+Collectd - added extended collectd recipe with basic support
+ .../recipes-extended/collectd/collectd_%.bbappend  |   37 +
+ meta-iris/recipes-extended/collectd/files/collectd |    2 +
+ .../recipes-extended/collectd/files/collectd.conf  | 1140 ++++++++++++++++++++
+ .../collectd/files/omap-serial-support.patch       |   14 +
+ .../collectd/files/remove-libgcrypt-config.patch   |  157 +++
+ 5 files changed, 1350 insertions(+)
+
+More work toward collectd support
+ .../rrdtool/files/remove-xml-support.patch         | 86 ++++++++++++++++++++++
+ .../recipes-extended/rrdtool/rrdtool_%.bbappend    | 15 ++++
+ 2 files changed, 101 insertions(+)
+
+Work toward collectd support
+ .../recipes-extended/libxml2/libxml2_%.bbappend    | 29 ++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+Log Rotation - Zwave/ZigBee binary message log
+ meta-iris/recipes-extended/logrotate/files/logrotate.conf |  3 ++-
+ meta-iris/recipes-extended/logrotate/files/logrotate.cron | 15 +++++++++++++++
+ meta-iris/recipes-extended/logrotate/logrotate_%.bbappend |  8 ++++++--
+ 3 files changed, 23 insertions(+), 3 deletions(-)
+
+Add Hub agent bootstrapping support - log rotate
+ .../logrotate/files/logrotate.conf                 | 45 ++++++++++++++++++++++
+ .../logrotate/logrotate_%.bbappend                 | 20 ++++++++++
+ 2 files changed, 65 insertions(+)
+
+Final release image size cleanup - shadow cleanup
+ meta-iris/recipes-extended/shadow/shadow_%.bbappend | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+Extended i2c-tools recipe to avoid the need for perl on target
+ .../recipes-extended/i2c-tools/files/Makefile      | 40 ++++++++++++++++++++++
+ .../recipes-extended/i2c-tools/i2c-tools_3.1.0.bb  | 22 ++++++++++++
+ 2 files changed, 62 insertions(+)
+
+
+
+IRIS Changes to meta-iris/recipes-kernel
+
+Updates to LTE support to handle Quectel module and Huawei dongle on v3 hub
+ meta-iris/recipes-kernel/linux/linux-fslc/imxdimagic/defconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Hub Image production build - remove Quectel kernel module
+ meta-iris/recipes-kernel/linux/linux-fslc/imxdimagic/defconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Set LED ring to a solid color at boot
+ .../0013-Set-LED-ring-to-purple-at-boot.patch      | 97 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-fslc_4.%.bbappend   |  1 +
+ 2 files changed, 98 insertions(+)
+
+Possible fix: HUB V3: Locks up occasionally on boot
+ meta-iris/recipes-kernel/linux/linux-fslc/imxdimagic/defconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Updated wireless firmware to latest for IH30x module
+ .../files/brcmfmac43362-sdio.bin                   | Bin 0 -> 214940 bytes
+ .../files/brcmfmac43362-sdio.txt                   | 138 ++++++++++++---------
+ .../linux-wifi-firmware/linux-wifi-firmware.bb     |   5 +-
+ 3 files changed, 86 insertions(+), 57 deletions(-)
+
+Enabled required CONFIG_BT_x support for bluez5 functionality
+ .../recipes-kernel/linux/linux-fslc/imxdimagic/defconfig     | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+Hub OS to update BLE Chip - Add GPIO_BT_RST support
+ .../linux/linux-fslc/0012-Add-BT-RST-signal.patch  | 23 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-fslc_4.%.bbappend   |  1 +
+ 2 files changed, 24 insertions(+)
+
+Added in kernel patches to support CUT-2 hardware from GS
+ .../0011-IMX-D-IMAGIC-CUT-2-modifications.patch    | 296 +++++++++++++++++++++
+ .../recipes-kernel/linux/linux-fslc_4.%.bbappend   |   1 +
+ 2 files changed, 297 insertions(+)
+
+Removed 4G related GPIOs from GS gpio driver
+ .../linux-fslc/0007-IMX-D-IMAGIC-board-support.patch     | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
+
+Updates from GS to support mods to latest prototypes
+ .../0007-IMX-D-IMAGIC-board-support.patch          | 200 ++++++++++++---------
+ 1 file changed, 111 insertions(+), 89 deletions(-)
+
+Update to 4.14.22 kernel - latest on LTS branch
+ meta-iris/recipes-kernel/linux/linux-fslc_4.%.bbappend | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Fixed issue with GS mbi6023 driver code that led to kernel panic
+ .../0008-IMX-D-IMAGIC-driver-support.patch         | 545 ++++++++++-----------
+ 1 file changed, 268 insertions(+), 277 deletions(-)
+
+Enabled ZTE LTE support for imx6qmq target as well for testing
+ meta-iris/recipes-kernel/linux/linux-fslc/imx6qmq/defconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+Change Broadcom fmac and IMX sdma drivers to modules
+ meta-iris/recipes-kernel/linux/linux-fslc/imxdimagic/defconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Added support for AP6181 wireless module
+ .../files/brcmfmac43362-sdio.txt                   | 56 ++++++++++++++++++++++
+ .../linux-wifi-firmware/linux-wifi-firmware.bb     | 22 +++++++--
+ 2 files changed, 75 insertions(+), 3 deletions(-)
+
+Removed CONFIG_SOC_IMX6Q_MQ define - not used by new target
+ meta-iris/recipes-kernel/linux/linux-fslc/imxdimagic/defconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+Added in patches for IMX-D-IMAGIC board (based on 4.1.15) kernel
+ .../0007-IMX-D-IMAGIC-board-support.patch          | 1144 ++++++++++++++
+ .../0008-IMX-D-IMAGIC-driver-support.patch         | 1592 ++++++++++++++++++++
+ .../0009-IMX-D-IMAGIC-sound-support.patch          |  430 ++++++
+ .../linux/linux-fslc/imxdimagic/defconfig          |   17 +-
+ .../recipes-kernel/linux/linux-fslc_4.%.bbappend   |    6 +-
+ 5 files changed, 3185 insertions(+), 4 deletions(-)
+
+Rename recently added target to imxdimagic to match GS naming
+ .../linux/linux-fslc/imx6iris/defconfig            | 615 ---------------------
+ .../linux/linux-fslc/imxdimagic/defconfig          | 615 +++++++++++++++++++++
+ .../recipes-kernel/linux/linux-fslc_4.%.bbappend   |   2 +-
+ 3 files changed, 616 insertions(+), 616 deletions(-)
+
+Update to 4.14.16 kernel
+ meta-iris/recipes-kernel/linux/linux-fslc_4.%.bbappend | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+First pass at adding a new machine target for GS next hw spin
+ .../linux/linux-fslc/imx6iris/defconfig            | 615 ++++++++++++++++++++
+ .../linux/linux-fslc/imx6iris/defconfig~           | 620 +++++++++++++++++++++
+ .../recipes-kernel/linux/linux-fslc_4.%.bbappend   |   3 +-
+ 3 files changed, 1237 insertions(+), 1 deletion(-)
+
+Created a board specific imx6qmq defconfig file in our kernel recipe area
+ .../linux/linux-fslc/imx6qmq/defconfig             | 620 +++++++++++++++++++++
+ .../recipes-kernel/linux/linux-fslc_4.%.bbappend   |   1 +
+ 2 files changed, 621 insertions(+)
+
+Added kernel patch to enable support for ZTE LTE modem
+ .../0007-Add-ZTE-LTE-ME3630-module-support.patch   | 54 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-fslc_4.%.bbappend   |  1 +
+ 2 files changed, 55 insertions(+)
+
+Created a board specific imx6qmq defconfig file in our kernel recipe area
+ .../linux/linux-fslc/imx6qmq/defconfig             | 620 +++++++++++++++++++++
+ .../recipes-kernel/linux/linux-fslc_4.%.bbappend   |   1 +
+ 2 files changed, 621 insertions(+)
+
+OSS patch clean up for imx6qmq board
+ ...
+ 42 files changed, 8405 insertions(+), 8431 deletions(-)
+
+Move to latest 4.14.13 kernel for Freescale build
+ meta-iris/recipes-kernel/linux/linux-fslc_4.%.bbappend | 3 +++
+ 1 file changed, 3 insertions(+)
+
+Fixed overlapping use of a gpio that prevented leds being set up
+ .../0005-IRIS-modifications-and-cleanup.patch      | 163 +++++++++++++--------
+ 1 file changed, 105 insertions(+), 58 deletions(-)
+
+Fixed issue with claiming PWM1 pin in latest kernel
+ .../linux/linux-fslc/0005-IRIS-modifications-and-cleanup.patch | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+Added support for linux-fslc kernel build
+ ...el-mods-to-support-EC25-A-module-in-QCI-W.patch |  107 ++
+ .../0002-imx6qmq-board-support.patch               |  325 +++++
+ .../0003-imx6qmq-device-tree-additions.patch       | 1276 ++++++++++++++++++++
+ .../0004-Go-back-to-old-mmc-numbering-scheme.patch |   70 ++
+ ...0004-imx6qmq-sound-driver-modifications.patch   |  804 ++++++++++++
+ .../0005-IRIS-modifications-and-cleanup.patch      |  975 +++++++++++++++
+ .../0006-Up-IMX-watchdog-default-timeout.patch     |   27 +
+ .../recipes-kernel/linux/linux-fslc_4.%.bbappend   |   24 +
+ 8 files changed, 3608 insertions(+)
+
+Renamed linux_imx_4.1.15.bbappend as this version is no longer supported
+ .../recipes-kernel/linux/linux-imx_4.%.bbappend    | 25 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend | 25 ----------------------
+ 2 files changed, 25 insertions(+), 25 deletions(-)
+
+Go back to older way of naming mmc devices so eMMC id doesn't change
+ .../0004-Go-back-to-old-mmc-numbering-scheme.patch | 70 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-yocto_4.12.bbappend |  1 +
+ 2 files changed, 71 insertions(+)
+
+First pass at merging our IRIS kernel patches to 4.12 kernel
+ .../linux-4.12/0001-Iris-dtsi-config-changes.patch |  260 ++
+ .../linux-4.12/0002-Disable-Ethernet-MDIX.patch    |   79 +
+ ...sbnet-fix-debugging-output-for-work-items.patch |  105 +
+ meta-iris/recipes-kernel/linux/linux-4.12/adc.cfg  |    7 +
+ .../recipes-kernel/linux/linux-4.12/defconfig      | 3021 ++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/linux-4.12/fs.cfg   |   14 +
+ meta-iris/recipes-kernel/linux/linux-4.12/leds.cfg |   17 +
+ meta-iris/recipes-kernel/linux/linux-4.12/pwm.cfg  |    9 +
+ meta-iris/recipes-kernel/linux/linux-4.12/usb.cfg  |    9 +
+ .../recipes-kernel/linux/linux-yocto_4.12.bbappend |   22 +
+ 10 files changed, 3543 insertions(+)
+
+Removed linux-dtb.inc require to avoid warnings
+ meta-iris/recipes-kernel/linux/linux-gs_3.14.52.bb | 1 -
+ 1 file changed, 1 deletion(-)
+
+Cleaned up imx6qmq prototype 4.1.15 patches now that it's working
+ .../0003-imx6qmq-board-support.patch               |  334 ++++---
+ .../0004-imx6qmq-device-tree-additions.patch       |  508 +++++-----
+ ...0005-imx6qmq-misc.-driver-modifications.patch   |   51 -
+ ...0005-imx6qmq-sound-driver-modifications.patch   |  234 +++++
+ .../linux-imx/0006-4x-changes-and-IRIS-mods.patch  | 1044 --------------------
+ .../0006-IRIS-modifications-and-cleanup.patch      |  975 ++++++++++++++++++
+ .../linux-imx/0008-imx6qmq-4.1.15-tweaks.patch     |  506 ----------
+ ...009-imx6qmq-further-board-modifications.patch   |  412 --------
+ .../linux-imx/0010-More-imx6qmq-updates.patch      |  127 ---
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend |    7 +-
+ 10 files changed, 1674 insertions(+), 2524 deletions(-)
+
+Added in some imx6qmq changes from their 4.1.15 kernel source dump
+ .../linux-imx/0010-More-imx6qmq-updates.patch      | 127 +++++++++++++++++++++
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend |   1 +
+ 2 files changed, 128 insertions(+)
+
+More 4.1.15 changed from imx6qmq, fixes restart issue
+ ...009-imx6qmq-further-board-modifications.patch   | 412 +++++++++++++++++++++
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend |   1 +
+ 2 files changed, 413 insertions(+)
+
+Added in imx6qmq mods to support linux-imx 4.1.15 kernel
+ .../linux-imx/0008-imx6qmq-4.1.15-tweaks.patch     | 506 +++++++++++++++++++++
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend |   1 +
+ 2 files changed, 507 insertions(+)
+
+Enable hardware flow control support for imx6qmq UARTS
+ .../linux-gs/0010-Add-UART-flow-control.patch      | 69 ++++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/linux-gs_3.14.52.bb |  1 +
+ 2 files changed, 70 insertions(+)
+
+Removed recent change from imx6qmq that disabled the eMMC flash
+ .../linux-gs/0009-imx6qmq-DVT1-DTS-update.patch    | 20 +++++---------------
+ 1 file changed, 5 insertions(+), 15 deletions(-)
+
+Set default watchdog timeout in imx case to be 120 not 60 seconds
+ .../0007-Up-IMX-watchdog-default-timeout.patch     | 27 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend |  1 +
+ 2 files changed, 28 insertions(+)
+
+Fixed issue with merge of imx6qmq board changes, 4X/IRIS DTS mods
+ .../0003-imx6qmq-board-support.patch               |   39 +-
+ .../linux-imx/0006-4x-changes-and-IRIS-mods.patch  | 1044 ++++++++++++++++++++
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend |    1 +
+ 3 files changed, 1070 insertions(+), 14 deletions(-)
+
+Start merge of imx6qmq support to 4.x kernel
+ .../0003-imx6qmq-board-support.patch               |  570 +++++++++
+ .../0004-imx6qmq-device-tree-additions.patch       | 1286 ++++++++++++++++++++
+ ...0005-imx6qmq-misc.-driver-modifications.patch   |   51 +
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend |   10 +-
+ 4 files changed, 1913 insertions(+), 4 deletions(-)
+
+Updates from imx6qmq for DVT1 hardware
+ .../linux-gs/0009-imx6qmq-DVT1-DTS-update.patch    | 35 ++++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/linux-gs_3.14.52.bb |  1 +
+ 2 files changed, 36 insertions(+)
+
+Added in imx6qmq changes to enable sound chip support on proto
+ .../0008-imx6qmq-kernel-sound-mods.patch           | 1499 ++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/linux-gs_3.14.52.bb |    1 +
+ 2 files changed, 1500 insertions(+)
+
+Change buzzer control from GPIO to PWM
+ .../linux/linux-gs/0007-Set-buzzer-to-PWM.patch    | 45 ++++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/linux-gs_3.14.52.bb |  1 +
+ 2 files changed, 46 insertions(+)
+
+Enable IRIS LEDs on imx6qmq proto board
+ .../linux/linux-gs/0006-Add-IRIS-LED-support.patch | 41 ++++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/linux-gs_3.14.52.bb |  2 ++
+ 2 files changed, 43 insertions(+)
+
+Added Quectel kernel patches to imx6qmq kernel
+ ...el-mods-to-support-EC25-A-module-in-QCI-W.patch | 114 +++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/linux-gs_3.14.52.bb |   1 +
+ 2 files changed, 115 insertions(+)
+
+imx6qmq kernel mods based on imx 3.14.52 1.1.0_ga kernel
+ .../linux-gs/0001-imx6qmq-board-support.patch      |  742 ++++
+ .../0002-imx6qmq-device-tree-additions.patch       | 1296 +++++++
+ .../0003-imx6qmq-MMC-modifications.patch           |  168 +
+ ...0004-imx6qmq-misc.-driver-modifications.patch   |   82 +
+ meta-iris/recipes-kernel/linux/linux-gs/defconfig  | 4061 ++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/linux-gs_3.14.52.bb |   30 +
+ 6 files changed, 6379 insertions(+)
+
+Added patches from Quectel to support EC25-A LTE module
+ ...el-mods-to-support-EC25-A-module-in-QCI-W.patch | 115 +++++++++++++++++++++
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend |   1 +
+ 2 files changed, 116 insertions(+)
+
+Avoid build issues with TI build due to recent changes
+ meta-iris/recipes-kernel/linux/linux-imx_4.1.15.bbappend | 2 ++
+ 1 file changed, 2 insertions(+)
+
+Added support for Realtek 8188 firmware
+ meta-iris/recipes-kernel/linux-wifi-firmware/linux-wifi-firmware.bb | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+Added recipe to include Linux wifi firmware we'll need
+ .../linux-wifi-firmware/linux-wifi-firmware.bb     | 53 ++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+
+Create separate folder for linux-imx patches and config
+ .../linux/files/0001-Wandboard-RevD1-Support.patch | 2205 --------------------
+ .../linux-imx/0001-Wandboard-RevD1-Support.patch   | 2205 ++++++++++++++++++++
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend |   11 +-
+ 3 files changed, 2209 insertions(+), 2212 deletions(-)
+
+Added in initial kernel config changes from current hub
+ meta-iris/recipes-kernel/linux/linux-imx_4.1.15.bbappend | 3 +++
+ 1 file changed, 3 insertions(+)
+
+Patch current FSL 4.1.15 kernel to add Wandboard rev D1 support
+ .../linux/files/0001-Wandboard-RevD1-Support.patch | 2205 ++++++++++++++++++++
+ .../recipes-kernel/linux/linux-imx_4.1.15.bbappend |   18 +
+ 2 files changed, 2223 insertions(+)
+
+Kernel panic on reboot in 2.1.0.003 image with LTE support
+ meta-iris/recipes-kernel/linux/files/defconfig | 36 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+
+Update device tree EDMA configuration to match latest driver
+ .../linux/files/0016-edma-fix-dts-config.patch            | 181 +++++++++++++++
+ meta-iris/recipes-kernel/linux/linux-yocto_4.4.bbappend   |   1 +
+ 2 files changed, 182 insertions(+)
+
+Added in new defconfig file based on 4.4.11 kernel
+ meta-iris/recipes-kernel/linux/files/defconfig | 1792 +++++++++++++------------
+ 1 file changed, 701 insertions(+), 1091 deletions(-)
+
+Enable crypto dev OMAP SHAM and AES support
+ meta-iris/recipes-kernel/linux/files/4x.cfg | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+Enable CONFIG_DEVMEM to restore /dev/mem support needed for some tools
+ meta-iris/recipes-kernel/linux/files/4x.cfg | 1 +
+ 1 file changed, 1 insertion(+)
+
+Added patch to remove "kevent 12 may have been dropped" console logs
+ .../0015-usbnet-fix-debugging-output-for-work-items.patch | 105 +++++++++++++++
+ meta-iris/recipes-kernel/linux/linux-yocto_4.4.bbappend   |   1 +
+ 2 files changed, 106 insertions(+)
+
+Merged in iris-4g-hilink branch with initial Huawae LTE dongle support
+ meta-iris/recipes-kernel/linux/files/4x.cfg  | 2 +-
+ meta-iris/recipes-kernel/linux/files/usb.cfg | 6 +++++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+First pass at Linux Kernel 4.4 support with our patches
+ .../linux/files/0001-Iris-dtsi-config-changes.patch       | 234 ++++++++++++++
+ meta-iris/recipes-kernel/linux/files/4x.cfg               |   6 +
+ meta-iris/recipes-kernel/linux/linux-yocto_4.4.bbappend   |  22 +++
+ 3 files changed, 262 insertions(+)
+
+Removed linux-yocto_3.14.bbappend
+ meta-iris/recipes-kernel/linux/linux-yocto_3.14.bbappend | 32 -----------------
+ 1 file changed, 32 deletions(-)
+
+Watchdog does not work in 056 hubOS release if agent killed
+ meta-iris/recipes-kernel/linux/files/watchdog.cfg        | 5 +++++
+ meta-iris/recipes-kernel/linux/linux-yocto_3.14.bbappend | 1 +
+ 2 files changed, 6 insertions(+)
+
+Hub support for Ethernet auto MDIX support may cause problem
+ .../linux/files/0014-Disable-Ethernet-MDIX.patch   | 79 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  1 +
+ 2 files changed, 80 insertions(+)
+
+Enabled TI hardware support for AES/SHA1/SHA2/MD5
+ meta-iris/recipes-kernel/linux/files/crypto.cfg | 2 ++
+ 1 file changed, 2 insertions(+)
+
+Flash all LEDs once Linux boots so they aren't off for a long time...
+ .../linux/files/0013-Enable-LEDs-at-startup.patch  | 46 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  1 +
+ 2 files changed, 47 insertions(+)
+
+Bring up EPR2 hardware -- add hardware flow control
+ .../0012-Enable-RTS-CTS-for-UARTS-2-and-4.patch    | 35 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  1 +
+ 2 files changed, 36 insertions(+)
+
+Add battery voltage level monitoring
+ .../linux/files/0011-Enable-ADC-support.patch      | 34 ++++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/files/adc.cfg       |  7 +++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  2 ++
+ 3 files changed, 43 insertions(+)
+
+Removed kernel debugging support we don't use at the moment
+ meta-iris/recipes-kernel/linux/files/defconfig | 66 +++++++++++++-------------
+ 1 file changed, 33 insertions(+), 33 deletions(-)
+
+Turned off RTC support in the kernel as our hardware doesn't support it
+ meta-iris/recipes-kernel/linux/files/defconfig | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+Final release image size cleanup
+ meta-iris/recipes-kernel/linux/files/defconfig | 54 +++++++++++++-------------
+ 1 file changed, 27 insertions(+), 27 deletions(-)
+
+Harden u-boot and Linux prior to release
+ meta-iris/recipes-kernel/linux/files/defconfig     | 46 +++++++++++-----------
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  5 +++
+ 2 files changed, 28 insertions(+), 23 deletions(-)
+
+Investigate crypto acceleration support
+ .../0010-Fix-INIT_COMPLETION-compile-error.patch   | 71 ++++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/files/crypto.cfg    |  4 ++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  2 +
+ 3 files changed, 77 insertions(+)
+
+First pass at reduction of kernel size - down about 4M
+ meta-iris/recipes-kernel/linux/files/defconfig     | 3449 ++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/files/fs.cfg        |    3 +-
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |    1 +
+ 3 files changed, 3452 insertions(+), 1 deletion(-)
+
+Test USB ports on EPR1 hardware
+ .../linux/files/0009-Set-USB0-to-host-mode.patch   | 25 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  1 +
+ 2 files changed, 26 insertions(+)
+
+Patched kernel to avoid warning dump due to lack of RTC support
+ .../0008-Avoid-RTC-kernel-warning-crash.patch      | 29 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  1 +
+ 2 files changed, 30 insertions(+)
+
+EPR1 Bringup - disable RTC in device tree
+ .../linux/files/0007-Disable-RTC-for-EPR1.patch    | 39 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  1 +
+ 2 files changed, 40 insertions(+)
+
+Create flash formatter script and image to boot from
+ meta-iris/recipes-kernel/linux/files/fs.cfg | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+Determine flash partition design
+ meta-iris/recipes-kernel/linux/files/fs.cfg              | 10 ++++++++++
+ meta-iris/recipes-kernel/linux/linux-yocto_3.14.bbappend |  1 +
+ 2 files changed, 11 insertions(+)
+
+Added patch to device tree to fix pinmux settings for UARTs 2 and 4
+ .../linux/files/0006-Fix-UART-mode-settings.patch  | 37 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  1 +
+ 2 files changed, 38 insertions(+)
+
+Add more support for buzzer
+ .../linux/files/0005-Enable-PWM-pinmux.patch       | 44 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  1 +
+ 2 files changed, 45 insertions(+)
+
+Added back in USB host support - was lost with initialy poky-iris distro
+ meta-iris/recipes-kernel/linux/files/usb.cfg             | 5 +++++
+ meta-iris/recipes-kernel/linux/linux-yocto_3.14.bbappend | 1 +
+ 2 files changed, 6 insertions(+)
+
+Enable UARTs used for radio interfaces
+ .../linux/files/0004-Enable-radio-UARTs.patch      | 73 ++++++++++++++++++++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  1 +
+ 2 files changed, 74 insertions(+)
+
+Add basic support for buzzer
+ .../linux/files/0002-Enable-PWM2-support.patch     | 32 +++++++++
+ .../linux/files/0003-Disable-HDMI-support.patch    | 75 ++++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/files/leds.cfg      |  1 -
+ meta-iris/recipes-kernel/linux/files/pwm.cfg       |  9 +++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  3 +
+ 5 files changed, 119 insertions(+), 1 deletion(-)
+
+Add LED support for prototype hardware
+ ...t-LED-names-and-count-for-actual-hardware.patch | 54 ++++++++++++++++++++++
+ meta-iris/recipes-kernel/linux/files/leds.cfg      | 18 ++++++++
+ .../recipes-kernel/linux/linux-yocto_3.14.bbappend |  7 +++
+ 3 files changed, 79 insertions(+)
+
+
+
+IRIS Changes to meta-iris/recipes-core/bluez-dbus
+
+Added internal flag to BlueZ DBUS update handlers
+ meta-iris/recipes-core/bluez-dbus/files/bluez-dbus.h   | 3 ++-
+ meta-iris/recipes-core/bluez-dbus/files/gatt-service.c | 7 ++++---
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+Added handling of offset parameter to date get routines
+ .../recipes-core/bluez-dbus/files/gatt-service.c   | 40 ++++++++++++++++------
+ 1 file changed, 30 insertions(+), 10 deletions(-)
+
+Need to also call update/validate handlers in chr read/write value code
+ .../recipes-core/bluez-dbus/files/gatt-service.c     | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+Added in hooks for validating writes and updating reads
+ .../recipes-core/bluez-dbus/files/bluez-dbus.h     | 20 +++++---
+ .../recipes-core/bluez-dbus/files/gatt-service.c   | 59 ++++++++++++++++++----
+ 2 files changed, 63 insertions(+), 16 deletions(-)
+
+Modified blueZ DBUS library to support setting descriptor default value
+ .../recipes-core/bluez-dbus/files/bluez-dbus.h     |  5 +--
+ .../recipes-core/bluez-dbus/files/gatt-service.c   | 41 ++++++++++++----------
+ 2 files changed, 26 insertions(+), 20 deletions(-)
+
+Extracted BlueZ DBUS related support to create GATT server into a library
+ meta-iris/recipes-core/bluez-dbus/bluez-dbus.bb    |   71 +
+ .../recipes-core/bluez-dbus/files/COPYING.LIB      |  504 ++++++
+ .../recipes-core/bluez-dbus/files/bluez-dbus.h     |   68 +
+ meta-iris/recipes-core/bluez-dbus/files/client.c   | 1400 +++++++++++++++
+ .../recipes-core/bluez-dbus/files/gatt-service.c   |  663 +++++++
+ meta-iris/recipes-core/bluez-dbus/files/gdbus.h    |  403 +++++
+ meta-iris/recipes-core/bluez-dbus/files/mainloop.c |  378 ++++
+ meta-iris/recipes-core/bluez-dbus/files/object.c   | 1842 ++++++++++++++++++++
+ meta-iris/recipes-core/bluez-dbus/files/polkit.c   |  202 +++
+ meta-iris/recipes-core/bluez-dbus/files/watch.c    |  818 +++++++++
+ 10 files changed, 6349 insertions(+)
+
+
+
+IRIS Changes to meta-iris/recipes-core/busybox
+
+Ability to test wifi-connection
+ meta-iris/recipes-core/busybox/files/simple.script | 36 ++++++++++++++++++++++++------------
+ 1 file changed, 24 insertions(+), 12 deletions(-)
+
+Updates to LTE support to handle Quectel module and Huawei dongle on v3 hub
+ meta-iris/recipes-core/busybox/files/simple.script | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Error installing updated BLE firmware from 018 production v3 release
+ meta-iris/recipes-core/busybox/busybox_%.bbappend        |  1 +
+ .../busybox/files/0001-set-killall-suid.patch            | 16 ++++++++++++++++
+ 2 files changed, 17 insertions(+)
+
+Set hub DHCP client hostname to "Iris Hub"
+ meta-iris/recipes-core/busybox/files/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Fixed issue with usb0 backup connection support
+ meta-iris/recipes-core/busybox/files/simple.script | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+Fixed issue with NTP not working due to DNS issues in mfg image
+ meta-iris/recipes-core/busybox/files/simple.script | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+LTE interface can also be usb0 on the ZTE LTE modem
+ meta-iris/recipes-core/busybox/files/simple.script | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+OSS patch clean up for imx6qmq board
+ meta-iris/recipes-core/busybox/files/simple.script | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Write current interface to /tmp/pri_interface file to help agent
+ meta-iris/recipes-core/busybox/files/simple.script | 2 ++
+ 1 file changed, 2 insertions(+)
+
+Consider the wireless interface (wlan0) as a primary interface as well
+ meta-iris/recipes-core/busybox/files/simple.script | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+Fixed another error in changes to busybox simple.script
+ meta-iris/recipes-core/busybox/files/simple.script | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+Enable hwclock long options supported - needed for clock init script
+ meta-iris/recipes-core/busybox/files/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Added hwclock support to busybox config
+ meta-iris/recipes-core/busybox/files/defconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Fixed error in logic to determine if backup interface is up
+ meta-iris/recipes-core/busybox/files/simple.script | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+First pass at support for iris4gd Quectel LTE module
+ meta-iris/recipes-core/busybox/files/simple.script | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+Multiple copies of ntpd are left running if we receive...
+ meta-iris/recipes-core/busybox/files/simple.script | 11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
+
+Removed busybox wget support - we'll use curl instead
+ meta-iris/recipes-core/busybox/files/defconfig | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+DNS information does not always match interface in use
+ meta-iris/recipes-core/busybox/files/simple.script | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+Merged in iris-4g-hilink branch with initial Huawae LTE dongle support
+ meta-iris/recipes-core/busybox/files/defconfig     |  2 +-
+ meta-iris/recipes-core/busybox/files/simple.script | 79 +++++++++++++--------
+ 2 files changed, 33 insertions(+), 48 deletions(-)
+
+Enable lsof command support in busybox
+ meta-iris/recipes-core/busybox/files/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Adjust DHCP client configuration to make sure we retry on failure
+ meta-iris/recipes-core/busybox/files/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Update NTP server configuration run ntpd at high priority
+ meta-iris/recipes-core/busybox/files/simple.script | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+HubOS should handle NTP server information passed in via DHCP
+ meta-iris/recipes-core/busybox/busybox_%.bbappend  |   1 +
+ meta-iris/recipes-core/busybox/files/simple.script | 100 +++++++++++++++++++++
+ 2 files changed, 101 insertions(+)
+
+Added busybox pmap support for debugging
+ meta-iris/recipes-core/busybox/files/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Added busybox 'arp' command to build
+ meta-iris/recipes-core/busybox/files/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Enable logging of DHCP messages to syslog
+ meta-iris/recipes-core/busybox/files/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Enable busybox support for ifplugd
+ meta-iris/recipes-core/busybox/files/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Cleaned up rtc related error messages on boot and shutdown
+ meta-iris/recipes-core/busybox/files/defconfig | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Enabled busybox syslog rotation support
+ meta-iris/recipes-core/busybox/busybox_%.bbappend        |  6 ++++--
+ meta-iris/recipes-core/busybox/files/syslog-startup.conf | 13 +++++++++++++
+ 2 files changed, 17 insertions(+), 2 deletions(-)
+
+Start up busybox ntpd when network comes up to get network time
+ meta-iris/recipes-core/busybox/files/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Final release image size cleanup - busybox cleanup
+ meta-iris/recipes-core/busybox/busybox_%.bbappend  |    7 +-
+ meta-iris/recipes-core/busybox/files/defconfig     | 1020 ++++++++++++++++++++
+ meta-iris/recipes-core/busybox/files/sha256sum.cfg |    1 -
+ 3 files changed, 1022 insertions(+), 6 deletions(-)
+
+Modified busybox DHCP configuration to try a little longer for a lease
+ meta-iris/recipes-core/busybox/busybox_%.bbappend | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+Enable sha256sum command in busybox configuration
+ meta-iris/recipes-core/busybox/busybox_%.bbappend  | 3 +++
+ meta-iris/recipes-core/busybox/files/sha256sum.cfg | 1 +
+ 2 files changed, 4 insertions(+)
+
+
+
+IRIS Changes to meta-iris/recipes-core/libst95hf
+
+Sporadic errors when running NFC diagnostic test - ST Micro patch
+ .../libst95hf/files/0003-Fix-tag-read-issues.patch | 35 ++++++++++++++++++++++
+ meta-iris/recipes-core/libst95hf/files/libst95hf.h |  1 +
+ meta-iris/recipes-core/libst95hf/libst95hf.bb      |  1 +
+ 3 files changed, 37 insertions(+)
+
+Added in ST Micro CR95HF/ST95HF NFC library
+ .../libst95hf/files/0001-IRIS-mods.patch           | 559 +++++++++++++++++++++
+ .../0002-Fixed-issues-with-tag-handling.patch      | 393 +++++++++++++++
+ meta-iris/recipes-core/libst95hf/files/Makefile    |  54 ++
+ meta-iris/recipes-core/libst95hf/files/libst95hf.h | 125 +++++
+ meta-iris/recipes-core/libst95hf/libst95hf.bb      |  52 ++
+ 5 files changed, 1183 insertions(+)
+
+
+
+IRIS Changes to meta-iris/recipes-core/openjdk
+
+Update to 1.8.0_171 Debian package
+ meta-iris/recipes-core/openjdk/openjdk-8-armhf.bb | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+Don't remove libjawt.so, needed for TinyB package
+ meta-iris/recipes-core/openjdk/openjdk-8-armhf.bb | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Added openjdk-8-armhf recipe to support Debian binary OpenJDK package
+ .../recipes-core/openjdk/files/iris-java.security  | 911 +++++++++++++++++++++
+ meta-iris/recipes-core/openjdk/openjdk-8-armhf.bb  | 360 ++++++++
+ 2 files changed, 1271 insertions(+)
+
+
+
+IRIS Changes to meta-iris/recipes-core/tinycbor
+
+Hub OS to update BLE Chip - added tinycbor library
+ meta-iris/recipes-core/tinycbor/tinycbor.bb | 44 +++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+
+
+IRIS Changes to radios/ble/mcuboot
+
+Update build scripts to use Zephyr 1.12.0 binary
+ radios/ble/mcuboot/zephyr-1.12.0.bin | Bin 0 -> 68708 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+Future proof and optimize BLE boot loader
+ radios/ble/mcuboot/IRIS_README                     |    4 +-
+ .../ble/mcuboot/boot/boot_serial/src/boot_serial.c |   19 +-
+ radios/ble/mcuboot/mcuboot-1.1.2.hex               | 2159 ++++++++++++++++++++
+ 3 files changed, 2175 insertions(+), 7 deletions(-)
+
+Added some notes for building BLE mcuboot and zephyr code
+ radios/ble/mcuboot/IRIS_README | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+
+Hub OS to update BLE Chip - mcuboot support
+ .../ble/mcuboot/boot/boot_serial/src/boot_serial.c |  127 +-
+ radios/ble/mcuboot/boot/zephyr/keys.c              |   57 +-
+ radios/ble/mcuboot/boot/zephyr/main.c              |    7 +
+ radios/ble/mcuboot/boot/zephyr/prj.conf            |    7 +
+ radios/ble/mcuboot/iris.pem                        |   28 +
+ radios/ble/mcuboot/mcuboot-1.1.1.hex               | 2159 ++++++++++++++++++++
+ radios/ble/mcuboot/zephyr-1.11.1.bin               |  Bin 0 -> 67276 bytes
+ 7 files changed, 2361 insertions(+), 24 deletions(-)
+
+Import of mcuboot GIT sources circa 4/30/18
+ ...
+ 96 files changed, 1440 insertions(+), 6290 deletions(-)
+
+Import of mcuboot v1.1.0 release for Zephyr bootloader use
+ ...
+ 296 files changed, 62776 insertions(+)
+
+
+
+IRIS Changes to radios/ble/zephyr
+
+Fixed merge issue from update to 1.12.0 release
+ radios/ble/zephyr/samples/bluetooth/hci_uart/nrf5.conf | 1 -
+ 1 file changed, 1 deletion(-)
+
+Remove IRIS hack to set version - will use EXT command to get version info
+ radios/ble/zephyr/subsys/bluetooth/controller/hci/hci.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+Import of Zephyr 1.12.0 release package
+ ...
+ 2434 files changed, 137735 insertions(+), 68977 deletions(-)
+
+Hub OS to update BLE Chip - Zephyr modifications
+ radios/ble/zephyr/.gitignore                             |  2 ++
+ .../boards/arm/nrf52840_pca10056/Kconfig.defconfig       |  8 ++++----
+ radios/ble/zephyr/boards/arm/nrf52840_pca10056/board.h   | 12 ++++++------
+ .../zephyr/boards/arm/nrf52_pca10040/Kconfig.defconfig   |  8 ++++----
+ radios/ble/zephyr/boards/arm/nrf52_pca10040/board.h      | 16 ++++++++--------
+ radios/ble/zephyr/samples/bluetooth/hci_uart/nrf5.conf   | 15 ++++++++++++++-
+ .../samples/bluetooth/hci_uart/nrf52840_pca10056.overlay |  2 +-
+ .../samples/bluetooth/hci_uart/nrf52_pca10040.overlay    |  2 +-
+ radios/ble/zephyr/subsys/bluetooth/controller/hci/hci.c  |  6 ++++++
+ 9 files changed, 46 insertions(+), 25 deletions(-)
+
+Import of Zephyr GIT master circa 4/30/18
+ ...
+ 2737 files changed, 576976 insertions(+), 58403 deletions(-)
+
+Import of v1.11.0 Zephyr package for use on Nordic 52832/52840 chip
+ ...
+ 8812 files changed, 5788729 insertions(+)
+

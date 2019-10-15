@@ -1,0 +1,30 @@
+/dts-v1/;
+
+#include <ti/cc32xx.dtsi>
+
+/ {
+	model = "TI CC3220SF LaunchXL";
+	compatible = "ti,cc3220sf-launchxl", "ti,cc3220sf", "ti,cc32xx";
+
+	aliases {
+		uart-0 = &uart0;
+		uart-1 = &uart1;
+		i2c-0 = &i2c0;
+	};
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash1;
+		zephyr,console = &uart0;
+	};
+};
+
+&uart0 {
+	status = "ok";
+	current-speed = <115200>;
+};
+
+&i2c0 {
+	status = "ok";
+	clock-frequency = <I2C_BITRATE_FAST>;
+};

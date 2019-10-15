@@ -1,0 +1,11 @@
+# /etc/securetty: list of terminals on which root is allowed to login.
+# See securetty(5) and login(1).
+console
+
+# TI OMAP SoCs
+ttyO0
+
+# NXP/Freescale consoles
+ttymxc0
+ttymxc3
+

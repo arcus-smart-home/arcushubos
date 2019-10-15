@@ -1,0 +1,6 @@
+sample:
+  name: Mass Storage
+tests:
+  test:
+    platform_whitelist: arduino_101
+    tags: msd usb

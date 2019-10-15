@@ -1,0 +1,7 @@
+sample:
+  name: Grove LCD Sample
+tests:
+  test:
+    tags: drivers
+    harness: grove
+    depends_on: i2c

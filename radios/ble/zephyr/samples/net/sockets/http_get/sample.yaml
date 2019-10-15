@@ -1,0 +1,8 @@
+sample:
+  description: BSD Sockets API HTTP GET example
+  name: socket_http_get
+tests:
+  test:
+    harness: net
+    min_ram: 32
+    tags: net

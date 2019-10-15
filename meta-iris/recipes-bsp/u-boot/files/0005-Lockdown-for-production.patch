@@ -1,0 +1,50 @@
+From e2091539a8b0df0acf6a3093ba30a576563d2487 Mon Sep 17 00:00:00 2001
+Date: Wed, 13 Jun 2018 15:00:45 -0400
+Subject: [PATCH] Lockdown for production
+
+---
+ include/configs/mx6imagic.h        | 6 +++++-
+ include/configs/mx6imagic_common.h | 3 ++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/include/configs/mx6imagic.h b/include/configs/mx6imagic.h
+index c1de439..a819514 100644
+--- a/include/configs/mx6imagic.h
++++ b/include/configs/mx6imagic.h
+@@ -24,7 +24,11 @@
+ #define CONFIG_SYS_PROMPT "MX6Q IMAGIC U-Boot > "
+ #define CONFIG_FAT_WRITE
+ 
+-#define CONFIG_BOOTDELAY        1
++/* IRIS Change - disable bootdelay for production and silence output */
++/* #define CONFIG_BOOTDELAY        1 */
++#define CONFIG_BOOTDELAY        0
++#define CONFIG_SILENT_CONSOLE
++#define CONFIG_SILENT_U_BOOT_ONLY
+ 
+ #define CONFIG_CMD_IMX_DOWNLOAD_MODE
+ 
+diff --git a/include/configs/mx6imagic_common.h b/include/configs/mx6imagic_common.h
+index 91e8798..d20168e 100644
+--- a/include/configs/mx6imagic_common.h
++++ b/include/configs/mx6imagic_common.h
+@@ -148,6 +148,7 @@
+ 	"fdt_addr=0x18000000\0" \
+ 	"boot_fdt=try\0" \
+ 	"ip_dyn=yes\0" \
++	"silent=1\0" \
+ 	"console=" CONFIG_CONSOLE_DEV "\0" \
+ 	"dfuspi=dfu 0 sf 0:0:10000000:0\0" \
+ 	"dfu_alt_info_spl=spl raw 0x400\0" \
+@@ -177,7 +178,7 @@
+ 	EMMC_ENV	  \
+ 	"smp=" CONFIG_SYS_NOSMP "\0"\
+ 	"bootargs_mmc=setenv bootargs ${bootargs} " \
+-		"root=${mmcroot} rootfstype=${mmcrootfstype} fec_mac=dc:07:c1:00:ed:85\0" \
++		"root=${mmcroot} rootfstype=${mmcrootfstype} quiet fec_mac=dc:07:c1:00:ed:85\0" \
+ 	"bootargs_base=setenv bootargs console=${console},${baudrate} ${smp} \0"\
+ 	"loadbootscript=" \
+ 		"load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
+-- 
+2.7.4
+

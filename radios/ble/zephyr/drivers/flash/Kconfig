@@ -1,0 +1,89 @@
+# Kconfig - Flash driver configuration options
+
+#
+# Copyright (c) 2016 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+#
+# Flash driver
+#
+config FLASH_HAS_DRIVER_ENABLED
+	bool
+	default n
+	help
+	  This option is enabled when any flash driver is enabled.
+
+config FLASH_HAS_PAGE_LAYOUT
+	bool
+	default n
+	help
+	  This option is enabled when the SoC flash driver supports
+	  retrieving the layout of flash memory pages.
+
+menuconfig FLASH
+	bool
+	prompt "Flash hardware support"
+	default n
+	help
+	  Enable support for the flash hardware.
+
+config FLASH_PAGE_LAYOUT
+	bool "API for retrieving the layout of pages"
+	depends on FLASH && FLASH_HAS_PAGE_LAYOUT
+	default n
+	help
+	  Enables API for retrieving the layout of flash memory pages.
+
+config SOC_FLASH_NRF
+	bool "Nordic Semiconductor nRF flash driver"
+	depends on FLASH && SOC_FAMILY_NRF
+	default n
+	select FLASH_HAS_PAGE_LAYOUT
+	select FLASH_HAS_DRIVER_ENABLED
+	help
+	  Enables Nordic Semiconductor nRF flash driver.
+
+config SOC_FLASH_NRF_RADIO_SYNC
+	bool "Nordic nRFx flash driver synchronized with radio"
+	depends on SOC_FLASH_NRF && BT_CTLR
+	default y
+	help
+	  Enable synchronization between flash memory driver and radio.
+
+config SOC_FLASH_MCUX
+	bool "MCUX flash shim driver"
+	depends on FLASH && HAS_MCUX
+	select FLASH_HAS_PAGE_LAYOUT
+	select FLASH_HAS_DRIVER_ENABLED
+	default n
+	help
+	  Enables the MCUX flash shim driver.
+	  WARNING: This driver will disable the system interrupts for
+	  the duration of the flash erase/write operations. This will
+	  have an impact on the overall system performance - whether
+	  this is acceptable or not will depend on the use case.
+
+config SOC_FLASH_NIOS2_QSPI
+	bool "Nios-II QSPI flash driver"
+	depends on FLASH && HAS_ALTERA_HAL
+	default n
+	select FLASH_HAS_DRIVER_ENABLED
+	help
+	  Enables the Nios-II QSPI flash driver.
+
+config SOC_FLASH_NIOS2_QSPI_DEV_NAME
+	string "Nios-II QSPI flash device name"
+	depends on SOC_FLASH_NIOS2_QSPI
+	default "NIOS2_QSPI_FLASH"
+	help
+	  Specify the device name for the QSPI flash driver.
+
+source "drivers/flash/Kconfig.qmsi"
+
+source "drivers/flash/Kconfig.stm32"
+
+source "drivers/flash/Kconfig.sam0"
+
+source "drivers/flash/Kconfig.w25qxxdv"

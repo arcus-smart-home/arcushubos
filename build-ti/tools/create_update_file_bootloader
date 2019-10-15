@@ -1,0 +1,67 @@
+#!/bin/sh
+
+#
+# Copyright 2019 Arcus Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+PREFIX='hubBL'
+BUILD_IMAGE="../tmp/sysroots-components/x86_64/iris-utils-native/usr/bin/build_image"
+
+# Remove existing update directory
+cd tmp/deploy/images/beaglebone
+rm -rf update
+
+mkdir update
+
+# Copy in files
+cp MLO-beaglebone update/
+cp u-boot-beaglebone.img update/
+cp uImage-beaglebone.bin update/
+cp uImage-am335x-boneblack.dtb update/
+cp $1-beaglebone.squashfs update/core-image-minimal-iris-beaglebone.squashfs
+
+# Add in latest Zwave firmware
+ZWAVE_FIRMWARE=../../../../../radios/zwave/SDK/ProductPlus/Bin/SerialAPI_Controller_Static/serialapi_controller_static_ZM5304_US.hex
+srec_cat ${ZWAVE_FIRMWARE} -intel -o update/zwave-firmware.bin -binary
+
+# Add in latest Zigbee firmware
+ZIGBEE_FIRMWARE=../../../../../radios/zigbee/gecko_sdk/protocol/zigbee/ncp-images/em3587/ncp-uart-xon-xoff-use-with-serial-uart-btl-6.2.3.ebl
+ZIGBEE_FIRMWARE_HWFLOW=../../../../../radios/zigbee/gecko_sdk/protocol/zigbee/ncp-images/em3587/ncp-uart-rts-cts-use-with-serial-uart-btl-6.2.3.ebl
+cp ${ZIGBEE_FIRMWARE} update/zigbee-firmware.bin
+cp ${ZIGBEE_FIRMWARE_HWFLOW} update/zigbee-firmware-hwflow.bin
+
+# Add in latest BLE firmware
+BLE_FIRMWARE=../../../../../radios/ble/TI-CC254x/Accessories/HexFiles/HostTestReleaseCC2541-SBL.bin
+BLE_FIRMWARE_HWFLOW=../../../../../radios/ble/TI-CC254x/Accessories/HexFiles/HostTestReleaseCC2541-SBL-hwflow.bin
+cp ${BLE_FIRMWARE} update/ble-firmware.bin
+cp ${BLE_FIRMWARE_HWFLOW} update/ble-firmware-hwflow.bin
+
+# Make sha256 checksum file
+cd update
+sha256sum * > sha256sums.txt
+
+# Make archive
+cd ..
+tar cvfz i2hubos_update_bootloader.bin update/
+
+# Create image file
+cd ../../../../tools
+$BUILD_IMAGE -p $PREFIX -c ALL ../tmp/deploy/images/beaglebone/i2hubos_update_bootloader.bin
+
+echo "Update file with bootloader created." 1>&2
+
+cp ../tmp/deploy/images/beaglebone/i2hubos_update_bootloader.bin /tftpboot
+cp -u $PREFIX* /tftpboot
+

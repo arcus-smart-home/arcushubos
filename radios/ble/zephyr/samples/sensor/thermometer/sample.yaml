@@ -1,0 +1,6 @@
+sample:
+  name: Temperature Sensor
+tests:
+  test:
+    tags: samples
+    harness: sensor

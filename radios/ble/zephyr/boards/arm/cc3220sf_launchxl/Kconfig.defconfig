@@ -1,0 +1,16 @@
+# Kconfig - TI CC3220SF LaunchXL board configuration
+#
+
+if BOARD_CC3220SF_LAUNCHXL
+
+config BOARD
+	default "cc3220sf_launchxl"
+
+if I2C
+
+config I2C_CC32XX
+	def_bool y
+
+endif # I2C
+
+endif # BOARD_CC3220SF_LAUNCHXL

@@ -1,0 +1,47 @@
+# Kconfig - OLIMEXINO-STM32 board configuration
+#
+# Copyright (c) 2016, I-SENSE group of ICCS
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+if BOARD_OLIMEXINO_STM32
+
+config BOARD
+	default "olimexino_stm32"
+
+if UART_CONSOLE
+
+config UART_STM32_PORT_1
+	default y
+
+endif # UART_CONSOLE
+
+if I2C
+
+config I2C_2
+	default y
+
+endif # I2C
+
+if SPI
+
+config SPI_STM32_INTERRUPT
+	default y
+
+config SPI_1
+	default y
+
+config SPI_2
+	default y
+
+endif # SPI
+
+if PWM
+
+config PWM_STM32_1
+	default y
+
+endif # PWM
+
+endif # BOARD_OLIMEXINO_STM32

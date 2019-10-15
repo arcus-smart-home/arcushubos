@@ -1,0 +1,23 @@
+# Kconfig - external source code configuration options
+
+#
+# Copyright (c) 2016 Linaro Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menu "External Sources"
+
+source "ext/hal/Kconfig"
+
+source "ext/lib/crypto/Kconfig"
+
+source "ext/lib/encoding/Kconfig"
+
+source "ext/lib/ipc/open-amp/Kconfig"
+
+source "ext/lib/mgmt/Kconfig"
+
+source "ext/debug/Kconfig"
+
+endmenu

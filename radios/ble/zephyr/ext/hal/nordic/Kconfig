@@ -1,0 +1,23 @@
+#
+# Copyright (c) 2016 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config HAS_NORDIC_DRIVERS
+	bool
+
+config HAS_NRFX
+	bool
+
+config NRFX_SPI
+	bool
+
+config NRFX_SPIM
+	bool
+
+config NRFX_SPIS
+	bool
+
+config NRFX_WDT
+	bool

@@ -1,0 +1,39 @@
+[package]
+name = "bootsim"
+version = "0.1.0"
+authors = ["David Brown <davidb@davidb.org>"]
+
+[features]
+default = []
+
+sig-rsa = ["mcuboot-sys/sig-rsa"]
+sig-ecdsa = ["mcuboot-sys/sig-ecdsa"]
+overwrite-only = ["mcuboot-sys/overwrite-only"]
+validate-slot0 = ["mcuboot-sys/validate-slot0"]
+
+[build-dependencies]
+gcc = "0.3.54"
+
+[dependencies]
+libc = "0.2.0"
+rand = "0.3.0"
+docopt = "0.8"
+serde = "1.0"
+serde_derive = "1.0"
+log = "0.3"
+env_logger = "0.4"
+simflash = { path = "simflash" }
+mcuboot-sys = { path = "mcuboot-sys" }
+ring = { version = "0.12.1", features = ["rsa_signing"] }
+untrusted = "0.5"
+pem = "0.4"
+
+# The simulator runs very slowly without optimization.  A value of 1
+# compiles in about half the time, but runs about 5-6 times slower.  2
+# and 3 are hardly different in either compile time or performance.
+# Use 2 in case that makes the code slightly more debuggable.
+[profile.test]
+opt-level = 2
+
+[profile.dev]
+opt-level = 2

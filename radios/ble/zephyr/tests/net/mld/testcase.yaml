@@ -1,0 +1,4 @@
+tests:
+  net.mld:
+    tags: net mld
+    depends_on: netif

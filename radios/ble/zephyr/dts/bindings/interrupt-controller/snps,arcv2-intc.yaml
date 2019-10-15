@@ -1,0 +1,35 @@
+#
+# Copyright (c) 2018, synopsys
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+---
+title: ARCV2 Interrupt Controller
+version: 0.1
+
+description: >
+    This binding describes the ARCV2 IRQ controller
+
+properties:
+    compatible:
+      category: required
+      type: string
+      description: compatible strings
+      constraint: "snps,arcv2-intc"
+
+    reg:
+      category: required
+      type: int
+      description: mmio register space
+      generation: define
+
+    arc,num-irq-priority-bits:
+      category: required
+      type: int
+      description: number of bits of IRQ priorities
+      generation: define
+
+"#cells":
+  - irq
+  - priority
+...

@@ -1,0 +1,6 @@
+sample:
+  name: Pong game using BBC Micro:bit
+tests:
+  test:
+    platform_whitelist: bbc_microbit
+    tags: samples

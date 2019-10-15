@@ -1,0 +1,7 @@
+identifier: stm32l496g_disco
+name: STM32L496G-DISCO
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gccarmemb

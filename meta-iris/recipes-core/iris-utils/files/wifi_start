@@ -1,0 +1,89 @@
+#!/bin/sh
+
+#
+# Copyright 2019 Arcus Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+INTF=$1
+WPACFG=/data/config/wpa_supplicant.conf
+WIFICFG=/data/config/wifiCfg
+
+# Need to have a config file
+if [ ! -f $WIFICFG ]; then
+    echo "Wireless configuration is not present, cannot start wireless!" 1>&2
+    exit 1
+fi
+
+# Get config
+SSID="$(cat $WIFICFG | grep ssid | sed 's/^.*: //')"
+SECURITY="$(cat $WIFICFG | grep security | sed 's/^.*: //')"
+KEY="$(cat $WIFICFG | grep key | sed 's/^.*: //')"
+
+# Need to have a SSID to try connection
+if [ "$SSID" == "" ]; then
+    echo "Wireless configuration is not valid, cannot start wireless!" 1>&2
+    exit 1
+fi
+
+# Terminate any existing connection
+if [ -f /var/run/udhcpc.eth0.pid ]; then
+    kill -9 $(cat /var/run/udhcpc.eth0.pid) > /dev/null 2>&1
+fi
+if [ -f /var/run/udhcpc.wlan0.pid ]; then
+    kill -9 $(cat /var/run/udhcpc.wlan0.pid) > /dev/null 2>&1
+fi
+/sbin/ifdown $INTF > /dev/null 2>&1
+/usr/bin/killall wpa_supplicant > /dev/null 2>&1
+/sbin/ifconfig $INTF down > /dev/null 2>&1
+sleep 1
+
+# Setup depend on mode
+/sbin/ifconfig $INTF up
+case $SECURITY in
+    *WPA* )
+	/usr/bin/wpa_passphrase "$SSID" "$KEY" > $WPACFG
+	/usr/sbin/wpa_supplicant -B -D wext -i $INTF -c $WPACFG
+	/sbin/ifup $INTF
+	;;
+
+    *WEP* )
+	# Use wpa_supplicant for WEP config as well as there are issues
+	#  switching to WEP (using iwconfig) after wpa_supplicant has been
+	#  running
+	KEYLEN=`echo -n $KEY | wc -m`
+	if [ $KEYLEN == 5 ] || [ $KEYLEN == 13 ]; then
+	    KEYSTR="\"$KEY\""
+	else
+	    KEYSTR=$KEY
+	fi
+	cat > $WPACFG << EOF
+network={
+        ssid="$SSID"
+        key_mgmt=NONE
+        wep_key0=$KEYSTR
+        wep_tx_keyidx=0
+}
+EOF
+	/usr/sbin/wpa_supplicant -B -D wext -i $INTF -c $WPACFG
+	/sbin/ifup $INTF &
+	;;
+
+    * )
+	/sbin/iwconfig $INTF mode Managed
+	/sbin/iwconfig $INTF essid "$SSID"
+	/sbin/ifup $INTF
+	;;
+esac
+

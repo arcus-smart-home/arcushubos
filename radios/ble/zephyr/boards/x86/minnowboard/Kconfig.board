@@ -1,0 +1,5 @@
+
+config BOARD_MINNOWBOARD
+	bool "MinnowBoard Max"
+	depends on SOC_ATOM
+	select HAS_DTS

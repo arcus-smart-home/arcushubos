@@ -1,0 +1,76 @@
+/dts-v1/;
+
+#include <nxp/nxp_kw2xd.dtsi>
+
+/ {
+	model = "NXP USB-KW24D512 board";
+	compatible = "nxp,usb-kw24d512", "nxp,kw24d512", "nxp,kw2xd";
+
+	aliases {
+		uart-0 = &uart0;
+		pinmux-a = &pinmux_a;
+		pinmux-b = &pinmux_b;
+		pinmux-c = &pinmux_c;
+		pinmux-d = &pinmux_d;
+		pinmux-e = &pinmux_e;
+		gpio-a = &gpioa;
+		gpio-b = &gpiob;
+		gpio-c = &gpioc;
+		gpio-d = &gpiod;
+		gpio-e = &gpioe;
+		i2c-0 = &i2c0;
+		led0 = &led_0;
+		led1 = &led_1;
+		sw0 = &user_button_1;
+	};
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,console = &uart0;
+		zephyr,uart-pipe = &uart0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led_0: led@0 {
+			gpios = <&gpiod 4 GPIO_INT_ACTIVE_LOW>;
+			label = "User LD1";
+		};
+		led_1: led@1 {
+			gpios = <&gpiod 5 GPIO_INT_ACTIVE_LOW>;
+			label = "User LD2";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button_1: button@0 {
+			label = "User SW1";
+			gpios = <&gpioc 4 GPIO_INT_ACTIVE_LOW>;
+		};
+	};
+};
+
+&adc0 {
+	status = "ok";
+};
+
+&i2c0 {
+	status = "ok";
+};
+
+&pwm1 {
+	status = "ok";
+};
+
+&uart0 {
+	status = "ok";
+	current-speed = <115200>;
+};
+
+&usbd {
+	compatible = "nxp,kinetis-usbd";
+	status = "ok";
+	num-bidir-endpoints = <8>;
+};

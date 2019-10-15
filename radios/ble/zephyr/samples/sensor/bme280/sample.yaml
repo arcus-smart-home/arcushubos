@@ -1,0 +1,12 @@
+sample:
+  name: BME280 Sensor sample
+tests:
+  test:
+    harness: sensor
+    tags: samples sensor
+    depends_on: i2c
+  test_spi:
+    harness: sensor
+    tags: samples sensor
+    depends_on: spi
+    extra_args: "CONF_FILE=prj_spi.conf"

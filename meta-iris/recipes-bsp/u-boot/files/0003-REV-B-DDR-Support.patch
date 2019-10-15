@@ -1,0 +1,180 @@
+From 1f4efa670b8ca58922b19ef9d42c0265286b5a7f Mon Sep 17 00:00:00 2001
+Date: Thu, 10 May 2018 09:06:19 -0400
+Subject: [PATCH] REV B DDR Support
+
+---
+ board/freescale/mx6imagic/mx6imagic.c              |   2 +-
+ .../mx6imagic/mx6q_2x_MT41K256M16TW-107.cfg        | 136 +++++++++++++++++++++
+ configs/mx6dlimagic_defconfig                      |   2 +-
+ 3 files changed, 138 insertions(+), 2 deletions(-)
+ create mode 100644 board/freescale/mx6imagic/mx6q_2x_MT41K256M16TW-107.cfg
+
+diff --git a/board/freescale/mx6imagic/mx6imagic.c b/board/freescale/mx6imagic/mx6imagic.c
+index 226445e..473b6a1 100644
+--- a/board/freescale/mx6imagic/mx6imagic.c
++++ b/board/freescale/mx6imagic/mx6imagic.c
+@@ -1187,7 +1187,7 @@ int board_late_init(void)
+ 
+ int checkboard(void)
+ {
+-	puts("Board: IMX-D-IMAGIC-V1.00 1G-DDR3-MT41K256M16HA-125 Version: 1.0.0\n");
++	puts("Board: IMX-D-IMAGIC-V1.00 1G-DDR3-MT41K256M16TW-107 Version: 1.0.0\n");
+ 	return 0;
+ }
+ 
+diff --git a/board/freescale/mx6imagic/mx6q_2x_MT41K256M16TW-107.cfg b/board/freescale/mx6imagic/mx6q_2x_MT41K256M16TW-107.cfg
+new file mode 100644
+index 0000000..729abe4
+--- /dev/null
++++ b/board/freescale/mx6imagic/mx6q_2x_MT41K256M16TW-107.cfg
+@@ -0,0 +1,136 @@
++/*
++ * Copyright (C) 2014-2016 Freescale Semiconductor, Inc.
++ *
++ * SPDX-License-Identifier:	GPL-2.0+
++ *
++ * Refer docs/README.imxmage for more details about how-to configure
++ * and create imximage boot image
++ *
++ * The syntax is taken as close as possible with the kwbimage
++ */
++
++#define __ASSEMBLY__
++#include <config.h>
++/* image version */
++
++IMAGE_VERSION 2
++
++/*
++ * Boot Device : one of
++ * spi, sd (the board has no nand neither onenand)
++ */
++
++BOOT_FROM	sd
++#ifdef CONFIG_USE_PLUGIN
++/*PLUGIN    plugin-binary-file    IRAM_FREE_START_ADDR*/
++PLUGIN board/freescale/mx6imagic/plugin.bin 0x00907000
++#else
++
++#ifdef CONFIG_SECURE_BOOT
++CSF CONFIG_CSF_SIZE
++#endif
++
++/*
++ * Device Configuration Data (DCD)
++ *
++ * Each entry must have the format:
++ * Addr-type           Address        Value
++ *
++ * where:
++ *	Addr-type register length (1,2 or 4 bytes)
++ *	Address	  absolute address of the register
++ *	value	  value to be stored in the register
++ */
++DATA 4	0x020e0774 0x000C0000
++DATA 4	0x020e0754 0x00000000
++DATA 4	0x020e04ac 0x00000028
++DATA 4	0x020e04b0 0x00000028
++DATA 4	0x020e0464 0x00000028
++DATA 4	0x020e0490 0x00000028
++DATA 4	0x020e074c 0x00000028
++DATA 4	0x020e0494 0x00000028
++DATA 4	0x020e04a0 0x00000000
++DATA 4	0x020e04b4 0x00000028
++DATA 4	0x020e04b8 0x00000028
++DATA 4	0x020e076c 0x00000028
++DATA 4	0x020e0750 0x00020000
++DATA 4	0x020e04bc 0x00000028
++DATA 4	0x020e04c0 0x00000028
++DATA 4	0x020e04c4 0x00000028
++DATA 4	0x020e04c8 0x00000028
++DATA 4	0x020e04cc 0x00000028
++DATA 4	0x020e04d0 0x00000028
++DATA 4	0x020e04d4 0x00000028
++DATA 4	0x020e04d8 0x00000028
++DATA 4	0x020e0760 0x00020000
++DATA 4	0x020e0764 0x00000028
++DATA 4	0x020e0770 0x00000028
++DATA 4	0x020e0778 0x00000028
++DATA 4	0x020e077c 0x00000028
++DATA 4	0x020e0780 0x00000028
++DATA 4	0x020e0784 0x00000028
++DATA 4	0x020e078c 0x00000028
++DATA 4	0x020e0748 0x00000028
++DATA 4	0x020e0470 0x00000028
++DATA 4	0x020e0474 0x00000028
++DATA 4	0x020e0478 0x00000028
++DATA 4	0x020e047c 0x00000028
++DATA 4	0x020e0480 0x00000028
++DATA 4	0x020e0484 0x00000028
++DATA 4	0x020e0488 0x00000028
++DATA 4	0x020e048c 0x00000028
++DATA 4	0x021b0800 0xa1390003
++DATA 4	0x021b080c 0x005F0065/**/
++DATA 4	0x021b0810 0x0051005B
++DATA 4	0x021b480c 0x001F001F
++DATA 4	0x021b4810 0x001F001F
++DATA 4	0x021b083c 0x03200324 /*yesq*/
++DATA 4	0x021b0840 0x03080304 /*yesq*/
++DATA 4	0x021b483c 0x4201020C
++DATA 4	0x021b4840 0x01660172
++DATA 4	0x021b0848 0x44464E4A /**/
++DATA 4	0x021b4848 0x4A4F5049
++DATA 4	0x021b0850 0x3232282C /**/
++DATA 4	0x021b4850 0x3238372B
++DATA 4	0x021b081c 0x33333333
++DATA 4	0x021b0820 0x33333333
++DATA 4	0x021b0824 0x33333333
++DATA 4	0x021b0828 0x33333333
++DATA 4	0x021b08b8 0x00000800
++DATA 4	0x021b0004 0x0002002D
++DATA 4	0x021b0008 0x00333040
++DATA 4	0x021b000c 0x676B52F3
++DATA 4	0x021b0010 0xB66D8B63
++DATA 4	0x021b0014 0x01FF00DB
++DATA 4	0x021b0018 0x00011740
++DATA 4	0x021b001c 0x00008000
++DATA 4	0x021b002c 0x000026d2
++DATA 4	0x021b0030 0x006B1023
++DATA 4	0x021b0040 0x00000027
++DATA 4	0x021b0000 0x84190000
++DATA 4	0x021b001c 0x02008032
++DATA 4	0x021b001c 0x00008033
++DATA 4	0x021b001c 0x00048031
++DATA 4	0x021b001c 0x15208030
++DATA 4  0x021b001c 0x04008040
++DATA 4	0x021b0020 0x00007800
++DATA 4	0x021b0818 0x00022227
++DATA 4	0x021b0004 0x0002556D
++DATA 4	0x021b0404 0x00011006
++DATA 4	0x021b001c 0x00000000
++
++/* set the default clock gate to save power */
++DATA 4 0x020c4068 0x00C03F3F
++DATA 4 0x020c406c 0x0030FC03
++DATA 4 0x020c4070 0x0FFFC000
++DATA 4 0x020c4074 0x3FF00000
++DATA 4 0x020c4078 0x00FFF300
++DATA 4 0x020c407c 0x0F0000C3
++DATA 4 0x020c4080 0x000003FF
++
++/* enable AXI cache for VDOA/VPU/IPU */
++DATA 4 0x020e0010 0xF00000CF
++/* set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7 */
++DATA 4 0x020e0018 0x007F007F
++DATA 4 0x020e001c 0x007F007F
++#endif
+diff --git a/configs/mx6dlimagic_defconfig b/configs/mx6dlimagic_defconfig
+index abab35f..acf15e6 100644
+--- a/configs/mx6dlimagic_defconfig
++++ b/configs/mx6dlimagic_defconfig
+@@ -1,5 +1,5 @@
+ CONFIG_ARM=y
+ CONFIG_ARCH_MX6=y
+ CONFIG_TARGET_MX6IMAGIC=y
+-CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/freescale/mx6imagic/mx6dlimagic.cfg,MX6DL,SYS_USE_SPINOR"
++CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/freescale/mx6imagic/mx6q_2x_MT41K256M16TW-107.cfg,MX6DL,SYS_USE_SPINOR"
+ CONFIG_CMD_GPIO=y
+-- 
+2.7.4
+

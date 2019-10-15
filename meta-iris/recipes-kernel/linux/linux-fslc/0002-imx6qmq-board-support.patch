@@ -1,0 +1,324 @@
+From 272fe7e70e1b3a58d94b1d48b3499045bfe53151 Mon Sep 17 00:00:00 2001
+Date: Tue, 28 Nov 2017 15:36:43 -0500
+Subject: [PATCH] imx6qmq board support
+
+---
+ arch/arm/mach-imx/Kconfig         |  11 ++
+ arch/arm/mach-imx/Makefile        |   2 +
+ arch/arm/mach-imx/mach-imx6q_mq.c | 246 ++++++++++++++++++++++++++++++++++++++
+ drivers/clk/imx/clk-imx6q.c | 4 ++++
+ 4 files changed, 263 insertions(+)
+ create mode 100644 arch/arm/mach-imx/mach-imx6q_mq.c
+
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index 782699e..7364f82 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -504,6 +504,17 @@ config SOC_IMX6Q
+ 	help
+ 	  This enables support for Freescale i.MX6 Quad processor.
+ 
++config SOC_IMX6Q_MQ
++	bool "i.MX6Q_MQ support"
++	select ARM_ERRATA_764369 if SMP
++	select PCI_DOMAINS if PCI
++	select PINCTRL_IMX6Q
++	select SOC_IMX6
++	select MXC_MLB150
++
++	help
++	  This enables support for Freescale i.MX6 Quad processor.
++
+ config SOC_IMX6SL
+ 	bool "i.MX6 SoloLite support"
+ 	select PINCTRL_IMX6SL
+diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
+index 8ff7105..4fd260a 100644
+--- a/arch/arm/mach-imx/Makefile
++++ b/arch/arm/mach-imx/Makefile
+@@ -26,6 +26,7 @@ obj-$(CONFIG_MXC_DEBUG_BOARD) += 3ds_debugboard.o
+ ifeq ($(CONFIG_CPU_IDLE),y)
+ obj-$(CONFIG_SOC_IMX5) += cpuidle-imx5.o
+ obj-$(CONFIG_SOC_IMX6Q) += cpuidle-imx6q.o
++obj-$(CONFIG_SOC_IMX6Q_MQ) += cpuidle-imx6q.o
+ obj-$(CONFIG_SOC_IMX6SL) += cpuidle-imx6sl.o
+ obj-$(CONFIG_SOC_IMX6SX) += cpuidle-imx6sx.o
+ obj-$(CONFIG_SOC_IMX6UL) += cpuidle-imx6sx.o
+@@ -77,6 +78,7 @@ obj-$(CONFIG_SMP) += headsmp.o platsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU) += hotplug.o
+ endif
+ obj-$(CONFIG_SOC_IMX6Q) += mach-imx6q.o
++obj-$(CONFIG_SOC_IMX6Q_MQ) += mach-imx6q_mq.o
+ obj-$(CONFIG_SOC_IMX6SL) += mach-imx6sl.o
+ obj-$(CONFIG_SOC_IMX6SX) += mach-imx6sx.o
+ obj-$(CONFIG_SOC_IMX6UL) += mach-imx6ul.o
+diff --git a/arch/arm/mach-imx/mach-imx6q_mq.c b/arch/arm/mach-imx/mach-imx6q_mq.c
+new file mode 100644
+index 0000000..ebc65ad
+--- /dev/null
++++ b/arch/arm/mach-imx/mach-imx6q_mq.c
+@@ -0,0 +1,246 @@
++/*
++ * Copyright 2011-2015 Freescale Semiconductor, Inc.
++ * Copyright 2011 Linaro Ltd.
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++#include <linux/clk.h>
++#include <linux/clkdev.h>
++#include <linux/cpu.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/irqchip.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
++#include <linux/pm_opp.h>
++#include <linux/pci.h>
++#include <linux/phy.h>
++#include <linux/reboot.h>
++#include <linux/regmap.h>
++#include <linux/micrel_phy.h>
++#include <linux/mfd/syscon.h>
++#include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
++#include <linux/of_net.h>
++#include <asm/mach/arch.h>
++#include <asm/mach/map.h>
++#include <asm/system_misc.h>
++
++#include "common.h"
++#include "cpuidle.h"
++#include "hardware.h"
++
++
++/*
++ * fixup for PLX PEX8909 bridge to configure GPIO1-7 as output High
++ * as they are used for slots1-7 PERST#
++ */
++static void ventana_pciesw_early_fixup(struct pci_dev *dev)
++{
++	u32 dw;
++
++	if (!of_machine_is_compatible("gw,ventana"))
++		return;
++
++	if (dev->devfn != 0)
++		return;
++
++	pci_read_config_dword(dev, 0x62c, &dw);
++	dw |= 0xaaa8; // GPIO1-7 outputs
++	pci_write_config_dword(dev, 0x62c, dw);
++
++	pci_read_config_dword(dev, 0x644, &dw);
++	dw |= 0xfe;   // GPIO1-7 output high
++	pci_write_config_dword(dev, 0x644, dw);
++
++	msleep(100);
++}
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_PLX, 0x8609, ventana_pciesw_early_fixup);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_PLX, 0x8606, ventana_pciesw_early_fixup);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_PLX, 0x8604, ventana_pciesw_early_fixup);
++
++static int lan8720_phy_fixup(struct phy_device *dev)
++{
++	u16 val;
++
++	/*check phy power*/
++	val = phy_read(dev, 0x0);
++	if (val & BMCR_PDOWN)
++		phy_write(dev, 0x0, val & ~BMCR_PDOWN);
++
++	return 0;
++}
++
++#define PHY_ID_LAN8720  0x0007c0f0
++
++static void __init imx6q_enet_phy_init(void)
++{
++    phy_register_fixup_for_uid(PHY_ID_LAN8720, 0xfffffff0,
++			       lan8720_phy_fixup);
++}
++
++static void __init imx6q_1588_init(void)
++{
++	struct device_node *np;
++	struct clk *ptp_clk;
++	struct clk *enet_ref;
++	struct regmap *gpr;
++	u32 clksel;
++
++	np = of_find_compatible_node(NULL, NULL, "fsl,imx6q-fec");
++	if (!np) {
++		pr_warn("%s: failed to find fec node\n", __func__);
++		return;
++	}
++
++	ptp_clk = of_clk_get(np, 2);
++	if (IS_ERR(ptp_clk)) {
++		pr_warn("%s: failed to get ptp clock\n", __func__);
++		goto put_node;
++	}
++
++	enet_ref = clk_get_sys(NULL, "enet_ref");
++	if (IS_ERR(enet_ref)) {
++		pr_warn("%s: failed to get enet clock\n", __func__);
++		goto put_ptp_clk;
++	}
++
++	/*
++	 * If enet_ref from ANATOP/CCM is the PTP clock source, we need to
++	 * set bit IOMUXC_GPR1[21].  Or the PTP clock must be from pad
++	 * (external OSC), and we need to clear the bit.
++	 */
++	clksel = clk_is_match(ptp_clk, enet_ref) ?
++				IMX6Q_GPR1_ENET_CLK_SEL_ANATOP :
++				IMX6Q_GPR1_ENET_CLK_SEL_PAD;
++	gpr = syscon_regmap_lookup_by_compatible("fsl,imx6q-iomuxc-gpr");
++	if (!IS_ERR(gpr))
++		regmap_update_bits(gpr, IOMUXC_GPR1,
++				IMX6Q_GPR1_ENET_CLK_SEL_MASK,
++				clksel);
++	else
++		pr_err("failed to find fsl,imx6q-iomux-gpr regmap\n");
++
++	clk_put(enet_ref);
++put_ptp_clk:
++	clk_put(ptp_clk);
++put_node:
++	of_node_put(np);
++}
++
++static void __init imx6q_axi_init(void)
++{
++	struct regmap *gpr;
++	unsigned int mask;
++
++	gpr = syscon_regmap_lookup_by_compatible("fsl,imx6q-iomuxc-gpr");
++	if (!IS_ERR(gpr)) {
++		/*
++		 * Enable the cacheable attribute of VPU and IPU
++		 * AXI transactions.
++		 */
++		mask = IMX6Q_GPR4_VPU_WR_CACHE_SEL |
++			IMX6Q_GPR4_VPU_RD_CACHE_SEL |
++			IMX6Q_GPR4_VPU_P_WR_CACHE_VAL |
++			IMX6Q_GPR4_VPU_P_RD_CACHE_VAL_MASK |
++			IMX6Q_GPR4_IPU_WR_CACHE_CTL |
++			IMX6Q_GPR4_IPU_RD_CACHE_CTL;
++		regmap_update_bits(gpr, IOMUXC_GPR4, mask, mask);
++
++		/* Increase IPU read QoS priority */
++		regmap_update_bits(gpr, IOMUXC_GPR6,
++				IMX6Q_GPR6_IPU1_ID00_RD_QOS_MASK |
++				IMX6Q_GPR6_IPU1_ID01_RD_QOS_MASK,
++				(0xf << 16) | (0x7 << 20));
++		regmap_update_bits(gpr, IOMUXC_GPR7,
++				IMX6Q_GPR7_IPU2_ID00_RD_QOS_MASK |
++				IMX6Q_GPR7_IPU2_ID01_RD_QOS_MASK,
++				(0xf << 16) | (0x7 << 20));
++	} else {
++		pr_warn("failed to find fsl,imx6q-iomuxc-gpr regmap\n");
++	}
++}
++
++static void __init imx6q_init_machine(void)
++{
++	struct device *parent;
++
++	if (cpu_is_imx6q() && imx_get_soc_revision() == IMX_CHIP_REVISION_2_0)
++		imx_print_silicon_rev("i.MX6QP", IMX_CHIP_REVISION_1_0);
++	else
++		imx_print_silicon_rev(cpu_is_imx6dl() ? "i.MX6DL" : "i.MX6Q",
++				 imx_get_soc_revision());
++
++	parent = imx_soc_device_init();
++	if (parent == NULL)
++		pr_warn("failed to initialize soc device\n");
++
++	imx6q_enet_phy_init();
++
++	of_platform_default_populate(NULL, NULL, parent);
++
++	imx_anatop_init();
++	cpu_is_imx6q() ?  imx6q_pm_init() : imx6dl_pm_init();
++	imx6q_1588_init();
++//	imx6q_axi_init();
++}
++
++static void __init imx6q_init_late(void)
++{
++	/*
++	 * WAIT mode is broken on TO 1.0 and 1.1, so there is no point
++	 * to run cpuidle on them.
++	 */
++	if ((cpu_is_imx6q() && imx_get_soc_revision() > IMX_CHIP_REVISION_1_1)
++		|| (cpu_is_imx6dl() && imx_get_soc_revision() >
++		IMX_CHIP_REVISION_1_0))
++		imx6q_cpuidle_init();
++
++	if (IS_ENABLED(CONFIG_ARM_IMX6Q_CPUFREQ)) {
++		platform_device_register_simple("imx6q-cpufreq", -1, NULL, 0);
++	}
++}
++
++static void __init imx6q_map_io(void)
++{
++	debug_ll_io_init();
++	imx_scu_map_io();
++}
++
++static void __init imx6q_init_irq(void)
++{
++	imx_gpc_check_dt();
++	imx_init_revision_from_anatop();
++	imx_init_l2cache();
++	imx_src_init();
++	irqchip_init();
++	imx6_pm_ccm_init("fsl,imx6q-ccm");
++}
++
++static const char * const imx6q_dt_compat[] __initconst = {
++	"fsl,imx6dl",
++	"fsl,imx6q",
++	"fsl,imx6qp",
++	NULL,
++};
++
++DT_MACHINE_START(IMX6Q, "Freescale i.MX6 Quad/DualLite (Device Tree)")
++	.l2c_aux_val 	= 0,
++	.l2c_aux_mask	= ~0,
++	.smp		= smp_ops(imx_smp_ops),
++	.map_io		= imx6q_map_io,
++	.init_irq	= imx6q_init_irq,
++	.init_machine	= imx6q_init_machine,
++	.init_late      = imx6q_init_late,
++	.dt_compat	= imx6q_dt_compat,
++MACHINE_END
+diff --git a/drivers/clk/imx/clk-imx6q.c b/drivers/clk/imx/clk-imx6q.c
+index 8d518ad..c74afca 100644
+--- a/drivers/clk/imx/clk-imx6q.c
++++ b/drivers/clk/imx/clk-imx6q.c
+@@ -884,6 +884,10 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+ 		clk_prepare_enable(clk[IMX6QDL_CLK_USBPHY2_GATE]);
+ 	}
+ 
++#ifdef CONFIG_SOC_IMX6Q_MQ
++	/* IRIS CHANGE: For 50MHz Enet external clock for correct PHY speed */
++	clk_set_rate(clk[IMX6QDL_CLK_ENET_REF], 50000000);
++#endif
+ 	/*
+ 	 * Let's initially set up CLKO with OSC24M, since this configuration
+ 	 * is widely used by imx6q board designs to clock audio codec.
+-- 
+1.9.1
+

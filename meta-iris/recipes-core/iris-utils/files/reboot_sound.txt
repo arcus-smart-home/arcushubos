@@ -1,0 +1,2 @@
+# Single beep on reboot
+F7, 100, 400

@@ -1,0 +1,296 @@
+From f36483514969ac0e04afcaa63d67e58ed5b1d548 Mon Sep 17 00:00:00 2001
+Date: Tue, 10 Apr 2018 09:23:09 -0400
+Subject: [PATCH] IMX D IMAGIC CUT-2 modifications
+
+---
+ arch/arm/boot/dts/imx6qdl-imagic.dtsi | 77 +++++++++++++++++++++++++++--------
+ drivers/misc/mbi6023.c                |  6 ++-
+ drivers/spi/spidev.c                  | 57 +++++++++++++++++++++++++-
+ include/uapi/linux/spi/spidev.h       |  4 ++
+ 4 files changed, 122 insertions(+), 22 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-imagic.dtsi b/arch/arm/boot/dts/imx6qdl-imagic.dtsi
+index ee0515b..20ff628 100644
+--- a/arch/arm/boot/dts/imx6qdl-imagic.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-imagic.dtsi
+@@ -135,14 +135,14 @@
+ 			gpio-key,wakeup;
+ 			linux,code = <KEY_VOLUMEUP>;
+ 		};
+-/*
++
+ 		volume-down {
+-			label = "Volume Down";
+-			gpios = <&gpio1 5 GPIO_ACTIVE_LOW>;
++			label = "Power Button";
++			gpios = <&gpio4 27 GPIO_ACTIVE_LOW>;
+ 			gpio-key,wakeup;
+-			linux,code = <KEY_VOLUMEDOWN>;
++			linux,code = <KEY_POWER>;
+ 		};
+-*/
++
+ 	};
+ 
+ 	sound {
+@@ -274,7 +274,7 @@
+ 		*/
+ 		gpio-number = <2>;
+ 		gpios = <&gpio3 22 GPIO_ACTIVE_HIGH>,		// USB_OTG_PWR
+-			<&gpio4 30 GPIO_ACTIVE_LOW>;		// LED power enable
++			<&gpio4 30 GPIO_ACTIVE_HIGH>;		// LED power enable
+ 		otg-gpios = <&gpio1 28 GPIO_ACTIVE_HIGH>;	// otg
+ 		status = "okay";
+ 	};
+@@ -453,6 +453,21 @@
+ 
+ };
+ 
++&ecspi2 {
++        fsl,spi-num-chipselects = <1>;
++        cs-gpios = <&gpio2 26 0>;
++        pinctrl-names = "default";
++        pinctrl-0 = <&pinctrl_ecspi2>;
++        status = "okay";
++
++        95hf@0 {
++        compatible = "rohm,dh2228fv";
++        spi-max-frequency = <2000000>;
++        spi-cpha = <1>;
++        reg = <0>;
++        };
++};
++
+ &fec {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_enet>;
+@@ -604,6 +619,26 @@
+ 				MX6QDL_PAD_GPIO_3__GPIO1_IO03 0x80000000	//enable pin
+ 				MX6QDL_PAD_DISP0_DAT20__GPIO5_IO14 0x80000000	//mbi6023 clk
+ 				MX6QDL_PAD_DISP0_DAT21__GPIO5_IO15 0x80000000	//mbi6023 sda
++				MX6QDL_PAD_DISP0_DAT12__GPIO5_IO06  0x80000000  //GPIO2_LED_MB  GPIO_INT
++				MX6QDL_PAD_DISP0_DAT9__GPIO4_IO30  0x80000000   //GPIO1_LED_MB   GPIO_VLED_PWR_EN
++				//MX6QDL_PAD_DISP0_DAT11__GPIO5_IO05 0x80000000   //GPIO0_LED_MB  GPIO_LED_NFC
++				MX6QDL_PAD_DISP0_DAT6__GPIO4_IO27   0x80000000  //GPIO_KEY_BAT_PDF
++				MX6QDL_PAD_DISP0_DAT18__GPIO5_IO12 0x80000000
++
++				MX6QDL_PAD_NANDF_D0__GPIO2_IO00 0x80000000 //WL_REG_ON
++				MX6QDL_PAD_NANDF_D4__GPIO2_IO04 0x80000000 //WL_HOST_WAKE
++				MX6QDL_PAD_NANDF_CS3__GPIO6_IO16 0x80000000 //WIFI_PWR_EN
++				MX6QDL_PAD_KEY_COL2__GPIO4_IO10  0x80000000  //GPIO_5V0_SYS_PWR_EN
++				MX6QDL_PAD_KEY_ROW4__GPIO4_IO15  0x80000000   //GPIO_GG_ALRT
++				MX6QDL_PAD_KEY_COL4__GPIO4_IO14  0x80000000  //GPIO_CMC_STAT
++
++				MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x80000000  //GPIO_DC_DET
++				//MX6QDL_PAD_GPIO_3__GPIO1_IO03 0x80000000  //GPIO_SW_CTR
++				//MX6QDL_PAD_GPIO_4__GPIO1_IO04 0x80000000  //GPIO_WDT_DAT
++
++				MX6QDL_PAD_SD3_DAT3__GPIO7_IO07 0x80000000
++				MX6QDL_PAD_SD3_DAT2__GPIO7_IO06 0x80000000
++				MX6QDL_PAD_SD3_DAT4__GPIO7_IO01 0x80000000
+ 			>;
+ 		};
+ 
+@@ -619,14 +654,14 @@
+ 		pinctrl_flexcan1: flexcan1grp {
+ 			fsl,pins = <
+ 				MX6QDL_PAD_KEY_ROW2__FLEXCAN1_RX        0x17059
+-				MX6QDL_PAD_KEY_COL2__FLEXCAN1_TX	0x17059
++				//MX6QDL_PAD_KEY_COL2__FLEXCAN1_TX	0x17059
+ 			>;
+ 		};
+ 
+ 		pinctrl_flexcan2: flexcan2grp {
+ 			fsl,pins = <
+-				MX6QDL_PAD_KEY_COL4__FLEXCAN2_TX	0x17059
+-				MX6QDL_PAD_KEY_ROW4__FLEXCAN2_RX	0x17059
++				//MX6QDL_PAD_KEY_COL4__FLEXCAN2_TX	0x17059
++				//MX6QDL_PAD_KEY_ROW4__FLEXCAN2_RX	0x17059
+ 			>;
+ 		};
+ 
+@@ -640,6 +675,16 @@
+ 			>;
+ 		};
+ 
++                pinctrl_ecspi2: ecspi2grp {
++                        fsl,pins = <
++                               MX6QDL_PAD_DISP0_DAT19__ECSPI2_SCLK 0x100b1
++                               MX6QDL_PAD_DISP0_DAT16__ECSPI2_MOSI 0x100b1
++                               MX6QDL_PAD_DISP0_DAT17__ECSPI2_MISO 0x100b1
++                               //MX6QDL_PAD_DISP0_DAT18__ECSPI2_SS0  0x1b0b0  //cs0
++			       MX6QDL_PAD_EIM_RW__GPIO2_IO26 0x1b0b0 //cs1
++                        >;
++                };
++
+ 		pinctrl_ecspi1_ads7846_pin: ads7846_pingrp {
+ 			fsl,pins = <
+ 				MX6QDL_PAD_EIM_D21__GPIO3_IO21		0x80000000	//ads7846 int
+@@ -772,10 +817,6 @@
+ 				MX6QDL_PAD_SD1_DAT1__SD1_DATA1		0x17059
+ 				MX6QDL_PAD_SD1_DAT2__SD1_DATA2		0x17059
+ 				MX6QDL_PAD_SD1_DAT3__SD1_DATA3		0x17059
+-
+-				MX6QDL_PAD_NANDF_D0__GPIO2_IO00 0x80000000 //WL_REG_ON
+-				MX6QDL_PAD_NANDF_D4__GPIO2_IO04 0x80000000 //WL_HOST_WAKE
+-				//MX6QDL_PAD_NANDF_CS3__GPIO6_IO16 0x80000000 //WIFI_PWR_EN
+ 			>;
+ 		};
+ 
+@@ -784,12 +825,12 @@
+ 				MX6QDL_PAD_SD3_CMD__SD3_CMD		0x17059
+ 				MX6QDL_PAD_SD3_CLK__SD3_CLK		0x10059
+ 				MX6QDL_PAD_SD3_DAT0__SD3_DATA0		0x17059
+-				MX6QDL_PAD_SD3_DAT1__SD3_DATA1		0x17059
+-				MX6QDL_PAD_SD3_DAT2__SD3_DATA2		0x17059
+-				MX6QDL_PAD_SD3_DAT3__SD3_DATA3		0x17059
++				//MX6QDL_PAD_SD3_DAT1__SD3_DATA1		0x17059
++				//MX6QDL_PAD_SD3_DAT2__SD3_DATA2		0x17059
++				//MX6QDL_PAD_SD3_DAT3__SD3_DATA3		0x17059
+ 
+ 				MX6QDL_PAD_SD3_DAT5__GPIO7_IO00 0x80000000 //sd3 cd
+-				MX6QDL_PAD_SD3_DAT4__GPIO7_IO01 0x80000000 //sd3 wr
++				// MX6QDL_PAD_SD3_DAT4__GPIO7_IO01 0x80000000 //sd3 wr
+ 			>;
+ 		};
+ 
+@@ -812,7 +853,7 @@
+ 	gpio_leds {
+ 		pinctrl_gpio_leds: gpioledsgrp {
+ 			fsl,pins = <
+-				MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x1b0b0
++				//MX6QDL_PAD_GPIO_2__GPIO1_IO02 0x1b0b0
+ 			>;
+ 		};
+ 	};
+diff --git a/drivers/misc/mbi6023.c b/drivers/misc/mbi6023.c
+index 2bafcda..f9c1ca7 100644
+--- a/drivers/misc/mbi6023.c
++++ b/drivers/misc/mbi6023.c
+@@ -41,7 +41,7 @@
+ #define IMX_GPIO_NR(bank, nr)		(((bank) - 1) * 32 + (nr))
+ #define QY_IMX6S_LED_CKI        IMX_GPIO_NR(5 , 14)
+ #define QY_IMX6S_LED_SDI        IMX_GPIO_NR(5 , 15)
+-#define MAX_INDEX               15 // 3 word control, 3x4 data words
++#define MAX_INDEX               39 // 3 word control, 3x12 data words
+ 
+ typedef struct {
+ 	int  mbi6023[MAX_INDEX];
+@@ -140,7 +140,9 @@ static int imx6_MBI6023_probe(struct platform_device *pdev)
+ 	gpio_direction_output(QY_IMX6S_LED_SDI , 0);
+ 	msleep(1);
+ 	 int data[]={
+-	0xfc00,0xfc00,0x0000,	   //标头
++	0xfc00,0xfc02,0x9002,	   //标头
++	0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
++	0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
+ 	0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
+ };
+ 	for(M=0;M<ARRAY_SIZE(data);M++)
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index 4c11fb2..d74240d 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -36,6 +36,12 @@
+ 
+ #include <linux/uaccess.h>
+ 
++#include<linux/miscdevice.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
++#include <linux/timer.h>
++#include <linux/gpio.h>
++#define IMX_GPIO_NR(bank, nr)       (((bank) - 1) * 32 + (nr))
+ 
+ /*
+  * This supports access to SPI devices using normal userspace I/O calls.
+@@ -204,6 +210,37 @@ spidev_write(struct file *filp, const char __user *buf,
+ 	return status;
+ }
+ 
++static int gpio_irq_in(void)
++{
++    gpio_direction_output(IMX_GPIO_NR(5, 5) , 1);
++    msleep(1);
++    //mdelay(1);
++    gpio_direction_output(IMX_GPIO_NR(5, 5) , 0);
++    msleep(1);
++    //mdelay(1);
++    gpio_direction_output(IMX_GPIO_NR(5, 5) , 1);
++    msleep(10);
++    return 0;
++}
++
++static int gpio_cs0_low(void)
++{
++    gpio_direction_output(IMX_GPIO_NR(5, 12) , 0);
++    return 0;
++}
++
++static int gpio_cs0_hig(void)
++{
++    gpio_direction_output(IMX_GPIO_NR(5, 12) , 1);
++    return 0;
++}
++
++static int gpio_irq_out(void)
++{
++    return gpio_get_value(IMX_GPIO_NR(5, 6));
++}
++
++
+ static int spidev_message(struct spidev_data *spidev,
+ 		struct spi_ioc_transfer *u_xfers, unsigned n_xfers)
+ {
+@@ -392,7 +429,18 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	case SPI_IOC_RD_MAX_SPEED_HZ:
+ 		retval = put_user(spidev->speed_hz, (__u32 __user *)arg);
+ 		break;
+-
++	case SPI_IOC_IRQ_IN:
++		retval = gpio_irq_in();
++		break;
++	case SPI_IOC_CSO_LOW:
++		retval = gpio_cs0_low();
++		break;
++	case SPI_IOC_CSO_HIG:
++		retval = gpio_cs0_hig();
++		break;
++	case SPI_IOC_GET_VALUE:
++		retval = gpio_irq_out();
++		break;
+ 	/* write requests */
+ 	case SPI_IOC_WR_MODE:
+ 	case SPI_IOC_WR_MODE32:
+@@ -774,7 +822,12 @@ static int spidev_probe(struct spi_device *spi)
+ 		spi_set_drvdata(spi, spidev);
+ 	else
+ 		kfree(spidev);
+-
++	gpio_request(IMX_GPIO_NR(5, 56) , "95HF_IN");
++	gpio_direction_output(IMX_GPIO_NR(5, 1) , 1);
++	gpio_request(IMX_GPIO_NR(5, 12) , "95HF_CS0");
++	gpio_direction_output(IMX_GPIO_NR(5, 12) , 1);
++	gpio_request(IMX_GPIO_NR(5, 6) , "95HF_CS0");
++	gpio_direction_input(IMX_GPIO_NR(5, 6));
+ 	return status;
+ }
+ 
+diff --git a/include/uapi/linux/spi/spidev.h b/include/uapi/linux/spi/spidev.h
+index c4253f0..d6833d5 100644
+--- a/include/uapi/linux/spi/spidev.h
++++ b/include/uapi/linux/spi/spidev.h
+@@ -138,6 +138,10 @@ struct spi_ioc_transfer {
+ #define SPI_IOC_RD_MODE32		_IOR(SPI_IOC_MAGIC, 5, __u32)
+ #define SPI_IOC_WR_MODE32		_IOW(SPI_IOC_MAGIC, 5, __u32)
+ 
++#define SPI_IOC_IRQ_IN          _IOW(SPI_IOC_MAGIC, 6, __u8)
++#define SPI_IOC_CSO_LOW         _IOW(SPI_IOC_MAGIC, 7, __u8)
++#define SPI_IOC_CSO_HIG         _IOW(SPI_IOC_MAGIC, 8, __u8)
++#define SPI_IOC_GET_VALUE       _IOW(SPI_IOC_MAGIC, 9, __u8)
+ 
+ 
+ #endif /* SPIDEV_H */
+-- 
+2.7.4
+

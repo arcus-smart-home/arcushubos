@@ -1,0 +1,393 @@
+From 951b7ca2e3c263de439f843ca5595b561abc1842 Mon Sep 17 00:00:00 2001
+Date: Wed, 18 Apr 2018 19:30:44 -0400
+Subject: [PATCH] Fixed issues with tag handling
+
+---
+ Libraries/95HF/inc/lib_iso15693pcd.h |  3 +++
+ Libraries/95HF/inc/lib_nfctype1pcd.h |  4 ++++
+ Libraries/95HF/inc/lib_nfctype2pcd.h |  4 ++++
+ Libraries/95HF/inc/lib_nfctype3pcd.h |  4 ++++
+ Libraries/95HF/inc/lib_nfctype4pcd.h |  6 +++++-
+ Libraries/95HF/inc/lib_nfctype5pcd.h |  4 ++++
+ Libraries/95HF/src/lib_iso15693pcd.c | 27 +++++++++++++++++++++------
+ Libraries/95HF/src/lib_nfctype1pcd.c | 10 +++++++++-
+ Libraries/95HF/src/lib_nfctype2pcd.c | 10 +++++++++-
+ Libraries/95HF/src/lib_nfctype3pcd.c | 10 +++++++++-
+ Libraries/95HF/src/lib_nfctype4pcd.c | 10 +++++++++-
+ Libraries/95HF/src/lib_nfctype5pcd.c | 34 ++++++++++++++++++++++++++++++++--
+ 12 files changed, 113 insertions(+), 13 deletions(-)
+
+diff --git a/Libraries/95HF/inc/lib_iso15693pcd.h b/Libraries/95HF/inc/lib_iso15693pcd.h
+index e60bf27..e03700d 100644
+--- a/Libraries/95HF/inc/lib_iso15693pcd.h
++++ b/Libraries/95HF/inc/lib_iso15693pcd.h
+@@ -51,6 +51,9 @@
+ #define ISO15693_LRiS2K											0x28
+ #define ISO15693_LRi2K											0x20
+ #define ISO15693_LRi1K											0x40
++#ifdef IRIS
++#define ISO15693_LRiS512										0x24
++#endif
+ 
+ #define ISO15693_LOW_DENSITY								0x00
+ #define ISO15693_HIGH_DENSITY								0x01
+diff --git a/Libraries/95HF/inc/lib_nfctype1pcd.h b/Libraries/95HF/inc/lib_nfctype1pcd.h
+index 1a8d25f..1a0ec70 100644
+--- a/Libraries/95HF/inc/lib_nfctype1pcd.h
++++ b/Libraries/95HF/inc/lib_nfctype1pcd.h
+@@ -48,7 +48,11 @@
+ #define PCDNFCT1_TOPAZ_MODE					0xA8
+ 
+ /* Functions */
++#ifdef IRIS
++uint8_t PCDNFCT1_ReadNDEF( uint8_t *data );
++#else
+ uint8_t PCDNFCT1_ReadNDEF( void );
++#endif
+ uint8_t PCDNFCT1_WriteNDEF( void );
+ 
+ #endif
+diff --git a/Libraries/95HF/inc/lib_nfctype2pcd.h b/Libraries/95HF/inc/lib_nfctype2pcd.h
+index 8fede76..a08e152 100644
+--- a/Libraries/95HF/inc/lib_nfctype2pcd.h
++++ b/Libraries/95HF/inc/lib_nfctype2pcd.h
+@@ -53,7 +53,11 @@
+ #define PCDNFCT2_NDEF_MNB						0xE1
+ 
+ /* Functions */
++#ifdef IRIS
++uint8_t PCDNFCT2_ReadNDEF( uint8_t *data );
++#else
+ uint8_t PCDNFCT2_ReadNDEF( void );
++#endif
+ uint8_t PCDNFCT2_WriteNDEF( void );
+ 
+ #endif
+diff --git a/Libraries/95HF/inc/lib_nfctype3pcd.h b/Libraries/95HF/inc/lib_nfctype3pcd.h
+index afe8a97..484ac7e 100644
+--- a/Libraries/95HF/inc/lib_nfctype3pcd.h
++++ b/Libraries/95HF/inc/lib_nfctype3pcd.h
+@@ -48,7 +48,11 @@
+ #define PCDNFCT3_ATTR_SIZE					16
+ 
+ /* Functions */
++#ifdef IRIS
++uint8_t PCDNFCT3_ReadNDEF( uint8_t *data );
++#else
+ uint8_t PCDNFCT3_ReadNDEF( void );
++#endif
+ uint8_t PCDNFCT3_WriteNDEF( void );
+ 
+ #endif
+diff --git a/Libraries/95HF/inc/lib_nfctype4pcd.h b/Libraries/95HF/inc/lib_nfctype4pcd.h
+index 5e4cd81..11f5583 100644
+--- a/Libraries/95HF/inc/lib_nfctype4pcd.h
++++ b/Libraries/95HF/inc/lib_nfctype4pcd.h
+@@ -37,7 +37,11 @@
+ 
+ #define PCDNFCT4_ACCESS_ALLOWED			0x00
+ 
+-uint8_t PCDNFCT4_ReadNDEF(void);
++#ifdef IRIS
++uint8_t PCDNFCT4_ReadNDEF( uint8_t *data );
++#else
++uint8_t PCDNFCT4_ReadNDEF( void );
++#endif
+ uint8_t PCDNFCT4_WriteNDEF( void );
+ 
+ #endif
+diff --git a/Libraries/95HF/inc/lib_nfctype5pcd.h b/Libraries/95HF/inc/lib_nfctype5pcd.h
+index 31aed1c..87ae65f 100644
+--- a/Libraries/95HF/inc/lib_nfctype5pcd.h
++++ b/Libraries/95HF/inc/lib_nfctype5pcd.h
+@@ -32,7 +32,11 @@
+ #define PCDNFCT5_ERROR_NOT_FORMATED				PCDNFC_ERROR_NOT_FORMATED
+ 
+ /* Functions */
++#ifdef IRIS
++uint8_t PCDNFCT5_ReadNDEF( uint8_t *data );
++#else
+ uint8_t PCDNFCT5_ReadNDEF( void );
++#endif
+ uint8_t PCDNFCT5_WriteNDEF( void );
+ 
+ #endif
+diff --git a/Libraries/95HF/src/lib_iso15693pcd.c b/Libraries/95HF/src/lib_iso15693pcd.c
+index 1cf90ca..0eaf1fb 100644
+--- a/Libraries/95HF/src/lib_iso15693pcd.c
++++ b/Libraries/95HF/src/lib_iso15693pcd.c
+@@ -890,10 +890,13 @@ static uint8_t ISO15693_ReadSingleTagData(uint8_t Tag_Density, uint8_t *Data_To_
+ // 					}
+ // 					else
+ // 						return ISO15693_ERRORCODE_DEFAULT;
+-
++#ifdef IRIS
++					/* This a flat-out bug-fix! */
++				if ( ISO15693_ReadSingleBlock (Requestflags, 0x00,NthDataToRead,RepBuffer ) !=ISO15693_SUCCESSCODE)
++#else
+ 				if ( ISO15693_ReadSingleBlock (Requestflags, 0x00,Num_DataToRead,RepBuffer ) !=ISO15693_SUCCESSCODE)
++#endif
+ 						return ISO15693_ERRORCODE_DEFAULT;
+-					
+  				 /*Data Temp*/
+ 				 memcpy(&Data_To_Read[NthDataToRead*4],&RepBuffer[3],ISO15693_NBBYTE_BLOCKLENGTH);
+ 	}
+@@ -1368,10 +1371,15 @@ int8_t ISO15693_GetTagIdentification (uint16_t *Length_Memory_TAG, uint8_t *Tag_
+ 		
+ 		/*Use ISO15693 Protocol*/
+ 		ISO15693_Init();
+-		
+-		
++
+ 		/*Send Get_System_Info with Protocol Extention Flag Set*/
++#ifdef IRIS
++		/* Error may not be returned, so make sure data is non-zero */
++		memset(RepBuffer, 0, sizeof(RepBuffer));
++		if ( (ISO15693_GetSystemInfo ( RequestFlags, 0x00, RepBuffer) == ISO15693_SUCCESSCODE) && (RepBuffer[17] != 0))
++#else
+ 		if ( ISO15693_GetSystemInfo ( RequestFlags, 0x00, RepBuffer) == ISO15693_SUCCESSCODE)
++#endif
+ 			IC_Ref = RepBuffer[17];
+ 		else
+ 		{
+@@ -1381,7 +1389,7 @@ int8_t ISO15693_GetTagIdentification (uint16_t *Length_Memory_TAG, uint8_t *Tag_
+ 				else 
+ 					return ISO15693_ERRORCODE_NOTAGFOUND; 	
+ 		}
+-		
++
+ 		switch (IC_Ref)
+ 		{
+ 			case ISO15693_M24LR64R :
+@@ -1415,6 +1423,9 @@ int8_t ISO15693_GetTagIdentification (uint16_t *Length_Memory_TAG, uint8_t *Tag_
+ 			
+ 				switch (IC_Ref)
+ 				{		
++#ifdef IRIS
++					case ISO15693_LRiS512 :
++#endif
+ 					case ISO15693_LRiS2K :
+ 						*Length_Memory_TAG = (RepBuffer[14]+1);
+ 						*Tag_Density = ISO15693_LOW_DENSITY;
+@@ -1424,7 +1435,7 @@ int8_t ISO15693_GetTagIdentification (uint16_t *Length_Memory_TAG, uint8_t *Tag_
+ 						*Length_Memory_TAG = (RepBuffer[14]+1);
+ 						*Tag_Density = ISO15693_LOW_DENSITY;
+ 					break;
+-				
++
+ 					case ISO15693_LRi1K :
+ 						*Length_Memory_TAG = (RepBuffer[14]+1);
+ 						*Tag_Density = ISO15693_LOW_DENSITY;
+@@ -1457,7 +1468,11 @@ uint8_t ISO15693_ReadBytesTagData(uint8_t Tag_Density, uint8_t IC_Ref_Tag, uint8
+ 	uint16_t FirstBlock_To_Read = FirstBytes_To_Read/4;
+ 	
+ 	/*LRiS2K don't support read multiple*/
++#ifdef IRIS
++	if ((IC_Ref_Tag == ISO15693_LRiS2K) || (IC_Ref_Tag == ISO15693_LRiS512))
++#else
+ 	if(IC_Ref_Tag  == ISO15693_LRiS2K)
++#endif
+ 	{	
+ 		 NbBlock_To_Read = NbBytes_To_Read/4;		
+ 		 status = ISO15693_ReadSingleTagData(Tag_Density, Data_To_Read, NbBlock_To_Read, FirstBlock_To_Read);
+diff --git a/Libraries/95HF/src/lib_nfctype1pcd.c b/Libraries/95HF/src/lib_nfctype1pcd.c
+index 6f15750..8f72940 100644
+--- a/Libraries/95HF/src/lib_nfctype1pcd.c
++++ b/Libraries/95HF/src/lib_nfctype1pcd.c
+@@ -114,7 +114,11 @@ static uint8_t PCDNFCT1_WriteErase(uint8_t address, uint8_t byte)
+  * @retval PCDNFCT1_OK : Command success
+  * @retval PCDNFCT1_ERROR : Transmission error
+  */
++#ifdef IRIS
++uint8_t PCDNFCT1_ReadNDEF( uint8_t *data )
++#else
+ uint8_t PCDNFCT1_ReadNDEF( void )
++#endif
+ {
+ 	uint8_t status;
+ 	uint8_t buffer[NFCT1_MAX_TAGMEMORY+2];
+@@ -152,7 +156,11 @@ uint8_t PCDNFCT1_ReadNDEF( void )
+ 	{
+ 		memcpy(&TT1Tag[16],&buffer[NDEFposition],buffer[NDEFposition+1]+3);
+ 	}
+-	
++
++#ifdef IRIS
++	// Copy data
++	memcpy(data, TT1Tag, NFCT1_MAX_TAGMEMORY);
++#endif
+ 	return PCDNFCT1_OK;
+ Error:
+ 	return PCDNFCT1_ERROR;
+diff --git a/Libraries/95HF/src/lib_nfctype2pcd.c b/Libraries/95HF/src/lib_nfctype2pcd.c
+index 7777cd9..7288d3a 100644
+--- a/Libraries/95HF/src/lib_nfctype2pcd.c
++++ b/Libraries/95HF/src/lib_nfctype2pcd.c
+@@ -135,7 +135,11 @@ static uint8_t PCDNFCT2_SectorSelect(uint8_t sector)
+  * @retval PCDNFCT2_ERROR : Transmission error
+  * @retval PCDNFCT2_ERROR_LOCKED : The tag cannot be read (CC lock)
+  */
++#ifdef IRIS
++uint8_t PCDNFCT2_ReadNDEF( uint8_t *data )
++#else
+ uint8_t PCDNFCT2_ReadNDEF( void )
++#endif
+ {
+ 	uint8_t status;
+ 	uint8_t bufferRead[PCDNFCT2_READ_SIZE_BUFFER];
+@@ -202,7 +206,11 @@ uint8_t PCDNFCT2_ReadNDEF( void )
+ 	{
+ 		memcpy(&TT2Tag[16],&buffer[NDEFposition],buffer[NDEFposition+1]+3);
+ 	}
+-	
++
++#ifdef IRIS
++	// Copy data
++	memcpy(data, TT2Tag, totalSize);
++#endif
+ 	return PCDNFCT2_OK;
+ Error:
+ 	return PCDNFCT2_ERROR;
+diff --git a/Libraries/95HF/src/lib_nfctype3pcd.c b/Libraries/95HF/src/lib_nfctype3pcd.c
+index 7db47dd..f47a294 100644
+--- a/Libraries/95HF/src/lib_nfctype3pcd.c
++++ b/Libraries/95HF/src/lib_nfctype3pcd.c
+@@ -244,7 +244,11 @@ static void PCDNFCT3_UpdateCheckSum(uint8_t *bufferAttrib)
+  * @retval PCDNFCT3_ERROR : Transmission error
+  * @retval PCDNFCT3_ERROR_LOCKED : The tag cannot be read (AttribInfo lock)
+  */
++#ifdef IRIS
++uint8_t PCDNFCT3_ReadNDEF( uint8_t *data )
++#else
+ uint8_t PCDNFCT3_ReadNDEF( void )
++#endif
+ {
+ 	uint8_t buffer[32];
+ 	uint8_t status;
+@@ -262,7 +266,11 @@ uint8_t PCDNFCT3_ReadNDEF( void )
+ 	
+ 	/* Read the NDEF message */
+ 	errchk(PCDNFCT3_ReadMessage(size,TT3NDEFfile));
+-	
++
++#ifdef IRIS
++	// Copy data
++	memcpy(data, TT3NDEFfile, size);
++#endif
+ 	return PCDNFCT3_OK;
+ Error:
+ 	return PCDNFCT3_ERROR; 
+diff --git a/Libraries/95HF/src/lib_nfctype4pcd.c b/Libraries/95HF/src/lib_nfctype4pcd.c
+index ad1d625..6feaf58 100644
+--- a/Libraries/95HF/src/lib_nfctype4pcd.c
++++ b/Libraries/95HF/src/lib_nfctype4pcd.c
+@@ -181,7 +181,11 @@ static uint8_t PCDNFCT4_UpdateBinary ( uc16 Offset ,uc8 NbByteToWrite , uint8_t
+  * @retval PCDNFCT4_ERROR : Transmission error
+  * @retval PCDNFCT4_ERROR_LOCKED : The tag cannot be read (CCfile lock)
+  */
++#ifdef IRIS
++uint8_t PCDNFCT4_ReadNDEF( uint8_t *data )
++#else
+ uint8_t PCDNFCT4_ReadNDEF( void )
++#endif
+ {
+ 	uint8_t status, NDEF_ID_MSB, NDEF_ID_LSB;
+ 	uint8_t limit = 0;
+@@ -234,7 +238,11 @@ uint8_t PCDNFCT4_ReadNDEF( void )
+ 		errchk(PCDNFCT4_ReadBinary(0, size, buffer));
+ 		memcpy(&CardNDEFfile[0],&buffer[PCD_DATA_OFFSET+1],size);
+ 	}
+-		
++
++#ifdef IRIS
++	// Copy data
++	memcpy(data, CardNDEFfile, size);
++#endif
+ 	return PCDNFCT4_OK;
+ Error:
+ 	return PCDNFCT4_ERROR;
+diff --git a/Libraries/95HF/src/lib_nfctype5pcd.c b/Libraries/95HF/src/lib_nfctype5pcd.c
+index 50933a0..d544c0c 100644
+--- a/Libraries/95HF/src/lib_nfctype5pcd.c
++++ b/Libraries/95HF/src/lib_nfctype5pcd.c
+@@ -66,10 +66,23 @@ extern uint8_t TT5Tag[];
+  * @retval PCDNFCT5_ERROR : Transmission error
+  * @retval PCDNFCT5_ERROR_LOCKED : The tag cannot be read (CC lock)
+  */
++#ifdef IRIS
++uint8_t PCDNFCT5_ReadNDEF( uint8_t *data )
++#else
+ uint8_t PCDNFCT5_ReadNDEF( void )
++#endif
+ {
+ 	uint16_t size;
+ 	uint8_t tagDensity = ISO15693_HIGH_DENSITY;
++#ifdef IRIS
++	uint8_t icRef = 0;
++	uint16_t memLength = 0;
++
++	/* Get tag info rather than guessing ... */
++	ISO15693_GetTagIdentification(&memLength, &tagDensity, &icRef);
++	if (ISO15693_ReadBytesTagData(tagDensity, icRef, TT5Tag, 128, 0) != ISO15693_SUCCESSCODE)
++	    return PCDNFCT5_ERROR;
++#else
+ 	// Try to determine the density by reading the first sector (128 bytes)
+ 	if (ISO15693_ReadBytesTagData(ISO15693_HIGH_DENSITY, ISO15693_LRiS64K, TT5Tag, 127, 0) != ISO15693_SUCCESSCODE)
+ 	{
+@@ -77,7 +90,7 @@ uint8_t PCDNFCT5_ReadNDEF( void )
+ 			return PCDNFCT5_ERROR;
+ 		tagDensity = ISO15693_LOW_DENSITY;
+ 	}
+-	
++#endif
+ 	// NDEF capable ?
+ 	if (TT5Tag[0] != 0xE1)
+ 		return PCDNFCT5_ERROR_NOT_FORMATED;
+@@ -100,12 +113,19 @@ uint8_t PCDNFCT5_ReadNDEF( void )
+ 	// Read the rest of the tag if needed
+ 	if (size > 124)
+ 	{
++#ifdef IRIS
++		if (ISO15693_ReadBytesTagData(tagDensity, icRef, &TT5Tag[128], size-128, 128) != ISO15693_SUCCESSCODE)
++#else
+ 		if (ISO15693_ReadBytesTagData(tagDensity, ISO15693_LRiS64K, &TT5Tag[128], size-128, 128) != ISO15693_SUCCESSCODE)
++#endif
+ 		{
+ 			return PCDNFCT5_ERROR;
+ 		}
+ 	}
+-	
++#ifdef IRIS
++	// Copy data
++	memcpy(data, TT5Tag, size+7);
++#endif
+ 	return PCDNFCT5_OK;	
+ }
+ 
+@@ -122,6 +142,15 @@ uint8_t PCDNFCT5_WriteNDEF( void )
+ 	uint8_t firstSector[140], status;
+ 	uint16_t size, tagSize;
+ 	uint8_t tagDensity = ISO15693_HIGH_DENSITY;
++#ifdef IRIS
++	uint8_t icRef = 0;
++	uint16_t memLength = 0;
++
++	/* Get tag info rather than guessing ... */
++	ISO15693_GetTagIdentification(&memLength, &tagDensity, &icRef);
++	if (ISO15693_ReadBytesTagData(tagDensity, icRef, firstSector, 128, 0) != ISO15693_SUCCESSCODE)
++	    return PCDNFCT5_ERROR;
++#else
+ 	// Try to determine the density by ready the first sector (128 bytes)
+ 	if (ISO15693_ReadBytesTagData(ISO15693_HIGH_DENSITY, ISO15693_LRiS64K, firstSector, 127, 0) != ISO15693_SUCCESSCODE)
+ 	{
+@@ -129,6 +158,7 @@ uint8_t PCDNFCT5_WriteNDEF( void )
+ 			return PCDNFCT5_ERROR;
+ 		tagDensity = ISO15693_LOW_DENSITY;
+ 	}
++#endif
+ 	// NDEF capable ?
+ 	if (firstSector[0] != 0xE1)
+ 	{
+-- 
+2.7.4
+

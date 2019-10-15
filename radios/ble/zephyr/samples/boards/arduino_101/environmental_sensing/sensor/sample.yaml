@@ -1,0 +1,9 @@
+sample:
+  description: Environmental Sensing sample using BLE
+    and sensor features on Arduino 101.
+  name: Environmental Sensing (Sensor Subsystem Part)
+tests:
+  test:
+    platform_whitelist: arduino_101_sss
+    tags: samples sensor
+    harness: sensor

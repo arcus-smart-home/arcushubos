@@ -1,0 +1,30 @@
+# Kconfig - 96Boards Neonkey Board Configuration
+#
+# Copyright (c) 2017 Linaro Limited
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+if BOARD_96B_NEONKEY
+
+config BOARD
+	default "96b_neonkey"
+
+if UART_CONSOLE
+
+config UART_STM32_PORT_1
+	default y
+
+endif # UART_CONSOLE
+
+if SPI
+
+config SPI_1
+	default y
+
+config SPI_STM32_INTERRUPT
+	default y
+
+endif # SPI
+
+endif # BOARD_96B_NEONKEY

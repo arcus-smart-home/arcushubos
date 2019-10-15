@@ -1,0 +1,29 @@
+set -e
+
+# Check for valid arguments
+if [ -z "$1" ] || [ -z "$2" ] ; then
+    echo "ifplugd: Incorrect arguments" > /dev/stderr
+    exit 1
+fi
+
+# Handle up and down of interface
+case "$2" in
+up)
+  # Kill wifi if Ethernet comes back
+  if [ "$1" == eth0 ]; then
+    /sbin/ifdown wlan0
+    # But leave up from ifconfig perspective so we can still scan!
+    /sbin/ifconfig wlan0 up
+  fi
+  /sbin/ifup $1
+  ;;
+down)
+  /sbin/ifdown $1
+  # Bring up wifi if Ethernet goes down
+  if [ "$1" == eth0 ]; then
+    /usr/bin/wifi_start wlan0
+  fi
+  ;;
+esac
+
+exit 1

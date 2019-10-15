@@ -1,0 +1,93 @@
+/*
+ * Copyright (c) 2017 Piotr Mienkowski
+ * Copyright (c) 2017 Justin Watson
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <atmel/same70.dtsi>
+
+/ {
+	model = "Atmel SAM E70 Xplained board";
+	compatible = "atmel,sam_e70_xplained", "atmel,same70q21", "atmel,same70";
+
+	aliases {
+		i2c-0 = &i2c0;
+		i2c-1 = &i2c1;
+		i2c-2 = &i2c2;
+	};
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+};
+
+&adc0 {
+	status = "ok";
+};
+
+&adc1 {
+	status = "ok";
+};
+
+&i2c0 {
+	status = "ok";
+};
+
+&i2c2 {
+	status = "ok";
+};
+
+&usart1 {
+	current-speed = <115200>;
+	status = "ok";
+};
+
+&flash0 {
+	/*
+	 * If chosen's zephyr,code-partition
+	 * is unset, the image will be linked
+	 * into the entire flash device.  If
+	 * it points to an individual
+	 * partition, the code will be linked
+	 * to, and restricted to that
+	 * partition.
+	 */
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/*
+		 * The first half of sector 0 (64 kbytes)
+		 * is reserved for the bootloader
+		 */
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x0 0x00010000>;
+			read-only;
+		};
+
+		/* From sector 1 to sector 7 (included): slot0 (896 kbytes) */
+		slot0_partition: partition@20000 {
+			label = "image-0";
+			reg = <0x0020000 0x000e0000>;
+		};
+
+		/* From sector 8 to sector 14 (included): slot1 (896 kbytes) */
+		slot1_partition: partition@100000 {
+			label = "image-1";
+			reg = <0x00100000 0x000e0000>;
+		};
+
+		/* Sector 15: scratch (128 kbytes) */
+		scratch_partition: partition@1e0000 {
+			label = "image-scratch";
+			reg = <0x001e0000 0x00020000>;
+		};
+	};
+};

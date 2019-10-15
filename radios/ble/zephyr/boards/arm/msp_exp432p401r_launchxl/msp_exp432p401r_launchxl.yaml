@@ -1,0 +1,9 @@
+identifier: msp_exp432p401r_launchxl
+name: MSP-EXP432P401R-LAUNCHXL
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gccarmemb
+ram: 64
+flash: 256

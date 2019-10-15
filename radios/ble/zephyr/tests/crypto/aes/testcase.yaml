@@ -1,0 +1,3 @@
+tests:
+  crypto.aes:
+    tags: crypto aes

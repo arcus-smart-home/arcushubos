@@ -1,0 +1,362 @@
+#!/bin/sh
+
+#
+# Copyright 2019 Arcus Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+echo Setting up needed gpios... 
+
+# Make directory for gpio links
+mkdir /tmp/io
+chmod 777 /tmp/io
+
+cd /sys/class/gpio
+
+# Set up LTE module reset
+echo 158 > export
+cd gpio158
+echo out > direction
+echo 0 > value
+chmod 0666 value
+ln -s /sys/class/gpio/gpio158/value /tmp/io/lteReset
+cd ..
+
+# Set up LTE module key
+echo 159 > export
+cd gpio159
+echo out > direction
+echo 1 > value
+chmod 0666 value
+cd ..
+
+# Set up LTE module power line
+echo 160 > export
+cd gpio160
+echo out > direction
+echo 1 > value
+chmod 0666 value
+ln -s /sys/class/gpio/gpio160/value /tmp/io/ltePower
+cd ..
+
+# Setup reset button as input
+echo 122 > export
+cd gpio122
+echo in > direction
+echo both > edge
+ln -s /sys/class/gpio/gpio122/value /tmp/io/resetBtnValue
+ln -s /sys/class/gpio/gpio122/edge /tmp/io/resetBtnEdge
+cd ..
+
+# Setup power down button as input
+echo 123 > export
+cd gpio123
+echo in > direction
+echo both > edge
+ln -s /sys/class/gpio/gpio123/value /tmp/io/pwrDownBtnValue
+ln -s /sys/class/gpio/gpio123/edge /tmp/io/pwrDownBtnEdge
+cd ..
+
+# Setup Iris button as input
+echo 127 > export
+cd gpio127
+echo in > direction
+echo both > edge
+ln -s /sys/class/gpio/gpio127/value /tmp/io/irisBtnValue
+ln -s /sys/class/gpio/gpio127/edge /tmp/io/irisBtnEdge
+cd ..
+
+# Set up Zigbee reset line, added to CUT-2 hardware
+echo 148 > export
+cd gpio148
+echo out > direction
+chmod 0666 value
+echo 1 > value
+# We will set this link later when we know we are on CUT-2 hardware
+#ln -s /sys/class/gpio/gpio148/value /tmp/io/zigbeeReset
+cd ..
+
+# Set up Zigbee power enable
+echo 165 > export
+cd gpio165
+echo out > direction
+chmod 0666 value
+echo 1 > value
+# Use as reset line as well until real reset is available (on CUT-2)
+ln -s /sys/class/gpio/gpio165/value /tmp/io/zigbeeReset
+ln -s /sys/class/gpio/gpio165/value /tmp/io/zigbeePower
+cd ..
+
+# Set up Zwave reset line
+echo 118 > export
+cd gpio118
+echo out > direction
+chmod 0666 value
+echo 1 > value
+ln -s /sys/class/gpio/gpio118/value /tmp/io/zwaveReset
+cd ..
+
+# Set up Zwave power enable
+echo 119 > export
+cd gpio119
+echo out > direction
+chmod 0666 value
+echo 1 > value
+ln -s /sys/class/gpio/gpio119/value /tmp/io/zwavePower
+cd ..
+
+# Set up BLE enable line - not really used
+echo 135 > export
+cd gpio135
+echo out > direction
+chmod 0666 value
+echo 1 > value
+cd ..
+
+# Set up BLE reset line
+echo 145 > export
+cd gpio145
+echo out > direction
+chmod 0666 value
+echo 1 > value
+ln -s /sys/class/gpio/gpio145/value /tmp/io/bleReset
+cd ..
+
+# Set up BLE power enable line
+echo 137 > export
+cd gpio137
+echo out > direction
+chmod 0666 value
+echo 1 > value
+ln -s /sys/class/gpio/gpio137/value /tmp/io/blePower
+cd ..
+
+# Set up USB port power
+echo 86 > export
+cd gpio86
+echo out > direction
+echo 1 > value
+chmod 0666 value
+ln -s /sys/class/gpio/gpio86/value /tmp/io/usbPower
+cd ..
+
+echo Done with gpio setup
+
+# Set up buzzer - use speaker instead!
+#echo Setup buzzer pwm
+#cd /sys/class/pwm/pwmchip0
+#echo 0 > export
+#chmod 0666 -R pwm0
+#cd pwm0
+#echo 0 > enable
+#ln -s /sys/class/pwm/pwmchip0/pwm0/period /tmp/io/pwmPeriod
+#ln -s /sys/class/pwm/pwmchip0/pwm0/duty_cycle /tmp/io/pwmDutyCycle
+#ln -s /sys/class/pwm/pwmchip0/pwm0/enable /tmp/io/pwmEnable
+#cd ..
+#
+#echo Done with pwm setup
+
+# Allow agent to access watchdog devs
+chmod 666 /dev/watchdog*
+
+# Create ledMode file
+touch /tmp/ledMode
+chmod 0666 /tmp/ledMode
+
+# Create writable media mount point
+mkdir -p /tmp/media
+
+# Check /mfg partition
+umount /mfg
+e2fsck -p /dev/mmcblk2p6
+if [ $? -le 2 ]; then
+    echo "Manufacturing partition is clean"
+else
+    echo "ERROR - manufacturing partition is not clean!"
+fi
+mount /dev/mmcblk2p6 /mfg
+
+# Create certs, keys and config mfg directories
+mkdir -p /mfg/config
+mkdir -p /mfg/certs
+mkdir -p /mfg/keys
+
+# If HubID files exists, use it as hostname
+if [ -e /mfg/config/hubID ]; then
+    hostname -F /mfg/config/hubID
+fi
+
+# Update eth0 MAC address
+if [ -e /mfg/config/macAddr1 ]; then
+    macEth0=$(cat /mfg/config/macAddr1);
+    ifconfig eth0 down
+    ifconfig eth0 hw ether $macEth0
+    ifconfig eth0 up
+fi
+
+# Copy all /mfg data then unmount
+mkdir -p /tmp/mfg
+cp -r /mfg/ /tmp/
+rm -rf /tmp/mfg/lost+found
+chmod 0555 -R /tmp/mfg/
+chmod 0444 /tmp/mfg/config/*
+chmod 0444 /tmp/mfg/certs/*
+chmod 0444 /tmp/mfg/keys/*
+umount /mfg
+
+# Copy flash size to /tmp/mfg/hwFlashSize to avoid having agent look
+#  in sys filesystem, translate into bytes (512 bytes/block)
+flashSize=$(cat /sys/class/block/mmcblk2/size)
+flashSize=`expr $flashSize \* 512`
+echo ${flashSize} > /tmp/mfg/config/hwFlashSize
+echo "Flash size: " ${flashSize}
+
+# Check /data partition
+umount /data
+e2fsck -p /dev/mmcblk2p7
+if [ $? -le 2 ]; then
+    echo "Data partition is clean"
+else
+    echo "ERROR - data partition is not clean!  Will need to reformat..."
+    if mkfs.ext4 -q -F -E stripe-width=4096 -L data /dev/mmcblk2p7; then
+        echo "Formatted data partition" 1>&2
+    else
+	echo "Could not format data partition!" 1>&2
+    fi
+fi
+mount /dev/mmcblk2p7 /data
+
+# Create links to paritions to avoid direct reference to particular
+#  mmcblkxpy in the code
+ln -s /dev/mmcblk2p1 /dev/kern1
+ln -s /dev/mmcblk2p2 /dev/fs1
+ln -s /dev/mmcblk2p3 /dev/kern2
+ln -s /dev/mmcblk2p5 /dev/fs2
+ln -s /dev/mmcblk2p6 /dev/mfg
+ln -s /dev/mmcblk2p7 /dev/data
+
+# Allow agent to update bootloader code
+chmod 666 /dev/mmcblk2boot0
+chmod 666 /sys/block/mmcblk2boot0/force_ro
+
+# Create config and firmware /data directories
+mkdir -p /data/config
+mkdir -p /data/firmware
+mkdir -p /data/log
+chmod 0777 /data
+chmod 0777 /data/config
+chmod 0777 /data/firmware
+chmod 0666 /data/firmware/*
+chmod 0777 /data/log
+
+# Create timestamp if it doesn't exist
+if [ ! -e /data/config/timestamp ] || [ ! -s /data/config/timestamp ]; then
+    touch /data/config/timestamp
+else
+    timeStamp=$(cat /data/config/timestamp);
+    echo "Current Timestamp: $timeStamp"
+fi
+
+# Create timezone files if they doesn't exist - default to UTC
+if [ ! -e /data/config/timezone ] || [ ! -s /data/config/timezone ]; then
+    echo "UTC" > /data/config/timezone
+    chmod 0777 /data/config/timezone
+fi
+if [ ! -e /data/config/localtime ]; then
+    rm -f /data/config/localtime
+    ln -s /usr/share/zoneinfo/Etc/UTC /data/config/localtime
+fi
+
+echo Setting up wireless configuration...
+
+# Create wpa_supplicant.con if it doesn't exist
+if [ ! -e /data/config/wpa_supplicant.conf ] || [ ! -s /data/config/wpa_supplicant.conf ]; then
+    cp /home/root/etc/wpa_supplicant.conf /data/config/wpa_supplicant.conf
+fi
+
+# Load crypto device module
+modprobe cryptodev
+
+# Create link to securetty (for console port login control)
+# We do not allow console login for release image (with java support)
+#  unless there is an override file
+if [ -e /usr/bin/java ] && ! [ -e /data/config/enable_console ]; then
+    cp /home/root/etc/securetty_noconsole /var/run/securetty
+else
+    cp /home/root/etc/securetty /var/run/securetty
+fi
+
+# Create link to hosts file so we can make changes if necessary
+cp /home/root/etc/hosts /var/run/hosts
+
+# We don't need very large stacks for our daemons
+ulimit -S -s 512
+
+# Make sure we reboot on a kernel oops
+sysctl -w kernel.panic=3
+sysctl -w kernel.panic_on_oops=1
+
+# Launch IRIS init handler - will become a daemon
+irisinitd
+
+# Launch battery daemon
+batteryd
+
+# Launch ifplugd to keep track of interface up/down handling
+/etc/init.d/ifplugd start
+
+# Map serial ports to expected ones and change permissions for agent use
+ln -s /dev/ttymxc4 /dev/ttyO1
+ln -s /dev/ttymxc1 /dev/ttyO2
+ln -s /dev/ttymxc2 /dev/ttyO4
+chmod 666 /dev/ttymxc1
+chmod 666 /dev/ttymxc2
+chmod 666 /dev/ttymxc4
+
+# Check for hardware version related changes
+hwVer=$(cat /tmp/mfg/config/hwVer)
+if [ ${hwVer} -ge 2 ]; then
+    # Zigbee reset line was added for CUT-2
+    rm -rf /tmp/io/zigbeeReset
+    ln -s /sys/class/gpio/gpio148/value /tmp/io/zigbeeReset
+
+    # NFC support was added, start up daemon if not diags image
+    if [ -e /usr/bin/java ]; then
+	irisnfcd
+    fi
+fi
+
+# Setup wlan0
+ifconfig wlan0 up
+touch /data/config/wifiCfg
+chmod 666 /data/config/wifiCfg
+touch /tmp/testWifiCfg
+chmod 666 /tmp/testWifiCfg
+
+# Set up BLE for Bluez usage on production image - this will break
+#  diagnostics if done for mfg image!
+if [ -e /usr/bin/java ]; then
+    hciattach /dev/ttyO4 any 115200 flow
+else
+    # Flash LED ring blue before setting to solid blue
+    ledRing -b 100 -g 0 -r 0 -m 5
+    usleep 100000
+    ledRing -b 100 -g 0 -r 0 -m 6
+
+    # Start up diags server for mfg image (no java)
+    gs_hubdiags
+fi
+
+# Start watcher to restart other daemons if they fail
+dwatcher

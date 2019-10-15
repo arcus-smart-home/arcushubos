@@ -1,0 +1,23 @@
+From 7b48508d40da1f04400fc7885548e2d77694c181 Mon Sep 17 00:00:00 2001
+Date: Mon, 30 Apr 2018 13:49:53 -0400
+Subject: [PATCH] Add BT RST signal
+
+---
+ arch/arm/boot/dts/imx6qdl-imagic.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-imagic.dtsi b/arch/arm/boot/dts/imx6qdl-imagic.dtsi
+index 20ff628..63e776c 100644
+--- a/arch/arm/boot/dts/imx6qdl-imagic.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-imagic.dtsi
+@@ -593,6 +593,7 @@
+ 				MX6QDL_PAD_DISP0_DAT13__GPIO5_IO07 0x80000000    //BT_EN
+ 				MX6QDL_PAD_DISP0_DAT14__GPIO5_IO08 0x80000000    //GPIO_BT_RESTORE
+ 				MX6QDL_PAD_DISP0_DAT15__GPIO5_IO09  0x80000000   //bt_pwr_eN
++				MX6QDL_PAD_DISP0_DAT23__GPIO5_IO17  0x80000000   //GPIO_BT_RST
+ 
+ 				MX6QDL_PAD_DISP0_DAT1__GPIO4_IO22  0x80000000 // PIO_ZWAVE_RST
+ 				MX6QDL_PAD_DISP0_DAT2__GPIO4_IO23  0x80000000  //GPIO_ZWAVE_PWR_EN
+-- 
+2.7.4
+

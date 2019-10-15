@@ -1,0 +1,54 @@
+From 09183d4e01fd700088e76f8456098feb80c42e37 Mon Sep 17 00:00:00 2001
+Date: Fri, 26 Jan 2018 17:00:04 -0500
+Subject: [PATCH] Add ZTE LTE ME3630 module support
+
+---
+ drivers/usb/serial/option.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index a940045..3c11723 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -305,6 +305,8 @@ static void option_instat_callback(struct urb *urb);
+ #define ZTE_PRODUCT_ME3620_MBIM			0x0426
+ #define ZTE_PRODUCT_ME3620_X			0x1432
+ #define ZTE_PRODUCT_ME3620_L			0x1433
++/* IRIS Change - support for ZTE LTE modules */
++#define ZTE_PRODUCT_ME3630			0x1476
+ #define ZTE_PRODUCT_AC2726			0xfff1
+ #define ZTE_PRODUCT_MG880			0xfffd
+ #define ZTE_PRODUCT_CDMA_TECH			0xfffe
+@@ -690,6 +692,8 @@ static const struct option_blacklist_info yuga_clm920_nc5_blacklist = {
+ };
+ 
+ static const struct usb_device_id option_ids[] = {
++	// IRIS Change - support ZTE ME3630 LTE module
++	{ USB_DEVICE(ZTE_VENDOR_ID, ZTE_PRODUCT_ME3630) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA_LIGHT) },
+@@ -2130,6 +2134,20 @@ static int option_probe(struct usb_serial *serial,
+ 	    iface_desc->bInterfaceClass != USB_CLASS_CDC_DATA)
+ 		return -ENODEV;
+ 
++	/* IRIS Change - support for ZTE LTE modules */
++	printk("idVendor=%x, idProduct=%x, bInterfaceNumber =%d\r\n",
++	       dev_desc->idVendor, dev_desc->idProduct,
++	       iface_desc->bInterfaceNumber);
++	if (dev_desc->idVendor == cpu_to_le16(ZTE_VENDOR_ID) &&
++	    dev_desc->idProduct == cpu_to_le16(ZTE_PRODUCT_ME3630) &&
++	    iface_desc->bInterfaceNumber == 3)
++		return -ENODEV;
++	if (dev_desc->idVendor == cpu_to_le16(ZTE_VENDOR_ID) &&
++	    dev_desc->idProduct == cpu_to_le16(ZTE_PRODUCT_ME3630) &&
++	    iface_desc->bInterfaceNumber == 4)
++		return -ENODEV;
++	/* IRIS Change - support for ZTE LTE modules */
++
+ 	/* Store the blacklist info so we can use it during attach. */
+ 	usb_set_serial_data(serial, (void *)blacklist);
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,127 @@
+#!/bin/sh
+
+# udhcpc script edited by Tim Riker <Tim@Rikers.org>
+# Stripped down for IRIS usage
+
+[ -z "$1" ] && echo "Error: should be called from udhcpc" && exit 1
+
+RESOLV_CONF="/etc/resolv.conf"
+PRI_RESOLV_CONF="/tmp/pri_resolv.conf"
+BKUP_RESOLV_CONF="/tmp/bkup_resolv.conf"
+PRI_GW_CONF="/tmp/pri_gw.conf"
+BKUP_GW_CONF="/tmp/bkup_gw.conf"
+BKUP_STATUS="/tmp/backupStatus"
+PRI_INTERFACE="/tmp/pri_interface"
+NTPD_CONF="/tmp/ntpd.conf"
+TEST_CONF="/tmp/testWifi.cfg"
+LOG=/var/log/ntpd.log
+
+[ -n "$broadcast" ] && BROADCAST="broadcast $broadcast"
+[ -n "$subnet" ] && NETMASK="netmask $subnet"
+
+# Get backup interface status
+backup_is_up() {
+    # Never true for mfg image
+    if [ -e /usr/bin/serialize ]; then
+        return 0
+    fi
+    # Depending on device, may be eth1, wwan0 or usb0
+    if [ -e /sys/class/net/eth1/operstate ]; then
+        if ! ip link show eth1 | grep -q "[<,]UP[,>]" ; then
+            return 1
+        fi
+    elif [ -e /sys/class/net/wwan0/operstate ] || [ -e /sys/class/net/usb0/operstate ]; then
+        # Link make show as up before connection is ready,
+        #  so look at backup status instead
+        if [ -e $BKUP_STATUS ]; then
+            status=`cat $BKUP_STATUS`
+            if [ "$status" = "up" ]; then
+                return 1
+            fi
+        fi
+    fi
+    return 0
+}
+
+case "$1" in
+	deconfig)
+                ip addr flush dev $interface
+                ip link set dev $interface up
+		;;
+
+	renew|bound)
+                ip addr add dev $interface local $ip/$mask $BROADCAST
+
+		# Exit if testing wifi, but set up default route first
+		if [ "$interface" == "wlan0" ] && [ -e $TEST_CONF ] ; then
+		    if [ -n "$router" ] ; then
+			while ip route del default 2>/dev/null ; do
+			    :
+			done
+			echo "$0: Default route added via $router"
+			ip route add default via $router dev $interface metric 0
+		    fi
+		    exit 0
+		fi
+
+		if [ -n "$router" ] ; then
+		    # When in backup mode, will handle routes elsewhere
+		    backup_is_up
+		    echo "$0: Backup state: $?"
+		    if [ "$?" == 0 -o ! -s /var/run/resolv.conf ] && [ "$interface" == "eth0" -o "$interface" == "wlan0" ] ; then
+			while ip route del default 2>/dev/null ; do
+			    :
+			done
+			metric=0
+			for i in $router ; do
+			    echo "$0: Default route added $i: $metric"
+			    ip route add default via $i metric $metric
+			    metric=$(($metric + 1))
+			done
+		    fi
+
+		    # Save gateway info for backup needs
+		    if [ "$interface" == "eth0" -o "$interface" == "wlan0" ] ; then
+			echo -n "$router" > "$PRI_GW_CONF"
+			echo -n "$interface" > "$PRI_INTERFACE"
+		    else
+			echo -n "$router" > "$BKUP_GW_CONF"
+		    fi
+		fi
+
+		# Start ntpd if NTP server data is present
+		if [ -n "$ntpsrv" ] ; then
+		    echo "$0: DHCP client received NTP servers $ntpsrv" >> $LOG 2<&1
+		    killall ntpd
+		    NTP=""
+		    for i in $ntpsrv; do
+			echo "$0: Adding NTP server $i"
+			NTP="${NTP}-p $i "
+		    done
+		    /usr/sbin/ntpd -nqN $NTP >> $LOG 2<&1
+		    echo -n "$NTP" > "$NTPD_CONF"
+		fi
+
+		# Update resolver configuration file
+		R=""
+		[ -n "$domain" ] && R="domain $domain
+"
+		for i in $dns; do
+			echo "$0: Adding DNS $i"
+			R="${R}nameserver $i
+"
+		done
+		# Save DNS info - we'll update elsewhere if in backup
+		backup_is_up
+		if [ "$?" == 0 -o ! -s /var/run/resolv.conf ] && [ "$interface" == "eth0" -o "$interface" == "wlan0" ] ; then
+		    echo -n "$R" > "$RESOLV_CONF"
+		fi
+		if [ "$interface" == "eth0" -o "$interface" == "wlan0" ] ; then
+		    echo -n "$R" > "$PRI_RESOLV_CONF"
+		else
+		    echo -n "$R" > "$BKUP_RESOLV_CONF"
+		fi
+		;;
+esac
+
+exit 0

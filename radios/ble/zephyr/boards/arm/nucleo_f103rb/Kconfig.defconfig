@@ -1,0 +1,37 @@
+# Kconfig - NUCLEO-64 F103RB board configuration
+#
+# Copyright (c) 2016 Open-RnD Sp. z o.o.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+if BOARD_NUCLEO_F103RB
+
+config BOARD
+	default "nucleo_f103rb"
+
+if UART_CONSOLE
+
+config UART_STM32_PORT_2
+	default y
+
+endif # UART_CONSOLE
+
+if PWM
+
+config PWM_STM32_1
+	default y
+
+endif # PWM
+
+if SPI
+
+config SPI_1
+	default y
+
+config SPI_2
+	default y
+
+endif
+
+endif # BOARD_NUCLEO_F103RB

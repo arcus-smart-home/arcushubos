@@ -1,0 +1,64 @@
+---
+title: <Title should describe what node you are describing>
+version: 0.1
+
+description: >
+    Describe in free form text w/ spanning lines what you
+    are describing
+
+inherits:
+  - !include other.yaml # or [other1.yaml, other2.yaml]
+# other.yaml contains bindings that also apply to this node.
+# In case there are duplicate definitions in the different
+# bindings the one that is defined first prevails.
+
+< parent | child >:
+# parent/child is used to document implicit relation between nodes.
+# This information is required to generate parent related bits in child
+# attributes.
+# In case parent has 'bus', slave inherits some information from master.
+# parent and child should share same bus-type value.
+   bus: <bus-type>
+
+# properties will be the contents of the device tree node
+# property names must match the property names in the DT
+
+properties:
+
+# A typical property entry will look like the following
+#   <name of property as it is in device tree>
+#     category: <required | optional>
+#     type: <string | int | array>
+#     description: <description of property>
+#     generation: <define | structure>
+
+# At a minimum, the compatible is required for matching nodes
+    compatible: <list of string compatible matches>
+      category: required
+      type: string
+      description: compatible of node
+
+# reg is used to denote mmio registers
+    reg:
+      type: array
+      description: mmio register space
+      generation: define
+      category: required
+
+# interrupts specifies the interrupts that the driver may utilize
+    interrupts:
+      type: array
+      category: required
+      description: required interrupts
+      generation: define
+
+# If a node is a interrupt controller, gpio controller, pinmux device
+# or any device which is referenced via phandle plus some number of cells
+# then the cell fiels below must be present.
+
+"#cells":
+  - cell0    # name of first cell
+  - cell1    # name of second cell
+  - cell2    # name of third cell
+  - and so on and so forth
+...

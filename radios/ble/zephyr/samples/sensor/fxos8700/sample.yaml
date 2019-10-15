@@ -1,0 +1,8 @@
+sample:
+  name: FXOS8700 Accelerometer/Magnetometer Sensor
+tests:
+  test:
+    harness: sensor
+    platform_whitelist: frdm_k64f hexiwear_k64
+    tags: samples sensor
+    depends_on: i2c

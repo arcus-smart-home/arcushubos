@@ -1,0 +1,8 @@
+sample:
+  description: TBD
+  name: TBD
+tests:
+  test:
+    harness: sensor
+    tags: samples sensor
+    depends_on: i2c gpio

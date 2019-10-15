@@ -1,0 +1,2 @@
+# Ignore HCI_UART build directory
+samples/bluetooth/hci_uart/build
