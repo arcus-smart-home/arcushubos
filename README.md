@@ -21,8 +21,8 @@ http://www.yoctoproject.org/docs/current/yocto-project-qs/yocto-project-qs.html
 
 For a Ubuntu distribution, the following tools are needed:
 
-$ sudo apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib \
-build-essential chrpath socat libsdl1.2-dev xterm python chrpath
+`$ sudo apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib \
+build-essential chrpath socat libsdl1.2-dev xterm python chrpath`
 
 We have only tested building under Ubuntu, but other environments should
 also work.
@@ -30,7 +30,7 @@ also work.
 We have added JDK support to the base Yocto build, so you will also
 need to install the following (assuming Ubuntu environment):
 
-$ sudo apt-get install openjdk-8-jdk galternatives srecord
+`$ sudo apt-get install openjdk-8-jdk galternatives srecord`
 
 Run 'galternatives' and make sure 'keytool' and 'jar" are configured to the
 java8-openjdk package which was just installed.
@@ -39,15 +39,17 @@ The build outputs are put in /tftpboot to simplify finding the firmware
 images.  Please add this directory - actual tftp server support is not needed,
 though.
 
+```
 $ sudo mkdir /tftpboot
 $ sudo chmod -R 777 /tftpboot
 $ sudo chown -R nobody /tftpboot
+```
 
 Before running the build, either create a top-level /build directory, or modify
 the configuration in build/conf/local.conf to comment out this line or change
 to another location:
 
-SSTATE_DIR ?= "/build/sstate-cache"
+`SSTATE_DIR ?= "/build/sstate-cache"`
 
 
 
@@ -55,18 +57,18 @@ Makefile Targets:
 
 The following targets are valid:
 
-hubv3           - builds release image for v3 hub
-hubv3-dev       - builds development image with added tools, etc. for v3 hub
-hubv3-clean     - cleans up v3 build outputs. Would need to remove
+* hubv3           - builds release image for v3 hub
+* hubv3-dev       - builds development image with added tools, etc. for v3 hub
+* hubv3-clean     - cleans up v3 build outputs. Would need to remove
                   /build/sstate-cache to truely force a complete rebuild
-hubv3-distclean - Removes all v3 files from "clean" as well as downloaded files
+* hubv3-distclean - Removes all v3 files from "clean" as well as downloaded files
                   to mimic starting from scratch
 
-hubv2           - builds release image for v2 hub
-hubv2-dev       - builds development image with added tools, etc. for v2 hub
-hubv2-clean     - cleans up v2 build outputs. Would need to remove
+* hubv2           - builds release image for v2 hub
+* hubv2-dev       - builds development image with added tools, etc. for v2 hub
+* hubv2-clean     - cleans up v2 build outputs. Would need to remove
                   /build/sstate-cache to truely force a complete rebuild
-hubv2-distclean - Removes all v2 files from "clean" as well as downloaded files
+* hubv2-distclean - Removes all v2 files from "clean" as well as downloaded files
                   to mimic starting from scratch
 
 
@@ -81,20 +83,20 @@ hub builds, and build-fsl/tmp/deploy/images for v3 hub builds.
 
 Build Output Files:
 
-i2hubos_update.bin - v2 image without the build header (which includes
+*i2hubos_update.bin - v2 image without the build header (which includes
                      checksum, signature, etc)
-i2hubos_update_bootloader.bin - Above, but with v2 boot loader files as well
-hubOS_X.Y.Z.xxx.bin - v2 Release image with Java support with release boot
+* i2hubos_update_bootloader.bin - Above, but with v2 boot loader files as well
+* hubOS_X.Y.Z.xxx.bin - v2 Release image with Java support with release boot
                       loader
-hubBL_X.Y.Z.xxx.bin - v2 Release image with Java support, plus development
+* hubBL_X.Y.Z.xxx.bin - v2 Release image with Java support, plus development
                       boot loader files
 
-i2hubosv3_update.bin - v3 image without the build header (which includes
+* i2hubosv3_update.bin - v3 image without the build header (which includes
                        checksum, signature, etc)
-i2hubosv3_update_bootloader.bin - Above, but with v3 boot loader files as well
-hubOSv3_X.Y.Z.xxx.bin - v3 Release image with Java support with release boot
+* i2hubosv3_update_bootloader.bin - Above, but with v3 boot loader files as well
+* hubOSv3_X.Y.Z.xxx.bin - v3 Release image with Java support with release boot
                         loader
-hubBLv3_X.Y.Z.xxx.bin - v3 Release image with Java support, plus development
+* hubBLv3_X.Y.Z.xxx.bin - v3 Release image with Java support, plus development
                         boot loader files
 
 
@@ -105,9 +107,11 @@ hub) is all that is necessary in most cases.   To install this file, do the
 following:
 
 
+```
 $ scp /tftpboot/i2hubos_update.bin root@your_hub_ip:/tmp
 $ ssh root@your_hub_ip
 $ fwinstall /tmp/i2hubos_update.bin
+```
 
 Once this install completes reboot the hub so the new firmware is used.
 
