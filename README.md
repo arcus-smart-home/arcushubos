@@ -1,6 +1,4 @@
-#
 # IRIS HubOS Build Instructions for OSS Redistribution
-#
 
 The development environment for the IRIS HubOS is currently based on the
 Yocto 2.4.3 "Rocko" release.  Our proprietary hardware is similar to that
