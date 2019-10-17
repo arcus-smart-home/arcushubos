@@ -11,7 +11,9 @@ file.
 
 
 
-Instructions for build environment set up:
+## Instructions for build environment set up
+
+Please use a Yocto Supported Operating system. For Yocto 2.4.3, this is *CentOs 7*, *Debian 9*, Fedora 26, Fedora 27, OpenSuse 42.3, *Ubuntu 16.04*, and Ubuntu 17.10.
 
 Follow the Yocto environment set up instructions in "The Packages" section at:
 
