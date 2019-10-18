@@ -41,7 +41,7 @@
 
 
 # Driver interface for Host AP driver
-#CONFIG_DRIVER_HOSTAP=y
+CONFIG_DRIVER_HOSTAP=y
 
 # Driver interface for Agere driver
 #CONFIG_DRIVER_HERMES=y
@@ -128,7 +128,7 @@ CONFIG_LIBNL32=y
 #CONFIG_DRIVER_TEST=y
 
 # Driver interface for wired Ethernet drivers
-#CONFIG_DRIVER_WIRED=y
+CONFIG_DRIVER_WIRED=y
 
 # Driver interface for the Broadcom RoboSwitch family
 #CONFIG_DRIVER_ROBOSWITCH=y
@@ -138,22 +138,22 @@ CONFIG_LIBNL32=y
 
 # Enable IEEE 802.1X Supplicant (automatically included if any EAP method is
 # included)
-#CONFIG_IEEE8021X_EAPOL=y
+CONFIG_IEEE8021X_EAPOL=y
 
 # EAP-MD5
-#CONFIG_EAP_MD5=y
+CONFIG_EAP_MD5=y
 
 # EAP-MSCHAPv2
-#CONFIG_EAP_MSCHAPV2=y
+CONFIG_EAP_MSCHAPV2=y
 
 # EAP-TLS
-#CONFIG_EAP_TLS=y
+CONFIG_EAP_TLS=y
 
 # EAL-PEAP
-#CONFIG_EAP_PEAP=y
+CONFIG_EAP_PEAP=y
 
 # EAP-TTLS
-#CONFIG_EAP_TTLS=y
+CONFIG_EAP_TTLS=y
 
 # EAP-FAST
 # Note: If OpenSSL is used as the TLS library, OpenSSL 1.0 or newer is needed
@@ -162,10 +162,10 @@ CONFIG_LIBNL32=y
 #CONFIG_EAP_FAST=y
 
 # EAP-GTC
-#CONFIG_EAP_GTC=y
+CONFIG_EAP_GTC=y
 
 # EAP-OTP
-#CONFIG_EAP_OTP=y
+CONFIG_EAP_OTP=y
 
 # EAP-SIM (enable CONFIG_PCSC, if EAP-SIM is used)
 #CONFIG_EAP_SIM=y
@@ -180,7 +180,7 @@ CONFIG_LIBNL32=y
 #CONFIG_EAP_PAX=y
 
 # LEAP
-#CONFIG_EAP_LEAP=y
+CONFIG_EAP_LEAP=y
 
 # EAP-AKA (enable CONFIG_PCSC, if EAP-AKA is used)
 #CONFIG_EAP_AKA=y
@@ -204,7 +204,7 @@ CONFIG_LIBNL32=y
 #CONFIG_EAP_TNC=y
 
 # Wi-Fi Protected Setup (WPS)
-#CONFIG_WPS=y
+CONFIG_WPS=y
 # Enable WSC 2.0 support
 #CONFIG_WPS2=y
 # Enable WPS external registrar functionality
@@ -223,11 +223,11 @@ CONFIG_LIBNL32=y
 
 # PKCS#12 (PFX) support (used to read private key and certificate file from
 # a file that usually has extension .p12 or .pfx)
-#CONFIG_PKCS12=y
+CONFIG_PKCS12=y
 
 # Smartcard support (i.e., private key on a smartcard), e.g., with openssl
 # engine.
-#CONFIG_SMARTCARD=y
+CONFIG_SMARTCARD=y
 
 # PC/SC interface for smartcards (USIM, GSM SIM)
 # Enable this if EAP-SIM or EAP-AKA is included
@@ -250,7 +250,7 @@ CONFIG_LIBNL32=y
 # y = use default (backwards compatibility)
 # If this option is commented out, control interface is not included in the
 # build.
-#CONFIG_CTRL_IFACE=y
+CONFIG_CTRL_IFACE=y
 
 # Include support for GNU Readline and History Libraries in wpa_cli.
 # When building a wpa_cli binary for distribution, please note that these
@@ -330,7 +330,7 @@ CONFIG_BACKEND=file
 #CONFIG_L2_PACKET=linux
 
 # PeerKey handshake for Station to Station Link (IEEE 802.11e DLS)
-#CONFIG_PEERKEY=y
+CONFIG_PEERKEY=y
 
 # IEEE 802.11w (management frame protection), also known as PMF
 # Driver support is also needed for IEEE 802.11w.
@@ -516,7 +516,7 @@ CONFIG_CTRL_IFACE_DBUS_NEW=y
 # should be noted that this is mainly aimed at simple cases like
 # WPA2-Personal while more complex configurations like WPA2-Enterprise with an
 # external RADIUS server can be supported with hostapd.
-#CONFIG_AP=y
+CONFIG_AP=y
 
 CONFIG_BGSCAN_SIMPLE=y
 

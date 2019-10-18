@@ -41,10 +41,6 @@ Removed alsamixer from base packages
  poky/meta/recipes-core/packagegroups/packagegroup-base.bb | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Trim size of wpa-supplicant for our needs
- .../wpa-supplicant/wpa-supplicant/defconfig        | 34 +++++++++++-----------
- 1 file changed, 17 insertions(+), 17 deletions(-)
-
 Removed vfat and alsa from Beaglebone MACHINE_FEATURES
  poky/meta-yocto-bsp/conf/machine/beaglebone.conf | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
@@ -778,7 +774,7 @@ Switch to mp3 format audio files to reduce size of hubOS image
  meta-iris/recipes-extended/sox/sox_14%.bbappend | 11 +++++++++++
  1 file changed, 11 insertions(+)
 
-Ability to test wifi-connection
+Ability to test wifi-connection and package size reduction
  meta-iris/recipes-extended/wpa-supplicant/files/defconfig            | 552 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  meta-iris/recipes-extended/wpa-supplicant/wpa-supplicant_2%.bbappend |   5 +
  2 files changed, 557 insertions(+)
