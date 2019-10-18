@@ -1,21 +1,7 @@
-# ex:ts=4:sw=4:sts=4:et
-# -*- tab-width: 4; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #
 # Copyright (c) 2013, Intel Corporation.
-# All rights reserved.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# SPDX-License-Identifier: GPL-2.0-only
 #
 # DESCRIPTION
 
@@ -191,7 +177,7 @@ def wic_create(wks_file, rootfs_dir, bootimg_dir, kernel_dir,
     if not os.path.exists(options.outdir):
         os.makedirs(options.outdir)
 
-    pname = 'direct'
+    pname = options.imager
     plugin_class = PluginMgr.get_plugins('imager').get(pname)
     if not plugin_class:
         raise WicError('Unknown plugin: %s' % pname)
@@ -245,9 +231,16 @@ class Disk:
         self._ptable_format = None
 
         # find parted
-        self.paths = "/bin:/usr/bin:/usr/sbin:/sbin/"
+        # read paths from $PATH environment variable
+        # if it fails, use hardcoded paths
+        pathlist = "/bin:/usr/bin:/usr/sbin:/sbin/"
+        try:
+            self.paths = os.environ['PATH'] + ":" + pathlist
+        except KeyError:
+            self.paths = pathlist
+
         if native_sysroot:
-            for path in self.paths.split(':'):
+            for path in pathlist.split(':'):
                 self.paths = "%s%s:%s" % (native_sysroot, path, self.paths)
 
         self.parted = find_executable("parted", self.paths)
@@ -266,10 +259,15 @@ class Disk:
             out = exec_cmd("%s -sm %s unit B print" % (self.parted, self.imagepath))
             parttype = namedtuple("Part", "pnum start end size fstype")
             splitted = out.splitlines()
-            lsector_size, psector_size, self._ptable_format = splitted[1].split(":")[3:6]
+            # skip over possible errors in exec_cmd output
+            try:
+                idx =splitted.index("BYT;")
+            except ValueError:
+                raise WicError("Error getting partition information from %s" % (self.parted))
+            lsector_size, psector_size, self._ptable_format = splitted[idx + 1].split(":")[3:6]
             self._lsector_size = int(lsector_size)
             self._psector_size = int(psector_size)
-            for line in splitted[2:]:
+            for line in splitted[idx + 2:]:
                 pnum, start, end, size, fstype = line.split(':')[:5]
                 partition = parttype(int(pnum), int(start[:-1]), int(end[:-1]),
                                      int(size[:-1]), fstype)
@@ -284,8 +282,8 @@ class Disk:
             aname = "_%s" % name
             if aname not in self.__dict__:
                 setattr(self, aname, find_executable(name, self.paths))
-                if aname not in self.__dict__:
-                    raise WicError("Can't find executable {}".format(name))
+                if aname not in self.__dict__ or self.__dict__[aname] is None:
+                    raise WicError("Can't find executable '{}'".format(name))
             return self.__dict__[aname]
         return self.__dict__[name]
 
@@ -326,7 +324,7 @@ class Disk:
     def copy(self, src, pnum, path):
         """Copy partition image into wic image."""
         if self.partitions[pnum].fstype.startswith('ext'):
-            cmd = "echo -e 'cd {}\nwrite {} {}' | {} -w {}".\
+            cmd = "printf 'cd {}\nwrite {} {}\n' | {} -w {}".\
                       format(path, src, os.path.basename(src),
                              self.debugfs, self._get_part_image(pnum))
         else: # fat
@@ -340,9 +338,21 @@ class Disk:
         """Remove files/dirs from the partition."""
         partimg = self._get_part_image(pnum)
         if self.partitions[pnum].fstype.startswith('ext'):
-            exec_cmd("{} {} -wR 'rm {}'".format(self.debugfs,
+            cmd = "{} {} -wR 'rm {}'".format(self.debugfs,
                                                 self._get_part_image(pnum),
-                                                path), as_shell=True)
+                                                path)
+            out = exec_cmd(cmd , as_shell=True)
+            for line in out.splitlines():
+                if line.startswith("rm:"):
+                    if "file is a directory" in line:
+                        # Try rmdir to see if this is an empty directory. This won't delete
+                        # any non empty directory so let user know about any error that this might
+                        # generate.
+                        print(exec_cmd("{} {} -wR 'rmdir {}'".format(self.debugfs,
+                                                    self._get_part_image(pnum),
+                                                    path), as_shell=True))
+                    else:
+                        raise WicError("Could not complete operation: wic %s" % str(line))
         else: # fat
             cmd = "{} -i {} ::{}".format(self.mdel, partimg, path)
             try:
@@ -391,11 +401,8 @@ class Disk:
         def write_ptable(parts, target):
             with tempfile.NamedTemporaryFile(prefix="wic-sfdisk-", mode='w') as outf:
                 write_sfdisk_script(outf, parts)
-                cmd = "{} --no-reread {} < {} 2>/dev/null".format(self.sfdisk, target, outf.name)
-                try:
-                    subprocess.check_output(cmd, shell=True)
-                except subprocess.CalledProcessError as err:
-                    raise WicError("Can't run '{}' command: {}".format(cmd, err))
+                cmd = "{} --no-reread {} < {} ".format(self.sfdisk, target, outf.name)
+                exec_cmd(cmd, as_shell=True)
 
         if expand is None:
             sparse_copy(self.imagepath, target)
@@ -412,11 +419,14 @@ class Disk:
             for line in exec_cmd("{} -F {}".format(self.sfdisk, target)).splitlines():
                 if line.startswith("Unpartitioned space ") and line.endswith("sectors"):
                     free = int(line.split()[-2])
+                    # Align free space to a 2048 sector boundary. YOCTO #12840.
+                    free = free - (free % 2048)
             if free is None:
                 raise WicError("Can't get size of unpartitioned space")
 
             # calculate expanded partitions sizes
             sizes = {}
+            num_auto_resize = 0
             for num, part in enumerate(parts['partitiontable']['partitions'], 1):
                 if num in expand:
                     if expand[num] != 0: # don't resize partition if size is set to 0
@@ -426,10 +436,11 @@ class Disk:
                         sizes[num] = sectors
                 elif part['type'] != 'f':
                     sizes[num] = -1
+                    num_auto_resize += 1
 
             for num, part in enumerate(parts['partitiontable']['partitions'], 1):
                 if sizes.get(num) == -1:
-                    part['size'] += free // len(sizes)
+                    part['size'] += free // num_auto_resize
 
             # write resized partition table to the target
             write_ptable(parts, target)
@@ -493,7 +504,7 @@ class Disk:
                     sparse_copy(partfname, target, seek=part['start'] * self._lsector_size)
                     os.unlink(partfname)
                 elif part['type'] != 'f':
-                    logger.warn("skipping partition {}: unsupported fstype {}".format(pnum, fstype))
+                    logger.warning("skipping partition {}: unsupported fstype {}".format(pnum, fstype))
 
 def wic_ls(args, native_sysroot):
     """List contents of partitioned image or vfat partition."""

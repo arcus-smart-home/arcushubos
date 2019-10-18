@@ -18,4 +18,9 @@ UPSTREAM_CHECK_URI = "https://github.com/libical/libical/releases"
 
 inherit cmake pkgconfig
 
-FILES_${PN}-dev += "${libdir}/cmake/*"
+do_install_append_class-target () {
+    # Remove build host references
+    sed -i \
+       -e 's,${STAGING_LIBDIR},${libdir},g' \
+       ${D}${libdir}/cmake/LibIcal/LibIcalTargets-noconfig.cmake
+}

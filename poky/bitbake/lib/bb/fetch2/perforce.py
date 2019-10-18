@@ -8,18 +8,7 @@ BitBake 'Fetch' implementation for perforce
 # Copyright (C) 2003, 2004  Chris Larson
 # Copyright (C) 2016 Kodak Alaris, Inc.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# SPDX-License-Identifier: GPL-2.0-only
 #
 # Based on functions from the base bb module, Copyright 2003 Holger Schurig
 
@@ -43,13 +32,9 @@ class Perforce(FetchMethod):
         provided by the env, use it.  If P4PORT is specified by the recipe, use
         its values, which may override the settings in P4CONFIG.
         """
-        ud.basecmd = d.getVar('FETCHCMD_p4')
-        if not ud.basecmd:
-            ud.basecmd = "/usr/bin/env p4"
+        ud.basecmd = d.getVar("FETCHCMD_p4") or "/usr/bin/env p4"
 
-        ud.dldir = d.getVar('P4DIR')
-        if not ud.dldir:
-            ud.dldir = '%s/%s' % (d.getVar('DL_DIR'), 'p4')
+        ud.dldir = d.getVar("P4DIR") or (d.getVar("DL_DIR") + "/p4")
 
         path = ud.url.split('://')[1]
         path = path.split(';')[0]

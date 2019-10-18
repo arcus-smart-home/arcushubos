@@ -1,21 +1,7 @@
-# ex:ts=4:sw=4:sts=4:et
-# -*- tab-width: 4; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #
 # Copyright (c) 2013, Intel Corporation.
-# All rights reserved.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# SPDX-License-Identifier: GPL-2.0-only
 #
 # DESCRIPTION
 # This implements the 'direct' imager plugin class for 'wic'
@@ -63,6 +49,7 @@ class DirectPlugin(ImagerPlugin):
 
         # parse possible 'rootfs=name' items
         self.rootfs_dir = dict(rdir.split('=') for rdir in rootfs_dir.split(' '))
+        self.replaced_rootfs_paths = {}
         self.bootimg_dir = bootimg_dir
         self.kernel_dir = kernel_dir
         self.native_sysroot = native_sysroot
@@ -121,6 +108,10 @@ class DirectPlugin(ImagerPlugin):
         if self._update_fstab(fstab_lines, self.parts):
             # copy rootfs dir to workdir to update fstab
             # as rootfs can be used by other tasks and can't be modified
+            new_pseudo = os.path.realpath(os.path.join(self.workdir, "pseudo"))
+            from_dir = os.path.join(os.path.join(image_rootfs, ".."), "pseudo")
+            from_dir = os.path.realpath(from_dir)
+            copyhardlinktree(from_dir, new_pseudo)
             new_rootfs = os.path.realpath(os.path.join(self.workdir, "rootfs_copy"))
             copyhardlinktree(image_rootfs, new_rootfs)
             fstab_path = os.path.join(new_rootfs, 'etc/fstab')
@@ -141,7 +132,17 @@ class DirectPlugin(ImagerPlugin):
                 continue
 
             if part.use_uuid:
-                device_name = "PARTUUID=%s" % part.uuid
+                if part.fsuuid:
+                    # FAT UUID is different from others
+                    if len(part.fsuuid) == 10:
+                        device_name = "UUID=%s-%s" % \
+                                       (part.fsuuid[2:6], part.fsuuid[6:])
+                    else:
+                        device_name = "UUID=%s" % part.fsuuid
+                else:
+                    device_name = "PARTUUID=%s" % part.uuid
+            elif part.use_label:
+                device_name = "LABEL=%s" % part.label
             else:
                 # mmc device partitions are named mmcblk0p1, mmcblk0p2..
                 prefix = 'p' if  part.disk.startswith('mmcblk') else ''
@@ -175,6 +176,7 @@ class DirectPlugin(ImagerPlugin):
             new_rootfs = self._write_fstab(self.rootfs_dir.get("ROOTFS_DIR"))
         if new_rootfs:
             # rootfs was copied to update fstab
+            self.replaced_rootfs_paths[new_rootfs] = self.rootfs_dir['ROOTFS_DIR']
             self.rootfs_dir['ROOTFS_DIR'] = new_rootfs
 
         for part in self.parts:
@@ -250,7 +252,10 @@ class DirectPlugin(ImagerPlugin):
                 suffix = ':'
             else:
                 suffix = '["%s"]:' % (part.mountpoint or part.label)
-            msg += '  ROOTFS_DIR%s%s\n' % (suffix.ljust(20), part.rootfs_dir)
+            rootdir = part.rootfs_dir
+            if rootdir in self.replaced_rootfs_paths:
+                rootdir = self.replaced_rootfs_paths[rootdir]
+            msg += '  ROOTFS_DIR%s%s\n' % (suffix.ljust(20), rootdir)
 
         msg += '  BOOTIMG_DIR:                  %s\n' % self.bootimg_dir
         msg += '  KERNEL_DIR:                   %s\n' % self.kernel_dir
@@ -334,13 +339,18 @@ class PartitionedImage():
                     continue
                 part.realnum = realnum
 
-        # generate parition UUIDs
+        # generate parition and filesystem UUIDs
         for part in self.partitions:
             if not part.uuid and part.use_uuid:
                 if self.ptable_format == 'gpt':
                     part.uuid = str(uuid.uuid4())
                 else: # msdos partition table
                     part.uuid = '%08x-%02d' % (self.identifier, part.realnum)
+            if not part.fsuuid:
+                if part.fstype == 'vfat' or part.fstype == 'msdos':
+                    part.fsuuid = '0x' + str(uuid.uuid4())[:8].upper()
+                else:
+                    part.fsuuid = str(uuid.uuid4())
 
     def prepare(self, imager):
         """Prepare an image. Call prepare method of all image partitions."""

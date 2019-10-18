@@ -90,10 +90,24 @@ python devtool_post_unpack() {
                         fname in files])
         return ret
 
+    is_kernel_yocto = bb.data.inherits_class('kernel-yocto', d)
     # Move local source files into separate subdir
     recipe_patches = [os.path.basename(patch) for patch in
                         oe.recipeutils.get_recipe_patches(d)]
     local_files = oe.recipeutils.get_recipe_local_files(d)
+
+    if is_kernel_yocto:
+        for key in local_files.copy():
+            if key.endswith('scc'):
+                sccfile = open(local_files[key], 'r')
+                for l in sccfile:
+                    line = l.split()
+                    if line and line[0] in ('kconf', 'patch'):
+                        cfg = os.path.join(os.path.dirname(local_files[key]), line[-1])
+                        if not cfg in local_files.values():
+                            local_files[line[-1]] = cfg
+                            shutil.copy2(cfg, workdir)
+                sccfile.close()
 
     # Ignore local files with subdir={BP}
     srcabspath = os.path.abspath(srcsubdir)
@@ -152,9 +166,65 @@ python devtool_pre_patch() {
 }
 
 python devtool_post_patch() {
+    import shutil
     tempdir = d.getVar('DEVTOOL_TEMPDIR')
     with open(os.path.join(tempdir, 'srcsubdir'), 'r') as f:
         srcsubdir = f.read()
+    with open(os.path.join(tempdir, 'initial_rev'), 'r') as f:
+        initial_rev = f.read()
+
+    def rm_patches():
+        patches_dir = os.path.join(srcsubdir, 'patches')
+        if os.path.exists(patches_dir):
+            shutil.rmtree(patches_dir)
+        # Restore any "patches" directory that was actually part of the source tree
+        try:
+            bb.process.run('git checkout -- patches', cwd=srcsubdir)
+        except bb.process.ExecutionError:
+            pass
+
+    extra_overrides = d.getVar('DEVTOOL_EXTRA_OVERRIDES')
+    if extra_overrides:
+        extra_overrides = set(extra_overrides.split(':'))
+        devbranch = d.getVar('DEVTOOL_DEVBRANCH')
+        default_overrides = d.getVar('OVERRIDES').split(':')
+        no_overrides = []
+        # First, we may have some overrides that are referred to in the recipe set in
+        # our configuration, so we need to make a branch that excludes those
+        for override in default_overrides:
+            if override not in extra_overrides:
+                no_overrides.append(override)
+        if default_overrides != no_overrides:
+            # Some overrides are active in the current configuration, so
+            # we need to create a branch where none of the overrides are active
+            bb.process.run('git checkout %s -b devtool-no-overrides' % initial_rev, cwd=srcsubdir)
+            # Run do_patch function with the override applied
+            localdata = bb.data.createCopy(d)
+            localdata.setVar('OVERRIDES', ':'.join(no_overrides))
+            bb.build.exec_func('do_patch', localdata)
+            rm_patches()
+            # Now we need to reconcile the dev branch with the no-overrides one
+            # (otherwise we'd likely be left with identical commits that have different hashes)
+            bb.process.run('git checkout %s' % devbranch, cwd=srcsubdir)
+            bb.process.run('git rebase devtool-no-overrides', cwd=srcsubdir)
+        else:
+            bb.process.run('git checkout %s -b devtool-no-overrides' % devbranch, cwd=srcsubdir)
+
+        for override in extra_overrides:
+            localdata = bb.data.createCopy(d)
+            if override in default_overrides:
+                bb.process.run('git branch devtool-override-%s %s' % (override, devbranch), cwd=srcsubdir)
+            else:
+                # Reset back to the initial commit on a new branch
+                bb.process.run('git checkout %s -b devtool-override-%s' % (initial_rev, override), cwd=srcsubdir)
+                # Run do_patch function with the override applied
+                localdata.appendVar('OVERRIDES', ':%s' % override)
+                bb.build.exec_func('do_patch', localdata)
+                rm_patches()
+                # Now we need to reconcile the new branch with the no-overrides one
+                # (otherwise we'd likely be left with identical commits that have different hashes)
+                bb.process.run('git rebase devtool-no-overrides', cwd=srcsubdir)
+        bb.process.run('git checkout %s' % devbranch, cwd=srcsubdir)
     bb.process.run('git tag -f devtool-patched', cwd=srcsubdir)
 }
 

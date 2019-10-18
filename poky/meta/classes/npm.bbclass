@@ -2,7 +2,15 @@ DEPENDS_prepend = "nodejs-native "
 RDEPENDS_${PN}_prepend = "nodejs "
 S = "${WORKDIR}/npmpkg"
 
-NPM_INSTALLDIR = "${D}${libdir}/node_modules/${PN}"
+def node_pkgname(d):
+    bpn = d.getVar('BPN')
+    if bpn.startswith("node-"):
+        return bpn[5:]
+    return bpn
+
+NPMPN ?= "${@node_pkgname(d)}"
+
+NPM_INSTALLDIR = "${libdir}/node_modules/${NPMPN}"
 
 # function maps arch names to npm arch names
 def npm_oe_arch_map(target_arch, d):
@@ -14,7 +22,7 @@ def npm_oe_arch_map(target_arch, d):
     return target_arch
 
 NPM_ARCH ?= "${@npm_oe_arch_map(d.getVar('TARGET_ARCH'), d)}"
-NPM_INSTALL_DEV = "0"
+NPM_INSTALL_DEV ?= "0"
 
 npm_do_compile() {
 	# Copy in any additionally fetched modules
@@ -31,7 +39,7 @@ npm_do_compile() {
 	fi
 	npm set cache ${WORKDIR}/npm_cache
 	# clear cache before every build
-	npm cache clear
+	npm cache clear --force
 	# Install pkg into ${S} without going to the registry
 	if [  "${NPM_INSTALL_DEV}" = "1" ]; then
 		npm --arch=${NPM_ARCH} --target_arch=${NPM_ARCH} --no-registry install
@@ -44,8 +52,11 @@ npm_do_install() {
 	# changing the home directory to the working directory, the .npmrc will
 	# be created in this directory
 	export HOME=${WORKDIR}
-	mkdir -p ${NPM_INSTALLDIR}/
-	npm install --prefix ${D}${prefix} -g --arch=${NPM_ARCH} --target_arch=${NPM_ARCH} --production --no-registry
+	mkdir -p ${D}${libdir}/node_modules
+	local NPM_PACKFILE=$(npm pack .)
+	npm install --prefix ${D}${prefix} -g --arch=${NPM_ARCH} --target_arch=${NPM_ARCH} --production --no-registry ${NPM_PACKFILE}
+	ln -fs node_modules ${D}${libdir}/node
+	find ${D}${NPM_INSTALLDIR} -type f \( -name "*.a" -o -name "*.d" -o -name "*.o" \) -delete
 	if [ -d ${D}${prefix}/etc ] ; then
 		# This will be empty
 		rmdir ${D}${prefix}/etc
@@ -53,13 +64,13 @@ npm_do_install() {
 }
 
 python populate_packages_prepend () {
-    instdir = d.expand('${D}${libdir}/node_modules/${PN}')
+    instdir = d.expand('${D}${NPM_INSTALLDIR}')
     extrapackages = oe.package.npm_split_package_dirs(instdir)
     pkgnames = extrapackages.keys()
     d.prependVar('PACKAGES', '%s ' % ' '.join(pkgnames))
     for pkgname in pkgnames:
         pkgrelpath, pdata = extrapackages[pkgname]
-        pkgpath = '${libdir}/node_modules/${PN}/' + pkgrelpath
+        pkgpath = '${NPM_INSTALLDIR}/' + pkgrelpath
         # package names can't have underscores but npm packages sometimes use them
         oe_pkg_name = pkgname.replace('_', '-')
         expanded_pkgname = d.expand(oe_pkg_name)
@@ -75,7 +86,9 @@ python populate_packages_prepend () {
 }
 
 FILES_${PN} += " \
-    ${libdir}/node_modules/${PN} \
+    ${bindir} \
+    ${libdir}/node \
+    ${NPM_INSTALLDIR} \
 "
 
 EXPORT_FUNCTIONS do_compile do_install

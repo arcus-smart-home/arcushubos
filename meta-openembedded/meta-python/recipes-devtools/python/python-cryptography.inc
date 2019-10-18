@@ -1,7 +1,9 @@
 SUMMARY = "Provides cryptographic recipes and primitives to python developers"
 HOMEPAGE = "https://cryptography.io/"
 LICENSE = "Apache-2.0 | BSD"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=d5ede125ed08d4fd14ec44d334bdb388"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=097f805837700cfac572ac274cd38124"
+
+LDSHARED += "-pthread"
 
 DEPENDS += " \
     ${PYTHON_PN}-cffi \
@@ -10,14 +12,13 @@ DEPENDS += " \
     ${PYTHON_PN}-six \
 "
 
-SRC_URI[md5sum] = "24cbdab3fda22be31dd3aef2808f5d2f"
-SRC_URI[sha256sum] = "d04bb2425086c3fe86f7bc48915290b13e798497839fbb18ab7f6dffcf98cc3a"
+SRC_URI[md5sum] = "401cc8268f89496643da3f7a48eb4e8e"
+SRC_URI[sha256sum] = "26c821cbeb683facb966045e2064303029d572a87ee69ca5a1bf54bf55f93ca6"
 
 RDEPENDS_${PN} += " \
     ${PYTHON_PN}-cffi \
     ${PYTHON_PN}-idna \
     ${PYTHON_PN}-asn1crypto \
-    ${PYTHON_PN}-pycparser \
     ${PYTHON_PN}-setuptools \
     ${PYTHON_PN}-six \
 "
@@ -27,8 +28,6 @@ RDEPENDS_${PN}_class-target += " \
     ${PYTHON_PN}-idna \
     ${PYTHON_PN}-numbers \
     ${PYTHON_PN}-asn1crypto \
-    ${PYTHON_PN}-pycparser \
-    ${PYTHON_PN}-subprocess \
     ${PYTHON_PN}-setuptools \
     ${PYTHON_PN}-six \
     ${PYTHON_PN}-threading \
@@ -40,6 +39,7 @@ RDEPENDS_${PN}-ptest += " \
     ${PYTHON_PN}-iso8601 \
     ${PYTHON_PN}-pretend \
     ${PYTHON_PN}-pytest \
+    ${PYTHON_PN}-pytz \
 "
 
 inherit ptest
@@ -54,7 +54,5 @@ do_install_ptest() {
 FILES_${PN}-dbg += " \
     ${libdir}/${PYTHON_PN}2.7/site-packages/${SRCNAME}/hazmat/bindings/.debug \
 "
-
-LDFLAGS_append = " -pthread"
 
 BBCLASSEXTEND = "native nativesdk"

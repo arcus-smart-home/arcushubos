@@ -14,6 +14,6 @@ RDEPENDS_${PN} = "\
     ${PYTHON_PN}-ctypes \
     ${PYTHON_PN}-misc \
     ${PYTHON_PN}-six \
-    ${PYTHON_PN}-subprocess \
     ${PYTHON_PN}-threading \
+    libudev \
 "

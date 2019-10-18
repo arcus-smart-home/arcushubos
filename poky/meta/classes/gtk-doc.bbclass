@@ -18,30 +18,30 @@ EXTRA_OECONF_prepend_class-target = "${@bb.utils.contains('GTKDOC_ENABLED', 'Tru
 EXTRA_OECONF_prepend_class-native = "--disable-gtk-doc "
 EXTRA_OECONF_prepend_class-nativesdk = "--disable-gtk-doc "
 
-DEPENDS_append_class-target = " gtk-doc-native qemu-native"
-
 # Even though gtkdoc is disabled on -native, gtk-doc package is still
 # needed for m4 macros.
-DEPENDS_append_class-native = " gtk-doc-native"
-DEPENDS_append_class-nativesdk = " gtk-doc-native"
+DEPENDS_append = " gtk-doc-native"
 
 # The documentation directory, where the infrastructure will be copied.
 # gtkdocize has a default of "." so to handle out-of-tree builds set this to $S.
 GTKDOC_DOCDIR ?= "${S}"
 
-do_configure_prepend () {
-	( cd ${S}; gtkdocize --docdir ${GTKDOC_DOCDIR} || true )
-}
-
-inherit qemu
-
 export STAGING_DIR_HOST
 
-do_compile_prepend_class-target () {
+inherit python3native pkgconfig qemu
+DEPENDS_append = "${@' qemu-native' if d.getVar('GTKDOC_ENABLED') == 'True' else ''}"
 
+do_configure_prepend () {
+	# Need to use ||true as this is only needed if configure.ac both exists
+	# and uses GTK_DOC_CHECK.
+	gtkdocize --srcdir ${S} --docdir ${GTKDOC_DOCDIR} || true
+}
+
+do_compile_prepend_class-target () {
+    if [ ${GTKDOC_ENABLED} = True ]; then
         # Write out a qemu wrapper that will be given to gtkdoc-scangobj so that it
         # can run target helper binaries through that.
-        qemu_binary="${@qemu_wrapper_cmdline(d, '$STAGING_DIR_HOST', ['\$GIR_EXTRA_LIBS_PATH','$STAGING_DIR_HOST/${libdir}','$STAGING_DIR_HOST/${base_libdir}'])}"
+        qemu_binary="${@qemu_wrapper_cmdline(d, '$STAGING_DIR_HOST', ['\\$GIR_EXTRA_LIBS_PATH','$STAGING_DIR_HOST/${libdir}','$STAGING_DIR_HOST/${base_libdir}'])}"
         cat > ${B}/gtkdoc-qemuwrapper << EOF
 #!/bin/sh
 # Use a modules directory which doesn't exist so we don't load random things
@@ -50,6 +50,9 @@ export GIO_MODULE_DIR=${STAGING_LIBDIR}/gio/modules-dummy
 
 GIR_EXTRA_LIBS_PATH=\`find ${B} -name *.so -printf "%h\n"|sort|uniq| tr '\n' ':'\`\$GIR_EXTRA_LIBS_PATH
 GIR_EXTRA_LIBS_PATH=\`find ${B} -name .libs| tr '\n' ':'\`\$GIR_EXTRA_LIBS_PATH
+
+# meson sets this wrongly (only to libs in build-dir), qemu-wrapper_cmdline() and GIR_EXTRA_LIBS_PATH take care of it properly
+unset LD_LIBRARY_PATH
 
 if [ -d ".libs" ]; then
     $qemu_binary ".libs/\$@"
@@ -64,7 +67,5 @@ if [ \$? -ne 0 ]; then
 fi
 EOF
         chmod +x ${B}/gtkdoc-qemuwrapper
+    fi
 }
-
-
-inherit pkgconfig

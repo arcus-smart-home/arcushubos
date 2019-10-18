@@ -1,11 +1,11 @@
 SUMMARY = "Firmwares and Standalone Applications"
-LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+LICENSE = "NXP-Binary-EULA"
+LIC_FILES_CHKSUM = "file://EULA.txt;md5=86d76166990962fa552f840ff08e5798"
 
-inherit deploy
+inherit deploy fsl-eula-unpack
 
-SRC_URI = "git://github.com/NXP/qoriq-firmware-cortina.git;nobranch=1"
-SRCREV = "6036a20ddbf796ac494da172f2588e5de4d833fc"
+SRC_URI = "git://github.com/nxp/qoriq-firmware-cortina.git;fsl-eula=true;nobranch=1"
+SRCREV = "9143c2a3adede595966583c00ca4edc99ec698cf"
 
 S = "${WORKDIR}/git"
 
@@ -23,6 +23,6 @@ addtask deploy before do_build after do_install
 PACKAGES += "${PN}-image"
 FILES_${PN}-image += "/boot"
 
-COMPATIBLE_MACHINE = "(ls2080ardb|ls2088ardb)"
+COMPATIBLE_MACHINE = "(ls2080ardb|ls2088ardb|t2080|t4240|lx2160a)"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 

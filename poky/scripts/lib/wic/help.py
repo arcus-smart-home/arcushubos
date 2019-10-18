@@ -1,21 +1,6 @@
-# ex:ts=4:sw=4:sts=4:et
-# -*- tab-width: 4; c-basic-offset: 4; indent-tabs-mode: nil -*-
-#
 # Copyright (c) 2013, Intel Corporation.
-# All rights reserved.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# SPDX-License-Identifier: GPL-2.0-only
 #
 # DESCRIPTION
 # This module implements some basic help invocation functions along
@@ -576,6 +561,10 @@ DESCRIPTION
           partition. In other words, it 'prepares' the final partition
           image which will be incorporated into the disk image.
 
+      do_post_partition()
+          Called after the partition is created. It is useful to add post
+          operations e.g. signing the partition.
+
       do_configure_partition()
           Called before do_prepare_partition(), typically used to
           create custom configuration files for a partition, for
@@ -862,8 +851,11 @@ DESCRIPTION
        Partitions with a <mountpoint> specified will be automatically mounted.
        This is achieved by wic adding entries to the fstab during image
        generation. In order for a valid fstab to be generated one of the
-       --ondrive, --ondisk or --use-uuid partition options must be used for
-       each partition that specifies a mountpoint.
+       --ondrive, --ondisk, --use-uuid or --use-label partition options must
+       be used for each partition that specifies a mountpoint.  Note that with
+       --use-{uuid,label} and non-root <mountpoint>, including swap, the mount
+       program must understand the PARTUUID or LABEL syntax.  This currently
+       excludes the busybox versions of these applications.
 
 
        The following are supported 'part' options:
@@ -938,6 +930,14 @@ DESCRIPTION
                         label is already in use by another filesystem,
                         a new label is created for the partition.
 
+         --use-label: This option is specific to wic. It makes wic to use the
+                      label in /etc/fstab to specify a partition. If the
+                      --use-label and --use-uuid are used at the same time,
+                      we prefer the uuid because it is less likely to cause
+                      name confliction. We don't support using this parameter
+                      on the root partition since it requires an initramfs to
+                      parse this value and we do not currently support that.
+
          --active: Marks the partition as active.
 
          --align (in KBytes): This option is specific to wic and says
@@ -985,6 +985,11 @@ DESCRIPTION
                  It's useful if preconfigured partition UUID is added to kernel command line
                  in bootloader configuration before running wic. In this case .wks file can
                  be generated or modified to set preconfigured parition UUID using this option.
+
+         --fsuuid: This option is specific to wic. It specifies filesystem UUID.
+                   It's useful if preconfigured filesystem UUID is added to kernel command line
+                   in bootloader configuration before running wic. In this case .wks file can
+                   be generated or modified to set preconfigured filesystem UUID using this option.
 
          --system-id: This option is specific to wic. It specifies partition system id. It's useful
                       for the harware that requires non-default partition system ids. The parameter

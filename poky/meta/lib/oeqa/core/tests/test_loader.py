@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-
-# Copyright (C) 2016-2017 Intel Corporation
-# Released under the MIT license (see COPYING.MIT)
+#
+# Copyright (C) 2016 Intel Corporation
+#
+# SPDX-License-Identifier: MIT
+#
 
 import os
 import unittest
@@ -42,7 +44,7 @@ class TestLoader(TestBase):
         cases_path = self.cases_path
         invalid_path = os.path.join(cases_path, 'loader', 'invalid')
         self.cases_path = [self.cases_path, invalid_path]
-        expect = 'Duplicated oeid module found in'
+        expect = 'Duplicated oetag module found in'
         msg = 'Expected ImportError exception for having duplicated module'
         try:
             # Must throw ImportEror because duplicated module
@@ -55,17 +57,16 @@ class TestLoader(TestBase):
             self.cases_path = cases_path
 
     def test_filter_modules(self):
-        expected_modules = {'oeid', 'oetag'}
+        expected_modules = {'oetag'}
         tc = self._testLoader(modules=expected_modules)
         modules = getSuiteModules(tc.suites)
         msg = 'Expected just %s modules' % ', '.join(expected_modules)
         self.assertEqual(modules, expected_modules, msg=msg)
 
     def test_filter_cases(self):
-        modules = ['oeid', 'oetag', 'data']
+        modules = ['oetag', 'data']
         expected_cases = {'data.DataTest.testDataOk',
-                          'oetag.TagTest.testTagGood',
-                          'oeid.IDTest.testIdGood'}
+                          'oetag.TagTest.testTagGood'}
         tc = self._testLoader(modules=modules, tests=expected_cases)
         cases = set(getSuiteCasesIDs(tc.suites))
         msg = 'Expected just %s cases' % ', '.join(expected_cases)
@@ -74,41 +75,13 @@ class TestLoader(TestBase):
     def test_import_from_paths(self):
         cases_path = self.cases_path
         cases2_path = os.path.join(cases_path, 'loader', 'valid')
-        expected_modules = {'oeid', 'another'}
+        expected_modules = {'another'}
         self.cases_path = [self.cases_path, cases2_path]
         tc = self._testLoader(modules=expected_modules)
         modules = getSuiteModules(tc.suites)
         self.cases_path = cases_path
         msg = 'Expected modules from two different paths'
         self.assertEqual(modules, expected_modules, msg=msg)
-
-    def test_loader_threaded(self):
-        cases_path = self.cases_path
-
-        self.cases_path = [os.path.join(self.cases_path, 'loader', 'threaded')]
-
-        tc = self._testLoaderThreaded()
-        self.assertEqual(len(tc.suites), 3, "Expected to be 3 suites")
-
-        case_ids = ['threaded.ThreadedTest.test_threaded_no_depends',
-                'threaded.ThreadedTest2.test_threaded_same_module',
-                'threaded_depends.ThreadedTest3.test_threaded_depends']
-        for case in tc.suites[0]._tests:
-            self.assertEqual(case.id(),
-                    case_ids[tc.suites[0]._tests.index(case)])
-
-        case_ids = ['threaded_alone.ThreadedTestAlone.test_threaded_alone']
-        for case in tc.suites[1]._tests:
-            self.assertEqual(case.id(),
-                    case_ids[tc.suites[1]._tests.index(case)])
-
-        case_ids = ['threaded_module.ThreadedTestModule.test_threaded_module',
-                'threaded_module.ThreadedTestModule2.test_threaded_module2']
-        for case in tc.suites[2]._tests:
-            self.assertEqual(case.id(),
-                    case_ids[tc.suites[2]._tests.index(case)])
-
-        self.cases_path = cases_path
 
 if __name__ == '__main__':
     unittest.main()

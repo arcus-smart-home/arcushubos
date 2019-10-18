@@ -11,6 +11,9 @@ LICENSE = "EPL-1.0"
 LIC_FILES_CHKSUM = "file://COPYING;md5=f300afd598546add034364cd0a533261"
 DEPENDS = "curl libpam openssl sblim-sfc-common unzip-native"
 
+inherit distro_features_check
+REQUIRED_DISTRO_FEATURES = "pam"
+
 SRC_URI = "http://downloads.sourceforge.net/sblim/${BP}.tar.bz2 \
            file://sfcb.service \
            file://sblim-sfcb-1.3.9-sfcbrepos-schema-location.patch \
@@ -22,13 +25,14 @@ SRC_URI = "http://downloads.sourceforge.net/sblim/${BP}.tar.bz2 \
            file://sblim-sfcb-1.4.9-fix-ftbfs.patch \
            file://0001-include-stdint.h-system-header-for-UINT16_MAX.patch \
            file://0001-Replace-need-for-error.h-when-it-does-not-exist.patch \
+           file://sblim-sfcb-1.4.9-fix-sfcbinst2mof.patch \
 "
 
 SRC_URI[md5sum] = "28021cdabc73690a94f4f9d57254ce30"
 SRC_URI[sha256sum] = "634a67b2f7ac3b386a79160eb44413d618e33e4e7fc74ae68b0240484af149dd"
 
 inherit autotools
-inherit ${@bb.utils.filter('VIRTUAL-RUNTIME_init_manager', 'systemd', d)}
+inherit systemd
 
 SYSTEMD_PACKAGES = "${PN}"
 SYSTEMD_SERVICE_${PN} = "sblim-sfcb.service"
@@ -53,10 +57,8 @@ do_install() {
 
     oe_runmake DESTDIR=${D} install
 
-    if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
-        install -d ${D}${systemd_unitdir}/system
-        install -m 0644 ${WORKDIR}/sfcb.service ${D}${systemd_unitdir}/system/sblim-sfcb.service
-    fi
+    install -d ${D}${systemd_unitdir}/system
+    install -m 0644 ${WORKDIR}/sfcb.service ${D}${systemd_unitdir}/system/sblim-sfcb.service
 
     install -d ${D}${sysconfdir}/init.d
     mv ${D}${sysconfdir}/init.d/sfcb ${D}${sysconfdir}/init.d/sblim-sfcb
@@ -66,14 +68,8 @@ do_install() {
 }
 
 pkg_postinst_${PN} () {
-    OPTS=""
-
     if [ x"$D" != "x" ]; then
-        OPTS="--root=$D"
-        if type systemctl >/dev/null 2>/dev/null; then
-                systemctl $OPTS ${SYSTEMD_AUTO_ENABLE} ${SYSTEMD_SERVICE}
-        fi
-        exit 1
+        $INTERCEPT_DIR/postinst_intercept delay_to_first_boot ${PKG} mlprefix=${MLPREFIX}
     fi
 
     ${datadir}/sfcb/genSslCert.sh ${sysconfdir}/sfcb

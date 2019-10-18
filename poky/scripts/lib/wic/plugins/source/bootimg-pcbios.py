@@ -1,21 +1,7 @@
-# ex:ts=4:sw=4:sts=4:et
-# -*- tab-width: 4; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #
 # Copyright (c) 2014, Intel Corporation.
-# All rights reserved.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# SPDX-License-Identifier: GPL-2.0-only
 #
 # DESCRIPTION
 # This implements the 'bootimg-pcbios' source plugin class for 'wic'
@@ -26,6 +12,7 @@
 
 import logging
 import os
+import re
 
 from wic import WicError
 from wic.engine import get_custom_config
@@ -47,9 +34,16 @@ class BootimgPcbiosPlugin(SourcePlugin):
         """
         Check if dirname exists in default bootimg_dir or in STAGING_DIR.
         """
-        for result in (bootimg_dir, get_bitbake_var("STAGING_DATADIR")):
+        staging_datadir = get_bitbake_var("STAGING_DATADIR")
+        for result in (bootimg_dir, staging_datadir):
             if os.path.exists("%s/%s" % (result, dirname)):
                 return result
+
+        # STAGING_DATADIR is expanded with MLPREFIX if multilib is enabled
+        # but dependency syslinux is still populated to original STAGING_DATADIR
+        nonarch_datadir = re.sub('/[^/]*recipe-sysroot', '/recipe-sysroot', staging_datadir)
+        if os.path.exists(os.path.join(nonarch_datadir, dirname)):
+            return nonarch_datadir
 
         raise WicError("Couldn't find correct bootimg_dir, exiting")
 
@@ -186,7 +180,8 @@ class BootimgPcbiosPlugin(SourcePlugin):
         # dosfs image, created by mkdosfs
         bootimg = "%s/boot%s.img" % (cr_workdir, part.lineno)
 
-        dosfs_cmd = "mkdosfs -n boot -S 512 -C %s %d" % (bootimg, blocks)
+        dosfs_cmd = "mkdosfs -n boot -i %s -S 512 -C %s %d" % \
+                    (part.fsuuid, bootimg, blocks)
         exec_native_cmd(dosfs_cmd, native_sysroot)
 
         mcopy_cmd = "mcopy -i %s -s %s/* ::/" % (bootimg, hdddir)

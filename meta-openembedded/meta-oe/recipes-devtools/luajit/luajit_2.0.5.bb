@@ -3,14 +3,14 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://COPYRIGHT;md5=10a96c93403affcc34765f4c2612bc22"
 HOMEPAGE = "http://luajit.org"
 
-SRC_URI = "http://luajit.org/download/LuaJIT-${PV}.tar.gz \
+PV .= "+git${SRCPV}"
+SRCREV = "02b521981a1ab919ff2cd4d9bcaee80baf77dce2"
+SRC_URI = "git://luajit.org/git/luajit-2.0.git;protocol=http \
            file://0001-Do-not-strip-automatically-this-leaves-the-stripping.patch \
            file://clang.patch \
 "
-SRC_URI[md5sum] = "48353202cbcacab84ee41a5a70ea0a2c"
-SRC_URI[sha256sum] = "874b1f8297c697821f561f9b73b57ffd419ed8f4278c82e05b48806d30c1e979"
 
-S = "${WORKDIR}/LuaJIT-${PV}"
+S = "${WORKDIR}/git"
 
 inherit pkgconfig binconfig siteinfo
 
@@ -22,7 +22,7 @@ BBCLASSEXTEND = "native"
 # you need to install the multilib development package (e.g.
 # libc6-dev-i386 on Debian/Ubuntu) and build a 32 bit host part
 # (HOST_CC="gcc -m32").
-BUILD_CC_ARCH_append = " ${@['-m32',''][d.getVar('SITEINFO_BITS', True) != '32']}"
+BUILD_CC_ARCH_append = " ${@['-m32',''][d.getVar('SITEINFO_BITS') != '32']}"
 
 # The lua makefiles expect the TARGET_SYS to be from uname -s
 # Values: Windows, Linux, Darwin, iOS, SunOS, PS3, GNU/kFreeBSD
@@ -49,10 +49,10 @@ EXTRA_OEMAKE = "\
     'TARGET_SHLDFLAGS=${LDFLAGS}' \
     'HOST_CC=${BUILD_CC}' \
     'HOST_CFLAGS=${BUILD_CFLAGS}' \
-    'HOST_LDFLAGS=${BUILD_LDFLAGS}' \
     \
     'PREFIX=${prefix}' \
     'MULTILIB=${baselib}' \
+    'LDCONFIG=:' \
 "
 
 do_compile () {
@@ -90,3 +90,7 @@ FILES_${PN}-dev += "${libdir}/libluajit-5.1.a \
 "
 FILES_luajit-common = "${datadir}/${BPN}-${PV}"
 
+# Aarch64/mips64 is not supported in this release
+COMPATIBLE_HOST_aarch64 = "null"
+COMPATIBLE_HOST_mipsarchn32 = "null"
+COMPATIBLE_HOST_mipsarchn64 = "null"

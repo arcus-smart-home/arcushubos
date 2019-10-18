@@ -14,12 +14,19 @@ S = "${WORKDIR}/XML-Parser-${PV}"
 
 EXTRA_CPANFLAGS = "EXPATLIBPATH=${STAGING_LIBDIR} EXPATINCPATH=${STAGING_INCDIR} CC='${CC}' LD='${CCLD}' FULL_AR='${AR}'"
 
-inherit cpan
+inherit cpan ptest-perl
 
 # fix up sub MakeMaker project as arguments don't get propagated though
 # see https://rt.cpan.org/Public/Bug/Display.html?id=28632
+do_configure_append_class-target() {
+	sed -E \
+	    -e 's:-L${STAGING_LIBDIR}::g' -e 's:-I${STAGING_INCDIR}::g' \
+	    -i Makefile Expat/Makefile
+}
+
 do_configure_append() {
-	sed 's:--sysroot=.*\(\s\|$\):--sysroot=${STAGING_DIR_TARGET} :g' -i Makefile Expat/Makefile
+	sed -e 's:--sysroot=.*\(\s\|$\):--sysroot=${STAGING_DIR_TARGET} :g' \
+	    -i Makefile Expat/Makefile
 	sed 's:^FULL_AR = .*:FULL_AR = ${AR}:g' -i Expat/Makefile
 	# make sure these two do not build in parallel
 	sed 's!^$(INST_DYNAMIC):!$(INST_DYNAMIC): $(BOOTSTRAP)!' -i Expat/Makefile
@@ -33,5 +40,16 @@ do_compile() {
 do_compile_class-native() {
 	cpan_do_compile
 }
+
+do_install_ptest() {
+	sed -i -e "s:/usr/local/bin/perl:/usr/bin/perl:g" ${B}/samples/xmlstats
+	sed -i -e "s:/usr/local/bin/perl:/usr/bin/perl:g" ${B}/samples/xmlfilter
+	sed -i -e "s:/usr/local/bin/perl:/usr/bin/perl:g" ${B}/samples/xmlcomments
+	sed -i -e "s:/usr/local/bin/perl:/usr/bin/perl:g" ${B}/samples/canonical
+	cp -r ${B}/samples ${D}${PTEST_PATH}
+	chown -R root:root ${D}${PTEST_PATH}/samples
+}
+
+RDEPENDS_${PN}-ptest += "perl-module-test-more"
 
 BBCLASSEXTEND="native nativesdk"

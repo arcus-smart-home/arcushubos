@@ -2,18 +2,8 @@
 #
 # Copyright (c) 2011 Intel, Inc.
 #
-# This program is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by the Free
-# Software Foundation; version 2 of the License
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-# for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc., 59
-# Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 __all__ = ['ImagerPlugin', 'SourcePlugin']
 
@@ -137,3 +127,13 @@ class SourcePlugin(metaclass=PluginMeta):
         'prepares' the partition to be incorporated into the image.
         """
         logger.debug("SourcePlugin: do_prepare_partition: part: %s", part)
+
+    @classmethod
+    def do_post_partition(cls, part, source_params, creator, cr_workdir,
+                             oe_builddir, bootimg_dir, kernel_dir, rootfs_dir,
+                             native_sysroot):
+        """
+        Called after the partition is created. It is useful to add post
+        operations e.g. security signing the partition.
+        """
+        logger.debug("SourcePlugin: do_post_partition: part: %s", part)

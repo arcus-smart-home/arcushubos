@@ -20,6 +20,7 @@ do_install() {
     install -m 0644 ${WORKDIR}/inittab ${D}${sysconfdir}/inittab
     install -d ${D}${base_bindir}
     install -m 0755 ${WORKDIR}/start_getty ${D}${base_bindir}/start_getty
+    sed -e 's,/usr/bin,${bindir},g' -i ${D}${base_bindir}/start_getty
 
     set -x
     tmp="${SERIAL_CONSOLES}"
@@ -53,8 +54,15 @@ EOF
 }
 
 pkg_postinst_${PN} () {
+# run this on host and on target
+if [ "${SERIAL_CONSOLES_CHECK}" = "" ]; then
+       exit 0
+fi
+}
+
+pkg_postinst_ontarget_${PN} () {
 # run this on the target
-if [ "x$D" = "x" ] && [ -e /proc/consoles ]; then
+if [ -e /proc/consoles ]; then
 	tmp="${SERIAL_CONSOLES_CHECK}"
 	for i in $tmp
 	do
@@ -68,11 +76,7 @@ if [ "x$D" = "x" ] && [ -e /proc/consoles ]; then
 	done
 	kill -HUP 1
 else
-	if [ "${SERIAL_CONSOLES_CHECK}" = "" ]; then
-		exit 0
-	else
-		exit 1
-	fi
+	exit 1
 fi
 }
 

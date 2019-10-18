@@ -1,7 +1,7 @@
-From 923265e04df5920fc99393aa05f584032aa1b383 Mon Sep 17 00:00:00 2001
+From 5d5436dfa3bdde7b4e87ce5a40cbc724199847d6 Mon Sep 17 00:00:00 2001
 From: Hongxu Jia <hongxu.jia@windriver.com>
 Date: Mon, 8 May 2017 16:18:02 +0800
-Subject: [PATCH 03/13] support infinit timeout
+Subject: [PATCH 03/11] support infinit timeout
 
 Upstream-Status: Pending
 
@@ -11,7 +11,7 @@ Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
  1 file changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/blivet/util.py b/blivet/util.py
-index d4bd9bb..44a2da5 100644
+index 4f05076..7e89949 100644
 --- a/blivet/util.py
 +++ b/blivet/util.py
 @@ -158,6 +158,7 @@ class Path(str):

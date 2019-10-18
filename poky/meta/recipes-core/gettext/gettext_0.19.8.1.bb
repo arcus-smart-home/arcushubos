@@ -8,8 +8,11 @@ SECTION = "libs"
 LICENSE = "GPLv3+ & LGPL-2.1+"
 LIC_FILES_CHKSUM = "file://COPYING;md5=d32239bcb673463ab874e80d47fae504"
 
-DEPENDS = "gettext-native virtual/libiconv expat"
-DEPENDS_class-native = "gettext-minimal-native"
+# Because po-gram-gen.y has been modified by fix-CVE-2018-18751.patch,
+# it requires yacc which provided by bison-native
+# Please remove bison-native from DEPENDS* when next upgrade
+DEPENDS = "bison-native gettext-native virtual/libiconv"
+DEPENDS_class-native = "bison-native gettext-minimal-native"
 PROVIDES = "virtual/libintl virtual/gettext"
 PROVIDES_class-native = "virtual/gettext-native"
 RCONFLICTS_${PN} = "proxy-libintl"
@@ -17,14 +20,14 @@ SRC_URI = "${GNU_MIRROR}/gettext/gettext-${PV}.tar.gz \
 	   file://parallel.patch \
 	   file://add-with-bisonlocaledir.patch \
 	   file://cr-statement.c-timsort.h-fix-formatting-issues.patch \
+	   file://use-pkgconfig.patch \
+	   file://fix-CVE-2018-18751.patch \
 "
 
 SRC_URI[md5sum] = "97e034cf8ce5ba73a28ff6c3c0638092"
 SRC_URI[sha256sum] = "ff942af0e438ced4a8b0ea4b0b6e0d6d657157c5e2364de57baa279c1c125c43"
 
-PACKAGECONFIG[msgcat-curses] = "--with-libncurses-prefix=${STAGING_LIBDIR}/..,--disable-curses,ncurses,"
-
-inherit autotools texinfo
+inherit autotools texinfo pkgconfig
 
 EXTRA_OECONF += "--without-lispdir \
                  --disable-csharp \
@@ -33,17 +36,26 @@ EXTRA_OECONF += "--without-lispdir \
                  --disable-native-java \
                  --disable-openmp \
                  --disable-acl \
-                 --with-included-glib \
                  --without-emacs \
                  --without-cvs \
                  --without-git \
-                 --with-included-libxml \
-                 --with-included-libcroco \
-                 --with-included-libunistring \
+                 --cache-file=${B}/config.cache \
                 "
 EXTRA_OECONF_append_class-target = " \
                  --with-bisonlocaledir=${datadir}/locale \
 "
+
+PACKAGECONFIG ??= "croco glib libxml"
+PACKAGECONFIG_class-native = ""
+PACKAGECONFIG_class-nativesdk = ""
+
+PACKAGECONFIG[croco] = "--without-included-libcroco,--with-included-libcroco,libcroco"
+PACKAGECONFIG[glib] = "--without-included-glib,--with-included-glib,glib-2.0"
+PACKAGECONFIG[libxml] = "--without-included-libxml,--with-included-libxml,libxml2"
+# Need paths here to avoid host contamination but this can cause RPATH warnings
+# or problems if $libdir isn't $prefix/lib.
+PACKAGECONFIG[libunistring] = "--with-libunistring-prefix=${STAGING_LIBDIR}/..,--with-included-libunistring,libunistring"
+PACKAGECONFIG[msgcat-curses] = "--with-libncurses-prefix=${STAGING_LIBDIR}/..,--disable-curses,ncurses,"
 
 acpaths = '-I ${S}/gettext-runtime/m4 \
            -I ${S}/gettext-tools/m4'

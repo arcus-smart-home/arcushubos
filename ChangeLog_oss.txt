@@ -5,13 +5,21 @@
 
 IRIS Changes to poky
 
+Import of Yocto 2.7.1 (poky-warrior-21.0.1) release
+ ...
+ 724 files changed, 8119 insertions(+), 10641 deletions(-)
+
+Import of Yocto 2.7.0 (poky-warrior-21.0.0) release
+ ...
+ 4143 files changed, 150750 insertions(+), 154944 deletions(-)
+
 Import of Yocto 2.4.3 (poky-rocko-18.0.3) release
  ...
-339 files changed, 20706 insertions(+), 19848 deletions(-)
+ 339 files changed, 20706 insertions(+), 19848 deletions(-)
 
 Import of Yocto 2.4.2 (poky-rocko-18.0.2) release
  ...
-342 files changed, 17421 insertions(+), 16791 deletions(-)
+ 342 files changed, 17421 insertions(+), 16791 deletions(-)
 
 Assume keytool is at /usr/bin/keytool rather than a package specific path
  poky/meta/recipes-support/ca-certificates/ca-certificates_20170717.bb | 2 +-
@@ -44,11 +52,6 @@ Removed vfat and alsa from Beaglebone MACHINE_FEATURES
 We still want to use uImage rather than zImage output
  poky/meta-yocto-bsp/conf/machine/beaglebone.conf | 4 +++-
  1 file changed, 3 insertions(+), 1 deletion(-)
-
-Added in patch to fix 4.13+ cryptodev module build issue
- .../cryptodev/cryptodev-module_1.9.bb               |  1 +
- .../files/0002-Fix-build-with-linux-4-13.patch      | 21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+)
 
 Import of Yocto 2.4.0 (poky-rocko-18.0.0) release
  ...
@@ -215,6 +218,14 @@ Modified dropbear configuration so key is kept in /data partition
 
 IRIS Changes to meta-openembedded
 
+Latest update to meta-openembedded "warrior" branch, circa 21.0.1 release
+ ...
+ 96 files changed, 834 insertions(+), 457 deletions(-)
+
+Latest update to meta-openembedded "warrior" branch, circa 21.0.0 release
+ ...
+ 4811 files changed, 156152 insertions(+), 91045 deletions(-)
+
 Latest update to meta-openembedded "rocko" branch, circa 18.0.3 release
  ...
  23 files changed, 250 insertions(+), 97 deletions(-)
@@ -270,6 +281,18 @@ Import of meta-openembedded daisy snapshot
 
 IRIS Changes to meta-freescale
 
+Added last FSL community 4.14.x kernel recipe linux-fslc-iris.bb
+ meta-freescale/recipes-kernel/linux/linux-fslc-iris.bb | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+Import of latest "Warrior" branch support from FSL Community BSP, circa 21.0.1
+ ...
+ 31 files changed, 30 insertions(+), 376 deletions(-)
+
+Import of latest "Warrior" branch support from FSL Community BSP, circa 21.0.0
+ ...
+ 379 files changed, 10488 insertions(+), 15867 deletions(-)
+
 Import of latest "Rocko" branch support from FSL Community BSP, circa 18.0.3
  ...
  101 files changed, 1653 insertions(+), 2994 deletions(-)
@@ -282,6 +305,18 @@ Import of latest "Rocko" branch support from FSL Community BSP
 
 IRIS Changes to meta-freescale-3rdparty
 
+Removed linux-fslc-lts-4.19.bbappend, no longer supported
+ .../recipes-kernel/linux/linux-fslc-lts-4.19.bbappend | 19 -------------------
+ 1 file changed, 19 deletions(-)
+
+Import of latest "Warrior" branch support from FSL Community BSP, circa 21.0.1
+ ...
+ 31 files changed, 2448 insertions(+), 7 deletions(-)
+
+Import of latest "Warrior" branch support from FSL Community BSP, circa 21.0.0
+ ...
+ 120 files changed, 3072 insertions(+), 5129 deletions(-)
+
 Import of latest "Rocko" branch support from FSL Community BSP, circa 18.0.3
  meta-freescale-3rdparty/conf/machine/apalis-imx6.conf                  | 3 +--
  meta-freescale-3rdparty/conf/machine/colibri-vf.conf                   | 2 +-
@@ -290,18 +325,6 @@ Import of latest "Rocko" branch support from FSL Community BSP, circa 18.0.3
  meta-freescale-3rdparty/recipes-kernel/linux/linux-boundary_4.1.15.bb  | 2 +-
  meta-freescale-3rdparty/recipes-kernel/linux/linux-warp7/defconfig     | 1 +
  6 files changed, 8 insertions(+), 5 deletions(-)
-
-Moved imx6qmq machine configuration to meta-iris/conf/machine
- meta-freescale-3rdparty/conf/machine/imx6qmq.conf | 33 -----------------------
- 1 file changed, 33 deletions(-)
-
-Remove vfat from MACHINE_FEATURES as well due to GPLv3 license issues
- meta-freescale-3rdparty/conf/machine/imx6qmq.conf | 3 +++
- 1 file changed, 3 insertions(+)
-
-Move imx6qmq machine configuration to meta-freescale-3rdparty
- meta-freescale-3rdparty/conf/machine/imx6qmq.conf | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
 
 Cleaned up machine config files (wandboard) for new Yocto
  meta-freescale-3rdparty/conf/machine/wandboard.conf | 8 +-------
@@ -314,6 +337,26 @@ Import of latest "Rocko" branch support from FSL Community BSP
 
 
 IRIS Changes to meta-iris/conf
+
+Limit v2 SERIAL_CONSOLES to just the one we actually use
+ meta-iris/conf/distro/poky-iris-ti.conf | 3 +++
+ 1 file changed, 3 insertions(+)
+
+Need to clear SERIAL_CONSOLES_CHECK variable to avoid build issues
+ meta-iris/conf/distro/poky-iris-ti.conf | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+Move to 4.19.x kernel for TI build
+ meta-iris/conf/distro/poky-iris-ti.conf | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+Removed wireless-tools, seems to no longer be available
+ meta-iris/conf/distro/poky-iris-fsl.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Added LAYERSERIES_COMPAT_iris define to get rid of new Yocto warnings
+ meta-iris/conf/layer.conf | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
 Switch to mp3 format audio files to reduce size of hubOS image
  meta-iris/conf/distro/poky-iris-fsl.conf | 10 ++++++----
@@ -496,6 +539,14 @@ Initial pass at meta-iris recipes - new core-image-minimal-iris target
 
 
 IRIS Changes to meta-iris/recipes-bsp
+
+Handle machine name change from beaglebone to beaglebone-yocto
+ meta-iris/recipes-bsp/u-boot/u-boot_2016.03.bb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+No longer need to add dtc-native DEPEND in latest Yocto
+ meta-iris/recipes-bsp/u-boot/u-boot-imxgs.bb | 1 -
+ 1 file changed, 1 deletion(-)
 
 v3 Hub: Update DDR settings to match patches from manufacturer
  meta-iris/recipes-bsp/u-boot/files/0006-Update-to-Micron-DDR-settings.patch | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
@@ -695,6 +746,10 @@ Add boot loader support for dual images
 
 IRIS Changes to meta-iris/recipes-devtools
 
+Handle machine name change from beaglebone to beaglebone-yocto
+ meta-iris/recipes-devtools/omapconf/omapconf_git.bb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
 Upgrade to latest omapconf code (top of master) to avoid compiler issues
  meta-iris/recipes-devtools/omapconf/omapconf_git.bb | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
@@ -710,6 +765,10 @@ Fixed how e2fsprogs are built to remove duplicate copies of applications
 
 
 IRIS Changes to meta-iris/recipes-extended
+
+Rename nspr bbappend file so it works with newer version of package
+ meta-iris/recipes-extended/nspr/{nspr_4.16.bbappend => nspr_4.%.bbappend} | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
 
 Switch to mp3 format audio files to reduce size of hubOS image
  meta-iris/recipes-extended/sox/sox_14%.bbappend | 11 +++++++++++
@@ -894,6 +953,32 @@ Extended i2c-tools recipe to avoid the need for perl on target
 
 
 IRIS Changes to meta-iris/recipes-kernel
+
+Move to 4.19.x kernel for TI build
+ .../0001-Iris-dtsi-config-changes.patch            |  0
+ .../0002-Disable-Ethernet-MDIX.patch               |  0
+ ...sbnet-fix-debugging-output-for-work-items.patch |  0
+ .../0004-Go-back-to-old-mmc-numbering-scheme.patch | 28 +++++++++++-----------
+ .../linux/{linux-4.12 => linux-4.x}/adc.cfg        |  0
+ .../linux/{linux-4.12 => linux-4.x}/defconfig      |  0
+ .../linux/{linux-4.12 => linux-4.x}/fs.cfg         |  0
+ .../linux/{linux-4.12 => linux-4.x}/leds.cfg       |  0
+ .../linux/{linux-4.12 => linux-4.x}/pwm.cfg        |  0
+ .../linux/{linux-4.12 => linux-4.x}/usb.cfg        |  0
+ .../recipes-kernel/linux/linux-yocto_4.%.bbappend  |  6 +++--
+ 11 files changed, 18 insertions(+), 16 deletions(-)
+
+Clean up fuzz warning issue with v3 kernel patch
+ .../linux-fslc/0006-Up-IMX-watchdog-default-timeout.patch | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+Rename linux-yocto_4.12.bbappend to linux-yocto_4.%.bbappend
+ .../linux/{linux-yocto_4.12.bbappend => linux-yocto_4.%.bbappend}         | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+Renamed last Linux fslc 4.x bbappend file to linux-fslc-iris.bb
+ .../linux/{linux-fslc_4.%.bbappend => linux-fslc-iris.bbappend}           | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
 
 Updates to LTE support to handle Quectel module and Huawei dongle on v3 hub
  meta-iris/recipes-kernel/linux/linux-fslc/imxdimagic/defconfig | 4 ++--
@@ -1380,6 +1465,14 @@ Extracted BlueZ DBUS related support to create GATT server into a library
 
 
 IRIS Changes to meta-iris/recipes-core/busybox
+
+Turn off busybox CONFIG_FEATURE_MOUNT_NFS due to build issues
+ meta-iris/recipes-core/busybox/files/defconfig | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+Update busybox kill/killall suid enable patch
+ .../busybox/files/0001-set-killall-suid.patch      | 33 +++++++++++-----------
+ 1 file changed, 17 insertions(+), 16 deletions(-)
 
 Ability to test wifi-connection
  meta-iris/recipes-core/busybox/files/simple.script | 36 ++++++++++++++++++++++++------------

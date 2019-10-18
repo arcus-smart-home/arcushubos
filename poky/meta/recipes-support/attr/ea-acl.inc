@@ -7,6 +7,9 @@ SRC_URI_append = " file://0001-Added-configure-option-to-enable-disable-static-l
 
 inherit autotools-brokensep gettext
 
+# When upstream is using automake properly, this can be removed
+CLEANBROKEN = "1"
+
 # the package comes with a custom config.h.in, it cannot be
 # overwritten by autoheader
 EXTRA_AUTORECONF += "--exclude=autoheader"
@@ -17,7 +20,7 @@ EXTRA_OECONF_append_class-target = "${@['', ' --disable-gettext '][(d.getVar('US
 EXTRA_OEMAKE = "PKG_LIB_DIR=${base_libdir} PKG_DEVLIB_DIR=${libdir}"
 
 do_install () {
-	oe_runmake install install-lib install-dev DIST_ROOT="${D}"
+	oe_runmake install install-lib install-dev DIST_ROOT="${D}" ZIP="gzip -n"
 }
 
 do_install_append_class-native () {

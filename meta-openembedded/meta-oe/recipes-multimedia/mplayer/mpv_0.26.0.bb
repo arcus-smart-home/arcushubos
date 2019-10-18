@@ -16,7 +16,7 @@ LICENSE_FLAGS = "commercial"
 
 SRC_URI = " \
     https://github.com/mpv-player/mpv/archive/v${PV}.tar.gz;name=mpv \
-    http://www.freehackers.org/~tnagy/release/waf-1.8.12;name=waf;subdir=${BPN}-${PV} \
+    http://www.freehackers.org/~tnagy/release/waf-1.8.12;name=waf;downloadfilename=waf;subdir=${BPN}-${PV} \
 "
 SRC_URI[mpv.md5sum] = "038d0b660de07ff645ad6a741704ecab"
 SRC_URI[mpv.sha256sum] = "daf3ef358d5f260f2269f7caabce27f446c291457ec330077152127133b71b46"
@@ -25,12 +25,17 @@ SRC_URI[waf.sha256sum] = "01bf2beab2106d1558800c8709bc2c8e496d3da4a2ca343fe091f2
 
 inherit waf pkgconfig pythonnative distro_features_check
 
+LUA ?= "lua"
+LUA_mips64  = ""
+LUA_aarch64  = ""
 # Note: both lua and libass are required to get on-screen-display (controls)
 PACKAGECONFIG ??= " \
-    lua \
+    ${LUA} \
     libass \
     ${@bb.utils.filter('DISTRO_FEATURES', 'wayland', d)} \
 "
+
+PACKAGECONFIG_remove_aarch64 = "lua"
 PACKAGECONFIG[drm] = "--enable-drm,--disable-drm,libdrm"
 PACKAGECONFIG[gbm] = "--enable-gbm,--disable-gbm,virtual/mesa"
 PACKAGECONFIG[lua] = "--enable-lua,--disable-lua,lua luajit"
@@ -64,9 +69,10 @@ EXTRA_OECONF = " \
     ${PACKAGECONFIG_CONFARGS} \
 "
 
-do_configure_prepend () {
-    ln -sf waf-1.8.12 ${S}/waf
+adjust_waf_perms() {
     chmod +x ${S}/waf
 }
+
+do_patch[postfuncs] += "adjust_waf_perms"
 
 FILES_${PN} += "${datadir}/icons"

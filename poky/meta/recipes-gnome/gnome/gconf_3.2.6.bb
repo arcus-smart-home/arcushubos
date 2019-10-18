@@ -11,6 +11,7 @@ inherit gnomebase gtk-doc gettext gobject-introspection gio-module-cache
 SRC_URI = "${GNOME_MIRROR}/GConf/${@gnome_verdir("${PV}")}/GConf-${PV}.tar.xz;name=archive \
            file://remove_plus_from_invalid_characters_list.patch \
            file://unable-connect-dbus.patch \
+           file://create_config_directory.patch \
 "
 
 SRC_URI[archive.md5sum] = "2b16996d0e4b112856ee5c59130e822c"
@@ -21,12 +22,11 @@ S = "${WORKDIR}/GConf-${PV}"
 EXTRA_OECONF = "--enable-shared --disable-static \
                 --disable-orbit --with-openldap=no --disable-gtk"
 
-# Disable PolicyKit by default
-PACKAGECONFIG ??= ""
-# We really don't want PolicyKit for native
+PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'polkit', d)}"
+# We really don't want Polkit for native
 PACKAGECONFIG_class-native = ""
 
-PACKAGECONFIG[policykit] = "--enable-defaults-service,--disable-defaults-service,polkit"
+PACKAGECONFIG[polkit] = "--enable-defaults-service,--disable-defaults-service,polkit"
 PACKAGECONFIG[debug] = "--enable-debug=yes, --enable-debug=minimum"
 
 do_install_append() {

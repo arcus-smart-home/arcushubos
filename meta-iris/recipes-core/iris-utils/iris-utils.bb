@@ -108,8 +108,8 @@ USERADD_PACKAGES = "${PN}"
 # the commands with a semicolon.
 USERADD_PARAM_${PN} = "-u 1000 -d /home/agent -s /bin/sh -G dialout agent"
 
-# Consider any warnings errors
-CFLAGS += "-Wall -Werror"
+# Consider any warnings errors (well, not ignored results or format truncation)
+CFLAGS += "-Wall -Werror -Wno-unused-result -Wno-format-truncation"
 
 # Add platform specific defines
 TARGET_MACHINE := "${@'${MACHINE}'.replace('-', '_')}"
@@ -117,7 +117,7 @@ CFLAGS += "-D${TARGET_MACHINE}"
 
 # We have to grab the include files from the iris-lib package for host build
 #  as these do not get installed for host access
-HOSTCFLAGS = "-Wall -Werror -D${TARGET_MACHINE} \
+HOSTCFLAGS = "-Wall -Werror -Wno-unused-result -D${TARGET_MACHINE} \
             -I${THISDIR}/../iris-lib/files \
             "
 
@@ -129,7 +129,7 @@ do_compile () {
         ${CC} ${CFLAGS} ${LDFLAGS} ${WORKDIR}/validate_image.c -o validate_image
         ${CC} ${CFLAGS} ${LDFLAGS} ${WORKDIR}/update.c -o update -liris
         # Battery daemon is machine specific
-        if [ "${MACHINE}" = "beaglebone" ]; then
+        if [ "${MACHINE}" = "beaglebone-yocto" ]; then
            ${CC} ${CFLAGS} ${LDFLAGS} ${WORKDIR}/batteryd.c -o batteryd -liris
         elif [ "${MACHINE}" = "imxdimagic" ]; then
            ${CC} ${CFLAGS} ${LDFLAGS} ${WORKDIR}/batterydv3.c -o batteryd -liris
@@ -151,7 +151,7 @@ do_compile () {
         fi
 
         # Wifi scan support
-        if [ "${MACHINE}" != "beaglebone" ]; then
+        if [ "${MACHINE}" != "beaglebone-yocto" ]; then
            ${CC} ${CFLAGS} ${LDFLAGS} ${WORKDIR}/wifi_scan.c -o wifi_scan
         fi
 
@@ -204,7 +204,7 @@ do_install () {
 	install -d ${D}${sysconfdir}/init.d
 
 	# Init script depends on machine
-	if [ "${MACHINE}" = "beaglebone" ]; then
+	if [ "${MACHINE}" = "beaglebone-yocto" ]; then
            install -m 0755 ${WORKDIR}/irisinit-ti  ${D}${sysconfdir}/init.d/irisinit
 	elif [ "${MACHINE}" = "imxdimagic" ]; then
            install -m 0755 ${WORKDIR}/irisinit-imxdimagic  ${D}${sysconfdir}/init.d/irisinit
@@ -231,7 +231,7 @@ do_install () {
 	fi
 
 	# Set up wireless configuration files
-	if [ "${MACHINE}" != "beaglebone" ]; then
+	if [ "${MACHINE}" != "beaglebone-yocto" ]; then
 	   install -m 0644 ${WORKDIR}/interfaces ${D}/home/root/etc/
 	   install -m 0755 ${WORKDIR}/wpa_supplicant.conf ${D}/home/root/etc/
 	   install -m 0755 ${WORKDIR}/wifi_start ${D}${bindir}
@@ -267,7 +267,7 @@ do_install () {
 	install -d ${D}${sysconfdir}/ifplugd
 	install -m 0755 ${WORKDIR}/ifplugd  ${D}${sysconfdir}/init.d/
 	# Allow for wifi support on non-TI platforms
-	if [ "${MACHINE}" != "beaglebone" ]; then
+	if [ "${MACHINE}" != "beaglebone-yocto" ]; then
 	  install -m 0755 ${WORKDIR}/ifplugd-wifi.action ${D}${sysconfdir}/ifplugd/ifplugd.action
 	else
 	  install -m 0755 ${WORKDIR}/ifplugd.action ${D}${sysconfdir}/ifplugd/

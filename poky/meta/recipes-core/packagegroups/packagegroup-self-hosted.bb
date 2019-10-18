@@ -76,24 +76,26 @@ RDEPENDS_packagegroup-self-hosted-sdk = "\
     intltool \
     ldd \
     less \
-    libssp \
-    libssp-dev \
-    libssp-staticdev \
     libstdc++ \
     libstdc++-dev \
     libtool \
     make \
-    mktemp \
     perl-module-re \
     perl-module-text-wrap \
     pkgconfig \
     quilt \
     sed \
     "
-# glibc-utils: for rpcgen
+RDEPENDS_packagegroup-self-hosted-sdk_append_mingw32 = "\
+    libssp \
+    libssp-dev \
+    libssp-staticdev \
+    "
+# rpcsvc-proto: for rpcgen
 RDEPENDS_packagegroup-self-hosted-sdk_append_libc-glibc = "\
     glibc-gconv-ibm850 \
     glibc-utils \
+    rpcsvc-proto \
     "
 RDEPENDS_packagegroup-self-hosted-debug = " \
     gdb \
@@ -126,7 +128,6 @@ RDEPENDS_packagegroup-self-hosted-extended = "\
     libaio \
     libusb1 \
     libxml2 \
-    lrzsz \
     lsof \
     lzo \
     man \
@@ -136,7 +137,6 @@ RDEPENDS_packagegroup-self-hosted-extended = "\
     mtools \
     ncurses \
     ncurses-terminfo-base \
-    neon \
     nfs-utils \
     nfs-utils-client \
     openssl \
@@ -186,8 +186,6 @@ RDEPENDS_packagegroup-self-hosted-graphics = "\
     libgl-dev \
     libglu \
     libglu-dev \
-    libsdl \
-    libsdl-dev \
     libx11-dev \
     adwaita-icon-theme \
     xdg-utils \

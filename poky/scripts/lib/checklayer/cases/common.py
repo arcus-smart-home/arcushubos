@@ -1,5 +1,7 @@
 # Copyright (C) 2017 Intel Corporation
-# Released under the MIT license (see COPYING.MIT)
+#
+# SPDX-License-Identifier: MIT
+#
 
 import glob
 import os
@@ -51,3 +53,8 @@ class CommonCheckLayer(OECheckLayerTestCase):
         msg = compare_signatures(self.td['sigs'], curr_sigs)
         if msg is not None:
             self.fail('Adding layer %s changed signatures.\n%s' % (self.tc.layer['name'], msg))
+
+    def test_layerseries_compat(self):
+        for collection_name, collection_data in self.tc.layer['collections'].items():
+            self.assertTrue(collection_data['compat'], "Collection %s from layer %s does not set compatible oe-core versions via LAYERSERIES_COMPAT_collection." \
+                 % (collection_name, self.tc.layer['name']))

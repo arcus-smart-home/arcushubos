@@ -16,9 +16,6 @@ SECTION = "libs/multimedia"
 # The src/pulsecore/filter/ directory contains code under the 3-clause BSD
 # license.
 #
-# src/utils/qpaeq is licensed under AGPL. qpaeq is not installed by this
-# recipe, however, which is why AGPL is not mentioned in LICENSE.
-#
 # People who distribute PulseAudio binaries need to also consider that there
 # are some dependencies to GPL libraries. LGPL code that depends on GPL
 # libraries probably becomes effectively GPL-licensed (at compile-time? or at
@@ -47,26 +44,24 @@ SECTION = "libs/multimedia"
 # section 3, and therefore libdbus's GPL license doesn't affect PulseAudio.
 LICENSE = "LGPLv2.1+ & MIT & BSD-3-Clause"
 
-LIC_FILES_CHKSUM = "file://LICENSE;md5=a848e8d03f04976778eab2348b59ed2b \
+LIC_FILES_CHKSUM = "file://LICENSE;md5=0e5cd938de1a7a53ea5adac38cc10c39 \
                     file://GPL;md5=4325afd396febcb659c36b49533135d4 \
                     file://LGPL;md5=2d5025d4aa3495befef8f17206a5b0a1 \
-                    file://AGPL;md5=73f1eb20517c55bf9493b7dd6e480788 \
                     file://src/modules/echo-cancel/adrian-license.txt;md5=abbab006a561fbffccedf1c3531f34ab \
                     file://src/pulsecore/filter/LICENSE.WEBKIT;md5=49defbaffddf8c51faf606ff7fc3b1f7 \
                     file://src/pulsecore/resampler.h;beginline=4;endline=21;md5=09794012ae16912c0270f3280cc8ff84 \
                     file://src/modules/reserve.h;beginline=6;endline=28;md5=0e23094760367d51b6609750e9b31fbb \
                     file://src/pulsecore/rtkit.h;beginline=6;endline=29;md5=3f00ff966716ae0817c31576d1473528 \
-                    file://src/utils/qpaeq;beginline=2;endline=16;md5=7f62515a4762f0c3fc3d4201858bb964 \
                     file://src/modules/echo-cancel/adrian-aec.h;beginline=3;endline=12;md5=d3ed4fad1c073f8b06f37495dc5d1026 \
                     file://src/pulsecore/filter/biquad.h;beginline=1;endline=4;md5=6d46d1365206528a20137355924233c1 \
 "
 
 DEPENDS = "libatomic-ops libsndfile1 libtool intltool-native"
 # optional
-DEPENDS += "udev alsa-lib glib-2.0 gconf"
+DEPENDS += "udev alsa-lib glib-2.0"
 DEPENDS += "speexdsp libxml-parser-perl-native libcap"
 
-inherit autotools bash-completion pkgconfig useradd gettext perlnative bluetooth systemd manpages
+inherit autotools bash-completion pkgconfig useradd gettext perlnative bluetooth systemd manpages gsettings
 
 # *.desktop rules wont be generated during configure and build will fail
 # if using --disable-nls
@@ -81,8 +76,9 @@ EXTRA_OECONF = "\
 		--with-database=simple \
 		--without-zsh-completion-dir \
 		--with-udev-rules-dir=`pkg-config --variable=udevdir udev`/rules.d \
-                ac_cv_header_valgrind_memcheck_h=no \
-                --disable-tests \
+		ac_cv_header_valgrind_memcheck_h=no \
+		--disable-tests \
+		--disable-running-from-build-tree \
 "
 
 # soxr (the SoX Resampler library) doesn't seem to be currently packaged in
@@ -93,10 +89,6 @@ EXTRA_OECONF += "--without-soxr"
 # ddbd713293 without explaining why it was not made a PACKAGECONFIG item
 # instead. Oh well, let's keep it disabled until someone expresses some
 # interest in having it enabled.
-#
-# One nice thing about disabling this is that it also prevents qpaeq from
-# being installed, so we avoid adding AGPL to the list of licenses (nothing
-# else in PulseAudio is licensed under AGPL).
 EXTRA_OECONF += "--without-fftw"
 
 # The "adrian" echo canceller implementation has a non-standard license
@@ -110,12 +102,14 @@ PACKAGECONFIG ??= "${@bb.utils.contains('DISTRO_FEATURES', 'bluetooth', '${BLUEZ
                    ${@bb.utils.contains('DISTRO_FEATURES', 'zeroconf', 'avahi', '', d)} \
                    ${@bb.utils.contains('DISTRO_FEATURES', '3g', 'ofono', '', d)} \
                    ${@bb.utils.filter('DISTRO_FEATURES', 'ipv6 systemd x11', d)} \
-                   dbus \
+                   dbus gsettings \
                    "
 
 PACKAGECONFIG[dbus] = "--enable-dbus,--disable-dbus,dbus"
 PACKAGECONFIG[bluez4] = "--enable-bluez4,--disable-bluez4,bluez4 sbc"
 PACKAGECONFIG[bluez5] = "--enable-bluez5,--disable-bluez5,bluez5 sbc"
+PACKAGECONFIG[gconf] = "--enable-gconf,--disable-gconf,gconf"
+PACKAGECONFIG[gsettings] = "--enable-gsettings,--disable-gsettings,glib-2.0-native glib-2.0"
 PACKAGECONFIG[ofono] = "--enable-bluez5-ofono-headset,--disable-bluez5-ofono-headset,ofono"
 PACKAGECONFIG[gtk] = "--enable-gtk3,--disable-gtk3,gtk+3"
 PACKAGECONFIG[systemd] = "--enable-systemd-daemon --enable-systemd-login --enable-systemd-journal --with-systemduserunitdir=${systemd_user_unitdir},--disable-systemd-daemon --disable-systemd-login --disable-systemd-journal,systemd"
@@ -160,7 +154,7 @@ do_install_append() {
 }
 
 USERADD_PACKAGES = "pulseaudio-server"
-GROUPADD_PARAM_pulseaudio-server = "pulse"
+GROUPADD_PARAM_pulseaudio-server = "--system pulse"
 USERADD_PARAM_pulseaudio-server = "--system --home /var/run/pulse \
                               --no-create-home --shell /bin/false \
                               --groups audio,pulse --gid pulse pulse"
@@ -198,6 +192,7 @@ SYSTEMD_SERVICE_${PN}-server = "pulseaudio.service"
 FILES_${PN}-misc = "${bindir}/* ${libdir}/pulseaudio/libpulsedsp.so"
 
 # Allow the pulseaudio package to be created empty as a placeholder (-dbg and -dev depend on it)
+FILES_${PN} = ""
 ALLOW_EMPTY_${PN} = "1"
 
 CONFFILES_libpulse = "${sysconfdir}/pulse/client.conf"
@@ -215,11 +210,9 @@ pkg_postinst_${PN}-server() {
 }
 
 python populate_packages_prepend() {
-    #d.setVar('PKG_pulseaudio', 'pulseaudio')
-
     plugindir = d.expand('${libdir}/pulse-${PV}/modules/')
-    do_split_packages(d, plugindir, '^module-(.*)\.so$', 'pulseaudio-module-%s', 'PulseAudio module for %s', extra_depends='', prepend=True)
-    do_split_packages(d, plugindir, '^lib(.*)\.so$', 'pulseaudio-lib-%s', 'PulseAudio library for %s', extra_depends='', prepend=True)
+    do_split_packages(d, plugindir, r'^module-(.*)\.so$', '${PN}-module-%s', 'PulseAudio module for %s', extra_depends='', prepend=True)
+    do_split_packages(d, plugindir, r'^lib(.*)\.so$', '${PN}-lib-%s', 'PulseAudio library for %s', extra_depends='', prepend=True)
 }
 
 RDEPENDS_pulseaudio-server = " \
@@ -255,8 +248,11 @@ RDEPENDS_pulseaudio-server += "alsa-plugins-pulseaudio-conf"
 RDEPENDS_pulseaudio-module-console-kit =+ "${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'consolekit', '', d)}"
 RDEPENDS_pulseaudio-misc += "pulseaudio-module-cli-protocol-unix"
 
-FILES_pulseaudio-module-gconf += "${libexecdir}/pulse/gconf-helper"
-FILES_pulseaudio-module-alsa-card += "${datadir}/pulseaudio/alsa-mixer"
+FILES_${PN}-module-alsa-card += "${datadir}/pulseaudio/alsa-mixer"
+FILES_${PN}-module-gconf += "${libexecdir}/pulse/gconf-helper"
+
+GSETTINGS_PACKAGE = "${@bb.utils.contains('PACKAGECONFIG', 'gsettings', '${PN}-module-gsettings', '', d)}"
+FILES_${PN}-module-gsettings += "${libexecdir}/pulse/gsettings-helper ${datadir}/GConf/gsettings ${datadir}/glib-2.0/schemas"
 
 # The console-kit module is good to have on X11 systems (it keeps PulseAudio
 # running for the duration of the user login session). The device-manager and

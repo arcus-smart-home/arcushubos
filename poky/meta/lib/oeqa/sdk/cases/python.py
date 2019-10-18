@@ -1,32 +1,31 @@
-import os
-import shutil
-import unittest
+#
+# SPDX-License-Identifier: MIT
+#
 
-from oeqa.core.utils.path import remove_safe
+import subprocess, unittest
 from oeqa.sdk.case import OESDKTestCase
 
-class PythonTest(OESDKTestCase):
-    @classmethod
-    def setUpClass(self):
-        if not (self.tc.hasHostPackage("nativesdk-python") or
-                self.tc.hasHostPackage("python-native")):
+from oeqa.utils.subprocesstweak import errors_have_output
+errors_have_output()
+
+class Python2Test(OESDKTestCase):
+    def setUp(self):
+        if not (self.tc.hasHostPackage("nativesdk-python-core") or
+                self.tc.hasHostPackage("python-core-native")):
             raise unittest.SkipTest("No python package in the SDK")
 
-        for f in ['test.py']:
-            shutil.copyfile(os.path.join(self.tc.files_dir, f),
-                   os.path.join(self.tc.sdk_dir, f))
+    def test_python2(self):
+        cmd = "python -c \"import codecs; print(codecs.encode('Uryyb, jbeyq', 'rot13'))\""
+        output = self._run(cmd)
+        self.assertEqual(output, "Hello, world\n")
 
-    def test_python_exists(self):
-        self._run('which python')
+class Python3Test(OESDKTestCase):
+    def setUp(self):
+        if not (self.tc.hasHostPackage("nativesdk-python3-core") or
+                self.tc.hasHostPackage("python3-core-native")):
+            raise unittest.SkipTest("No python3 package in the SDK")
 
-    def test_python_stdout(self):
-        output = self._run('python %s/test.py' % self.tc.sdk_dir)
-        self.assertEqual(output.strip(), "the value of a is 0.01", msg="Incorrect output: %s" % output)
-
-    def test_python_testfile(self):
-        self._run('ls /tmp/testfile.python')
-
-    @classmethod
-    def tearDownClass(self):
-        remove_safe("%s/test.py" % self.tc.sdk_dir)
-        remove_safe("/tmp/testfile.python")
+    def test_python3(self):
+        cmd = "python3 -c \"import codecs; print(codecs.encode('Uryyb, jbeyq', 'rot13'))\""
+        output = self._run(cmd)
+        self.assertEqual(output, "Hello, world\n")

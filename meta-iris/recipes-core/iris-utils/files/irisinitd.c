@@ -187,7 +187,7 @@ static void alarmHandler(int sig)
 
             // Play reboot sound, once
             if (!reboot_sound_played) {
-#ifdef beaglebone
+#ifdef beaglebone_yocto
                 snprintf(cmd, sizeof(cmd), "play_tones -f %s",
                          REBOOT_SOUND_FILE);
                 system(cmd);
@@ -207,7 +207,7 @@ static void alarmHandler(int sig)
 
             // Play factory reset sound, once
             if (!factory_resetting) {
-#ifdef beaglebone
+#ifdef beaglebone_yocto
                 snprintf(cmd, sizeof(cmd), "play_tones -f %s",
                          RESET_SOUND_FILE);
                 system(cmd);
@@ -431,7 +431,7 @@ static gboolean pwrDownButtonHandler(GIOChannel *channel, GIOCondition cond,
 }
 #endif
 
-#ifdef beaglebone
+#ifdef beaglebone_yocto
 /* Simple USB over-current handler - creates a file to mark when
    condition started, removes file when over */
 static gboolean usbOCHandler(GIOChannel *channel, GIOCondition cond,
@@ -807,7 +807,7 @@ static void *ledThreadHandler(void *ptr)
     return NULL;
 }
 
-#ifndef beaglebone
+#ifndef beaglebone_yocto
 
 // Provisioning support for V3 hub
 #ifdef imxdimagic
@@ -1419,7 +1419,7 @@ int main(int argc, char** argv)
     gchar      buf[64];
     int        fdGpio, restart = 0;
     pthread_t  led_thread;
-#ifndef beaglebone
+#ifndef beaglebone_yocto
     pthread_t  wifiCfg_thread;
 #endif
     FILE       *f;
@@ -1453,7 +1453,7 @@ int main(int argc, char** argv)
     /* Create LED handler thread - may need to sleep for some actions */
     pthread_create(&led_thread, NULL, &ledThreadHandler, NULL);
 
-#ifndef beaglebone
+#ifndef beaglebone_yocto
     /* Create wifi configuration handler */
     pthread_create(&wifiCfg_thread, NULL, &wifiCfgThreadHandler, NULL);
 #endif
@@ -1534,7 +1534,7 @@ int main(int argc, char** argv)
 #endif
     }
 
-#ifdef beaglebone
+#ifdef beaglebone_yocto
     /* Open GPIO - USB0 Over-current */
     fdGpio = open(USB0_OC_GPIO_VALUE_FILE, O_RDONLY | O_NONBLOCK);
 
@@ -1576,7 +1576,7 @@ int main(int argc, char** argv)
     /* For manufacturing, start with all LEDs off to avoid confusion
        during the test process (at least for v2 hub...) */
     if (IRIS_isMfgImage()) {
-#ifdef beaglebone
+#ifdef beaglebone_yocto
         setLedMode("all-off");
 #endif
     } else {

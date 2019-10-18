@@ -1,53 +1,55 @@
-From 21080b6a40d0a4ddd2db8f0fa37686f6fa885d1c Mon Sep 17 00:00:00 2001
-From: Khem Raj <raj.khem@gmail.com>
-Date: Mon, 23 Oct 2017 11:38:33 -0700
-Subject: [PATCH 06/12] Include netinet/if_ether.h
+From 67a988ae82c776d11be76de7180d50ea027ac442 Mon Sep 17 00:00:00 2001
+From: Chen Qi <Qi.Chen@windriver.com>
+Date: Mon, 25 Feb 2019 14:24:20 +0800
+Subject: [PATCH 06/24] Include netinet/if_ether.h
 
 Fixes
-/mnt/a/oe/build/tmp/work/mips32r2-bec-linux-musl/systemd/1_234-r0/recipe-sysroot/usr/include/netinet/if_ether.h:101:8: error: redefinition of 'struct ethhdr'
+/path/to/systemd/recipe-sysroot/usr/include/netinet/if_ether.h:101:8: error: redefinition of 'struct ethhdr'
  struct ethhdr {
         ^~~~~~
 
-Signed-off-by: Khem Raj <raj.khem@gmail.com>
----
-Upstream-Status: Pending
+Upstream-Status: Inappropriate [musl specific]
 
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+Signed-off-by: Chen Qi <Qi.Chen@windriver.com>
+---
  src/libsystemd/sd-netlink/netlink-types.c | 1 +
  src/network/netdev/tuntap.c               | 1 +
  src/network/networkd-brvlan.c             | 1 +
- src/udev/net/ethtool-util.c               | 2 +-
- src/udev/udev-builtin-net_setup_link.c    | 2 +-
- 5 files changed, 5 insertions(+), 2 deletions(-)
+ src/udev/net/ethtool-util.c               | 1 +
+ src/udev/net/ethtool-util.h               | 1 +
+ src/udev/udev-builtin-net_setup_link.c    | 1 +
+ 6 files changed, 6 insertions(+)
 
 diff --git a/src/libsystemd/sd-netlink/netlink-types.c b/src/libsystemd/sd-netlink/netlink-types.c
-index 923f7dd10..b95b1e4b2 100644
+index 9dcd3f2..e23ff4c 100644
 --- a/src/libsystemd/sd-netlink/netlink-types.c
 +++ b/src/libsystemd/sd-netlink/netlink-types.c
-@@ -19,6 +19,7 @@
- 
+@@ -3,6 +3,7 @@
+ #include <netinet/in.h>
  #include <stdint.h>
  #include <sys/socket.h>
 +#include <netinet/if_ether.h>
  #include <linux/netlink.h>
  #include <linux/rtnetlink.h>
- #include <linux/can/netlink.h>
+ #include <linux/genetlink.h>
 diff --git a/src/network/netdev/tuntap.c b/src/network/netdev/tuntap.c
-index 3d6280884..40e58c38f 100644
+index 951138d..1ad499d 100644
 --- a/src/network/netdev/tuntap.c
 +++ b/src/network/netdev/tuntap.c
-@@ -18,6 +18,7 @@
- ***/
+@@ -2,6 +2,7 @@
  
+ #include <errno.h>
  #include <fcntl.h>
 +#include <netinet/if_ether.h>
  #include <linux/if_tun.h>
  #include <net/if.h>
  #include <netinet/if_ether.h>
 diff --git a/src/network/networkd-brvlan.c b/src/network/networkd-brvlan.c
-index fa5d3ee7f..e0828962a 100644
+index 8377623..132af60 100644
 --- a/src/network/networkd-brvlan.c
 +++ b/src/network/networkd-brvlan.c
-@@ -18,6 +18,7 @@
+@@ -4,6 +4,7 @@
  ***/
  
  #include <netinet/in.h>
@@ -56,31 +58,39 @@ index fa5d3ee7f..e0828962a 100644
  #include <stdbool.h>
  
 diff --git a/src/udev/net/ethtool-util.c b/src/udev/net/ethtool-util.c
-index 201fc2343..5f7cc2a0a 100644
+index 0dcec03..3695b10 100644
 --- a/src/udev/net/ethtool-util.c
 +++ b/src/udev/net/ethtool-util.c
-@@ -16,7 +16,7 @@
-   You should have received a copy of the GNU Lesser General Public License
-   along with systemd; If not, see <http://www.gnu.org/licenses/>.
- ***/
--
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
 +#include <netinet/if_ether.h>
  #include <net/if.h>
  #include <sys/ioctl.h>
  #include <linux/ethtool.h>
+diff --git a/src/udev/net/ethtool-util.h b/src/udev/net/ethtool-util.h
+index 618b26b..ebfe82a 100644
+--- a/src/udev/net/ethtool-util.h
++++ b/src/udev/net/ethtool-util.h
+@@ -2,6 +2,7 @@
+ #pragma once
+ 
+ #include <macro.h>
++#include <netinet/if_ether.h>
+ #include <linux/ethtool.h>
+ 
+ #include "conf-parser.h"
 diff --git a/src/udev/udev-builtin-net_setup_link.c b/src/udev/udev-builtin-net_setup_link.c
-index 8e4777513..d01fff2a4 100644
+index a845dfa..177289a 100644
 --- a/src/udev/udev-builtin-net_setup_link.c
 +++ b/src/udev/udev-builtin-net_setup_link.c
-@@ -16,7 +16,7 @@
-   You should have received a copy of the GNU Lesser General Public License
-   along with systemd; If not, see <http://www.gnu.org/licenses/>.
- ***/
--
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
 +#include <netinet/if_ether.h>
+ #include "device-util.h"
  #include "alloc-util.h"
  #include "link-config.h"
- #include "log.h"
 -- 
-2.14.2
+2.7.4
 

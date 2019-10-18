@@ -12,6 +12,8 @@ RDEPENDS_${PN} += "bash"
 RRECOMMENDS_${PN} += "kernel-module-ebtables \
     "
 
+UPSTREAM_CHECK_URI = "https://sourceforge.net/projects/ebtables/files/ebtables/"
+
 SRC_URI = "${SOURCEFORGE_MIRROR}/ebtables/ebtables-v${PV}.tar.gz \
            file://ebtables-save \
            file://installnonroot.patch \
@@ -29,11 +31,21 @@ SRC_URI = "${SOURCEFORGE_MIRROR}/ebtables/ebtables-v${PV}.tar.gz \
            file://0007-extensions-Use-stdint-types.patch \
            file://0008-ethernetdb.h-Remove-C-specific-compiler-hint-macro-_.patch \
            file://0009-ebtables-Allow-RETURN-target-rules-in-user-defined-c.patch \
-           file://0010-Adjust-header-include-sequence.patch \
            "
+
+SRC_URI_append_libc-musl = " file://0010-Adjust-header-include-sequence.patch"
 
 SRC_URI[md5sum] = "506742a3d44b9925955425a659c1a8d0"
 SRC_URI[sha256sum] = "dc6f7b484f207dc712bfca81645f45120cb6aee3380e77a1771e9c34a9a4455d"
+
+# It is using '-' but not '.' as delimiter for the version in the releases page,
+# which causes the version comparison unmatched.
+#UPSTREAM_CHECK_URI = "https://sourceforge.net/projects/ebtables/files/ebtables/"
+#UPSTREAM_CHECK_REGEX = "ebtables-(?P<pver>\d+(\-\d+)+)"
+
+RECIPE_UPSTREAM_VERSION = "2.0.10-4"
+RECIPE_UPSTREAM_DATE = "Dec 15, 2011"
+CHECK_DATE = "May 25, 2018"
 
 S = "${WORKDIR}/ebtables-v${PV}"
 
@@ -42,10 +54,10 @@ inherit update-rc.d systemd
 python __anonymous () {
     import re
 
-    karch = d.getVar('KARCH')
+    karch = d.getVar('TARGET_ARCH')
     multilib = d.getVar('MLPREFIX')
 
-    if multilib and karch == 'powerpc64':
+    if multilib and ( karch == 'powerpc64' or karch == 'arm' ):
         searchstr = "lib.?32"
         reg = re.compile(searchstr)
         if reg.search(multilib):

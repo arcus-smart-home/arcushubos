@@ -1,3 +1,7 @@
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+
 from abc import ABCMeta, abstractmethod
 from oe.utils import execute_pre_post_process
 from oe.manifest import *
@@ -6,52 +10,6 @@ import os
 import shutil
 import glob
 import traceback
-
-def generate_locale_archive(d, rootfs):
-    # Pretty sure we don't need this for SDK archive generation but
-    # keeping it to be safe...
-    target_arch = d.getVar('SDK_ARCH')
-    locale_arch_options = { \
-        "arm": ["--uint32-align=4", "--little-endian"],
-        "armeb": ["--uint32-align=4", "--big-endian"],
-        "aarch64": ["--uint32-align=4", "--little-endian"],
-        "aarch64_be": ["--uint32-align=4", "--big-endian"],
-        "sh4": ["--uint32-align=4", "--big-endian"],
-        "powerpc": ["--uint32-align=4", "--big-endian"],
-        "powerpc64": ["--uint32-align=4", "--big-endian"],
-        "mips": ["--uint32-align=4", "--big-endian"],
-        "mipsisa32r6": ["--uint32-align=4", "--big-endian"],
-        "mips64": ["--uint32-align=4", "--big-endian"],
-        "mipsisa64r6": ["--uint32-align=4", "--big-endian"],
-        "mipsel": ["--uint32-align=4", "--little-endian"],
-        "mipsisa32r6el": ["--uint32-align=4", "--little-endian"],
-        "mips64el": ["--uint32-align=4", "--little-endian"],
-        "mipsisa64r6el": ["--uint32-align=4", "--little-endian"],
-        "i586": ["--uint32-align=4", "--little-endian"],
-        "i686": ["--uint32-align=4", "--little-endian"],
-        "x86_64": ["--uint32-align=4", "--little-endian"]
-    }
-    if target_arch in locale_arch_options:
-        arch_options = locale_arch_options[target_arch]
-    else:
-        bb.error("locale_arch_options not found for target_arch=" + target_arch)
-        bb.fatal("unknown arch:" + target_arch + " for locale_arch_options")
-
-    localedir = oe.path.join(rootfs, d.getVar("libdir_nativesdk"), "locale")
-    # Need to set this so cross-localedef knows where the archive is
-    env = dict(os.environ)
-    env["LOCALEARCHIVE"] = oe.path.join(localedir, "locale-archive")
-
-    for name in os.listdir(localedir):
-        path = os.path.join(localedir, name)
-        if os.path.isdir(path):
-            try:
-                cmd = ["cross-localedef", "--verbose"]
-                cmd += arch_options
-                cmd += ["--add-to-archive", path]
-                subprocess.check_output(cmd, env=env, stderr=subprocess.STDOUT)
-            except Exception as e:
-                bb.fatal("Cannot create locale archive: %s" % e.output)
 
 class Sdk(object, metaclass=ABCMeta):
     def __init__(self, d, manifest_dir):
@@ -141,10 +99,13 @@ class Sdk(object, metaclass=ABCMeta):
             if linguas == "all":
                 pm.install_glob("nativesdk-glibc-binary-localedata-*.utf-8", sdk=True)
             else:
-                for lang in linguas.split():
-                    pm.install("nativesdk-glibc-binary-localedata-%s.utf-8" % lang)
+                pm.install(["nativesdk-glibc-binary-localedata-%s.utf-8" % \
+                           lang for lang in linguas.split()])
             # Generate a locale archive of them
-            generate_locale_archive(self.d, oe.path.join(self.sdk_host_sysroot, self.sdk_native_path))
+            target_arch = self.d.getVar('SDK_ARCH')
+            rootfs = oe.path.join(self.sdk_host_sysroot, self.sdk_native_path)
+            localedir = oe.path.join(rootfs, self.d.getVar("libdir_nativesdk"), "locale")
+            generate_locale_archive(self.d, rootfs, target_arch, localedir)
             # And now delete the binary locales
             pkgs = fnmatch.filter(pm.list_installed(), "nativesdk-glibc-binary-localedata-*.utf-8")
             pm.remove(pkgs)
@@ -162,40 +123,21 @@ class RpmSdk(Sdk):
         self.host_manifest = RpmManifest(d, self.manifest_dir,
                                          Manifest.MANIFEST_TYPE_SDK_HOST)
 
-        target_providename = ['/bin/sh',
-                              '/bin/bash',
-                              '/usr/bin/env',
-                              '/usr/bin/perl',
-                              'pkgconfig'
-                              ]
-
         rpm_repo_workdir = "oe-sdk-repo"
         if "sdk_ext" in d.getVar("BB_RUNTASK"):
             rpm_repo_workdir = "oe-sdk-ext-repo"
-
 
         self.target_pm = RpmPM(d,
                                self.sdk_target_sysroot,
                                self.d.getVar('TARGET_VENDOR'),
                                'target',
-                               target_providename,
                                rpm_repo_workdir=rpm_repo_workdir
                                )
-
-        sdk_providename = ['/bin/sh',
-                           '/bin/bash',
-                           '/usr/bin/env',
-                           '/usr/bin/perl',
-                           'pkgconfig',
-                           'libGL.so()(64bit)',
-                           'libGL.so'
-                           ]
 
         self.host_pm = RpmPM(d,
                              self.sdk_host_sysroot,
                              self.d.getVar('SDK_VENDOR'),
                              'host',
-                             sdk_providename,
                              "SDK_PACKAGE_ARCHS",
                              "SDK_OS",
                              rpm_repo_workdir=rpm_repo_workdir
@@ -228,6 +170,8 @@ class RpmSdk(Sdk):
 
         self.target_pm.install_complementary(self.d.getVar('SDKIMAGE_INSTALL_COMPLEMENTARY'))
 
+        self.target_pm.run_intercepts(populate_sdk='target')
+
         execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_TARGET_COMMAND"))
 
         if not bb.utils.contains("SDKIMAGE_FEATURES", "package-management", True, False, self.d):
@@ -236,6 +180,8 @@ class RpmSdk(Sdk):
         bb.note("Installing NATIVESDK packages")
         self._populate_sysroot(self.host_pm, self.host_manifest)
         self.install_locales(self.host_pm)
+
+        self.host_pm.run_intercepts(populate_sdk='host')
 
         execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_HOST_COMMAND"))
 
@@ -285,11 +231,17 @@ class OpkgSdk(Sdk):
         self.host_manifest = OpkgManifest(d, self.manifest_dir,
                                           Manifest.MANIFEST_TYPE_SDK_HOST)
 
+        ipk_repo_workdir = "oe-sdk-repo"
+        if "sdk_ext" in d.getVar("BB_RUNTASK"):
+            ipk_repo_workdir = "oe-sdk-ext-repo"
+
         self.target_pm = OpkgPM(d, self.sdk_target_sysroot, self.target_conf,
-                                self.d.getVar("ALL_MULTILIB_PACKAGE_ARCHS"))
+                                self.d.getVar("ALL_MULTILIB_PACKAGE_ARCHS"), 
+                                ipk_repo_workdir=ipk_repo_workdir)
 
         self.host_pm = OpkgPM(d, self.sdk_host_sysroot, self.host_conf,
-                              self.d.getVar("SDK_PACKAGE_ARCHS"))
+                              self.d.getVar("SDK_PACKAGE_ARCHS"),
+                                ipk_repo_workdir=ipk_repo_workdir)
 
     def _populate_sysroot(self, pm, manifest):
         pkgs_to_install = manifest.parse_initial_manifest()
@@ -312,6 +264,8 @@ class OpkgSdk(Sdk):
 
         self.target_pm.install_complementary(self.d.getVar('SDKIMAGE_INSTALL_COMPLEMENTARY'))
 
+        self.target_pm.run_intercepts(populate_sdk='target')
+
         execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_TARGET_COMMAND"))
 
         if not bb.utils.contains("SDKIMAGE_FEATURES", "package-management", True, False, self.d):
@@ -320,6 +274,8 @@ class OpkgSdk(Sdk):
         bb.note("Installing NATIVESDK packages")
         self._populate_sysroot(self.host_pm, self.host_manifest)
         self.install_locales(self.host_pm)
+
+        self.host_pm.run_intercepts(populate_sdk='host')
 
         execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_HOST_COMMAND"))
 
@@ -361,15 +317,21 @@ class DpkgSdk(Sdk):
         self.host_manifest = DpkgManifest(d, self.manifest_dir,
                                           Manifest.MANIFEST_TYPE_SDK_HOST)
 
+        deb_repo_workdir = "oe-sdk-repo"
+        if "sdk_ext" in d.getVar("BB_RUNTASK"):
+            deb_repo_workdir = "oe-sdk-ext-repo"
+
         self.target_pm = DpkgPM(d, self.sdk_target_sysroot,
                                 self.d.getVar("PACKAGE_ARCHS"),
                                 self.d.getVar("DPKG_ARCH"),
-                                self.target_conf_dir)
+                                self.target_conf_dir,
+                                deb_repo_workdir=deb_repo_workdir)
 
         self.host_pm = DpkgPM(d, self.sdk_host_sysroot,
                               self.d.getVar("SDK_PACKAGE_ARCHS"),
                               self.d.getVar("DEB_SDK_ARCH"),
-                              self.host_conf_dir)
+                              self.host_conf_dir,
+                              deb_repo_workdir=deb_repo_workdir)
 
     def _copy_apt_dir_to(self, dst_dir):
         staging_etcdir_native = self.d.getVar("STAGING_ETCDIR_NATIVE")
@@ -397,6 +359,8 @@ class DpkgSdk(Sdk):
 
         self.target_pm.install_complementary(self.d.getVar('SDKIMAGE_INSTALL_COMPLEMENTARY'))
 
+        self.target_pm.run_intercepts(populate_sdk='target')
+
         execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_TARGET_COMMAND"))
 
         self._copy_apt_dir_to(os.path.join(self.sdk_target_sysroot, "etc", "apt"))
@@ -407,6 +371,8 @@ class DpkgSdk(Sdk):
         bb.note("Installing NATIVESDK packages")
         self._populate_sysroot(self.host_pm, self.host_manifest)
         self.install_locales(self.host_pm)
+
+        self.host_pm.run_intercepts(populate_sdk='host')
 
         execute_pre_post_process(self.d, self.d.getVar("POPULATE_SDK_POST_HOST_COMMAND"))
 

@@ -24,6 +24,7 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     e2fsprogs-mke2fs \
     e2fsprogs-tune2fs \
     openssl \
+    openssl-bin \
     udev-extraconf \
     i2c-tools \
     sqlite3 \
@@ -80,7 +81,7 @@ set_reboot_permissions() {
       chmod 4755 ${IMAGE_ROOTFS}/usr/bin/play ;
 
       # Needed for agent to run wifi scan
-      chmod 4755 ${IMAGE_ROOTFS}/sbin/iwconfig ;
+      chmod 4755 ${IMAGE_ROOTFS}/usr/sbin/iw ;
    fi
 }
 
@@ -110,7 +111,7 @@ set_file_links() {
 	ln -s /var/run/hosts ${IMAGE_ROOTFS}/etc/hosts
 
 	# Replace wireless configuration files with links
-	if [ "${MACHINE}" != "beaglebone" ]; then
+	if [ "${MACHINE}" != "beaglebone-yocto" ]; then
 	   rm -f ${IMAGE_ROOTFS}/etc/network/interfaces
 	   ln -s /home/root/etc/interfaces ${IMAGE_ROOTFS}/etc/network/interfaces
 	   rm -f ${IMAGE_ROOTFS}/etc/wpa_supplicant.conf

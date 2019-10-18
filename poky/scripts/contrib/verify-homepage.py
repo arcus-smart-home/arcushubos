@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
 # This script can be used to verify HOMEPAGE values for all recipes in
 # the current configuration.
 # The result is influenced by network environment, since the timeout of connect url is 5 seconds as default.
@@ -27,7 +29,7 @@ logger = scriptutils.logger_create('verify_homepage')
 def wgetHomepage(pn, homepage):
     result = subprocess.call('wget ' + '-q -T 5 -t 1 --spider ' + homepage, shell = True)
     if result:
-        logger.warn("%s: failed to verify HOMEPAGE: %s " % (pn, homepage))
+        logger.warning("%s: failed to verify HOMEPAGE: %s " % (pn, homepage))
         return 1
     else:
         return 0

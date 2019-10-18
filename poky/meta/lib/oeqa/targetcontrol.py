@@ -1,6 +1,8 @@
+#
 # Copyright (C) 2013 Intel Corporation
 #
-# Released under the MIT license (see COPYING.MIT)
+# SPDX-License-Identifier: MIT
+#
 
 # This module is used by testimage.bbclass for setting up and controlling a target machine.
 
@@ -91,6 +93,8 @@ class QemuTarget(BaseTarget):
 
     def __init__(self, d, logger, image_fstype=None):
 
+        import oe.types
+
         super(QemuTarget, self).__init__(d, logger)
 
         self.rootfs = ''
@@ -105,13 +109,9 @@ class QemuTarget(BaseTarget):
         dump_target_cmds = d.getVar("testimage_dump_target")
         dump_host_cmds = d.getVar("testimage_dump_host")
         dump_dir = d.getVar("TESTIMAGE_DUMP_DIR")
-        qemu_use_kvm = d.getVar("QEMU_USE_KVM")
-        if qemu_use_kvm and \
-           (qemu_use_kvm == "True" and "x86" in d.getVar("MACHINE") or \
-            d.getVar("MACHINE") in qemu_use_kvm.split()):
-            use_kvm = True
-        else:
-            use_kvm = False
+        if not dump_dir:
+            dump_dir = os.path.join(d.getVar('LOG_DIR'), 'runtime-hostdump')
+        use_kvm = oe.types.qemu_use_kvm(d.getVar('QEMU_USE_KVM'), d.getVar('TARGET_ARCH'))
 
         # Log QemuRunner log output to a file
         import oe.path
@@ -161,7 +161,7 @@ class QemuTarget(BaseTarget):
 
     def start(self, params=None, ssh=True, extra_bootparams='', runqemuparams='', launch_cmd='', discard_writes=True):
         if launch_cmd:
-            start = self.runner.launch(get_ip=ssh, launch_cmd=launch_cmd)
+            start = self.runner.launch(get_ip=ssh, launch_cmd=launch_cmd, qemuparams=params)
         else:
             start = self.runner.start(params, get_ip=ssh, extra_bootparams=extra_bootparams, runqemuparams=runqemuparams, discard_writes=discard_writes)
 
@@ -194,7 +194,7 @@ class QemuTarget(BaseTarget):
         else:
             raise bb.build.FuncFailed("%s - FAILED to re-start qemu - check the task log and the boot log" % self.pn)
 
-    def run_serial(self, command, timeout=5):
+    def run_serial(self, command, timeout=60):
         return self.runner.run_serial(command, timeout=timeout)
 
 

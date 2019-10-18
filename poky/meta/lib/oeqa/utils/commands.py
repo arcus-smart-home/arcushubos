@@ -1,6 +1,8 @@
+#
 # Copyright (c) 2013-2014 Intel Corporation
 #
-# Released under the MIT license (see COPYING.MIT)
+# SPDX-License-Identifier: MIT
+#
 
 # DESCRIPTION
 # This module is mainly used by scripts/oe-selftest and modules under meta/oeqa/selftest
@@ -146,6 +148,9 @@ class Command(object):
         # At this point we know that the process has closed stdout/stderr, so
         # it is safe and necessary to wait for the actual process completion.
         self.status = self.process.wait()
+        self.process.stdout.close()
+        if self.process.stderr:
+            self.process.stderr.close()
 
         self.log.debug("Command '%s' returned %d as exit code." % (self.cmd, self.status))
         # logging the complete output is insane
@@ -227,7 +232,7 @@ def get_bb_vars(variables=None, target=None, postconfig=None):
     bbenv = get_bb_env(target, postconfig=postconfig)
 
     if variables is not None:
-        variables = variables.copy()
+        variables = list(variables)
     var_re = re.compile(r'^(export )?(?P<var>\w+(_.*)?)="(?P<value>.*)"$')
     unset_re = re.compile(r'^unset (?P<var>\w+)$')
     lastline = None
@@ -285,7 +290,7 @@ def create_temp_layer(templayerdir, templayername, priority=999, recipepathspec=
         f.write('BBFILE_PATTERN_%s = "^${LAYERDIR}/"\n' % templayername)
         f.write('BBFILE_PRIORITY_%s = "%d"\n' % (templayername, priority))
         f.write('BBFILE_PATTERN_IGNORE_EMPTY_%s = "1"\n' % templayername)
-
+        f.write('LAYERSERIES_COMPAT_%s = "${LAYERSERIES_COMPAT_core}"\n' % templayername)
 
 @contextlib.contextmanager
 def runqemu(pn, ssh=True, runqemuparams='', image_fstype=None, launch_cmd=None, qemuparams=None, overrides={}, discard_writes=True):
@@ -333,16 +338,20 @@ def runqemu(pn, ssh=True, runqemuparams='', image_fstype=None, launch_cmd=None, 
         try:
             qemu.start(params=qemuparams, ssh=ssh, runqemuparams=runqemuparams, launch_cmd=launch_cmd, discard_writes=discard_writes)
         except bb.build.FuncFailed:
-            raise Exception('Failed to start QEMU - see the logs in %s' % logdir)
+            msg = 'Failed to start QEMU - see the logs in %s' % logdir
+            if os.path.exists(qemu.qemurunnerlog):
+                with open(qemu.qemurunnerlog, 'r') as f:
+                    msg = msg + "Qemurunner log output from %s:\n%s" % (qemu.qemurunnerlog, f.read())
+            raise Exception(msg)
 
         yield qemu
 
     finally:
+        targetlogger.removeHandler(handler)
         try:
             qemu.stop()
         except:
             pass
-    targetlogger.removeHandler(handler)
 
 def updateEnv(env_file):
     """

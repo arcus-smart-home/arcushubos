@@ -14,14 +14,13 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a6f89e2100d9b6cdffcea4f398e37343 \
                    "
 inherit autotools gtk-doc pkgconfig manpages
 
-SRCREV = "ef4257b59c4307b8c627d89f3c7f1feedb32582f"
+SRCREV = "58133a96c894c043e48c74ddf0bfe8db90bac62f"
 # Lookout for PV bump too when SRCREV is changed
-PV = "24+git${SRCPV}"
+PV = "26"
 
 SRC_URI = "git://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git \
            file://depmod-search.conf \
            file://avoid_parallel_tests.patch \
-           file://fix-O_CLOEXEC.patch \
           "
 
 S = "${WORKDIR}/git"
@@ -35,9 +34,7 @@ PACKAGECONFIG[debug] = "--enable-debug,--disable-debug"
 PACKAGECONFIG[logging] = " --enable-logging,--disable-logging"
 PACKAGECONFIG[manpages] = "--enable-manpages, --disable-manpages, libxslt-native xmlto-native"
 
-do_configure_prepend () {
-        gtkdocize --docdir ${S}/libkmod/docs --srcdir ${S}
-}
+GTKDOC_DOCDIR = "${S}/libkmod/docs"
 
 do_configure_append () {
 	sed -i 's#}libtool#}${TARGET_SYS}-libtool#' ${B}/doltlibtool

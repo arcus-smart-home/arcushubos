@@ -1,16 +1,20 @@
+#
 # Copyright (C) 2017 Intel Corporation
-# Released under the MIT license (see COPYING.MIT)
+#
+# SPDX-License-Identifier: MIT
+#
 
 import os
 import time
 import glob
 import sys
-import imp
+import importlib
 import signal
 from shutil import copyfile
 from random import choice
 
 import oeqa
+import oe
 
 from oeqa.core.context import OETestContext, OETestContextExecutor
 from oeqa.core.exception import OEQAPreRun, OEQATestNotFound
@@ -25,14 +29,14 @@ class OESelftestTestContext(OETestContext):
         self.custommachine = None
         self.config_paths = config_paths
 
-    def runTests(self, machine=None, skips=[]):
+    def runTests(self, processes=None, machine=None, skips=[]):
         if machine:
             self.custommachine = machine
             if machine == 'random':
                 self.custommachine = choice(self.machines)
             self.logger.info('Run tests with custom MACHINE set to: %s' % \
                     self.custommachine)
-        return super(OESelftestTestContext, self).runTests(skips)
+        return super(OESelftestTestContext, self).runTests(processes, skips)
 
     def listTests(self, display_type, machine=None):
         return super(OESelftestTestContext, self).listTests(display_type)
@@ -68,6 +72,9 @@ class OESelftestTestContextExecutor(OETestContextExecutor):
                 action="store_true", default=False,
                 help='List all available tests.')
 
+        parser.add_argument('-j', '--num-processes', dest='processes', action='store',
+                type=int, help="number of processes to execute in parallel with")
+
         parser.add_argument('--machine', required=False, choices=['random', 'all'],
                             help='Run tests on different machines (random/all).')
         
@@ -96,10 +103,16 @@ class OESelftestTestContextExecutor(OETestContextExecutor):
         return cases_paths
 
     def _process_args(self, logger, args):
-        args.output_log = '%s-results-%s.log' % (self.name,
-                time.strftime("%Y%m%d%H%M%S"))
+        args.test_start_time = time.strftime("%Y%m%d%H%M%S")
         args.test_data_file = None
         args.CASES_PATHS = None
+
+        bbvars = get_bb_vars()
+        logdir = os.environ.get("BUILDDIR")
+        if 'LOG_DIR' in bbvars:
+            logdir = bbvars['LOG_DIR']
+        bb.utils.mkdirhier(logdir)
+        args.output_log = logdir + '/%s-results-%s.log' % (self.name, args.test_start_time)
 
         super(OESelftestTestContextExecutor, self)._process_args(logger, args)
 
@@ -110,7 +123,7 @@ class OESelftestTestContextExecutor(OETestContextExecutor):
         elif args.list_tests:
             args.list_tests = 'name'
 
-        self.tc_kwargs['init']['td'] = get_bb_vars()
+        self.tc_kwargs['init']['td'] = bbvars
         self.tc_kwargs['init']['machines'] = self._get_available_machines()
 
         builddir = os.environ.get("BUILDDIR")
@@ -137,6 +150,7 @@ class OESelftestTestContextExecutor(OETestContextExecutor):
                 self.tc_kwargs['init']['config_paths']['bblayers_backup'])
 
         self.tc_kwargs['run']['skips'] = args.skips
+        self.tc_kwargs['run']['processes'] = args.processes
 
     def _pre_run(self):
         def _check_required_env_variables(vars):
@@ -152,7 +166,7 @@ class OESelftestTestContextExecutor(OETestContextExecutor):
                 os.chdir(builddir)
 
             if not "meta-selftest" in self.tc.td["BBLAYERS"]:
-                self.tc.logger.warn("meta-selftest layer not found in BBLAYERS, adding it")
+                self.tc.logger.warning("meta-selftest layer not found in BBLAYERS, adding it")
                 meta_selftestdir = os.path.join(
                     self.tc.td["BBLAYERS_FETCH_DIR"], 'meta-selftest')
                 if os.path.isdir(meta_selftestdir):
@@ -174,13 +188,17 @@ class OESelftestTestContextExecutor(OETestContextExecutor):
                     self.tc.logger.info("\t%s" % l)
 
                 sys.path.extend(layer_libdirs)
-                imp.reload(oeqa.selftest)
+                importlib.reload(oeqa.selftest)
 
         _check_required_env_variables(["BUILDDIR"])
         _check_presence_meta_selftest()
 
         if "buildhistory.bbclass" in self.tc.td["BBINCLUDED"]:
             self.tc.logger.error("You have buildhistory enabled already and this isn't recommended for selftest, please disable it first.")
+            raise OEQAPreRun
+
+        if "rm_work.bbclass" in self.tc.td["BBINCLUDED"]:
+            self.tc.logger.error("You have rm_work enabled which isn't recommended while running oe-selftest. Please disable it before continuing.")
             raise OEQAPreRun
 
         if "PRSERV_HOST" in self.tc.td:
@@ -193,8 +211,30 @@ class OESelftestTestContextExecutor(OETestContextExecutor):
 
         _add_layer_libs()
 
-        self.tc.logger.info("Running bitbake -p")
-        runCmd("bitbake -p")
+        self.tc.logger.info("Running bitbake -e to test the configuration is valid/parsable")
+        runCmd("bitbake -e")
+
+    def get_json_result_dir(self, args):
+        json_result_dir = os.path.join(self.tc.td["LOG_DIR"], 'oeqa')
+        if "OEQA_JSON_RESULT_DIR" in self.tc.td:
+            json_result_dir = self.tc.td["OEQA_JSON_RESULT_DIR"]
+
+        return json_result_dir
+
+    def get_configuration(self, args):
+        import platform
+        from oeqa.utils.metadata import metadata_from_bb
+        metadata = metadata_from_bb()
+        configuration = {'TEST_TYPE': 'oeselftest',
+                        'STARTTIME': args.test_start_time,
+                        'MACHINE': self.tc.td["MACHINE"],
+                        'HOST_DISTRO': oe.lsb.distro_identifier().replace(' ', '-'),
+                        'HOST_NAME': metadata['hostname'],
+                        'LAYERS': metadata['layers']}
+        return configuration
+
+    def get_result_id(self, configuration):
+        return '%s_%s_%s_%s' % (configuration['TEST_TYPE'], configuration['HOST_DISTRO'], configuration['MACHINE'], configuration['STARTTIME'])
 
     def _internal_run(self, logger, args):
         self.module_paths = self._get_cases_paths(
@@ -212,7 +252,10 @@ class OESelftestTestContextExecutor(OETestContextExecutor):
         else:
             self._pre_run()
             rc = self.tc.runTests(**self.tc_kwargs['run'])
-            rc.logDetails()
+            configuration = self.get_configuration(args)
+            rc.logDetails(self.get_json_result_dir(args),
+                          configuration,
+                          self.get_result_id(configuration))
             rc.logSummary(self.name)
 
         return rc
@@ -270,7 +313,7 @@ class OESelftestTestContextExecutor(OETestContextExecutor):
 
             output_link = os.path.join(os.path.dirname(args.output_log),
                     "%s-results.log" % self.name)
-            if os.path.exists(output_link):
+            if os.path.lexists(output_link):
                 os.remove(output_link)
             os.symlink(args.output_log, output_link)
 

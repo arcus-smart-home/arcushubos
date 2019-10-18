@@ -12,25 +12,21 @@
 #
 # MACHINEOVERRIDES_EXTENDER_FILTER_OUT_override = "group1 group2"
 #
-# Copyright 2016-2017 (C) O.S. Systems Software LTDA.
+# Copyright 2016-2018 (C) O.S. Systems Software LTDA.
 
 def machine_overrides_extender(d):
-    variant = d.getVar("BBEXTENDVARIANT")
-    if variant:
-        return
-
-    machine_overrides = (d.getVar('MACHINEOVERRIDES', True) or '').split(':')
+    machine_overrides = (d.getVar('PRISTINE_MACHINEOVERRIDES') or '').split(':')
 
     # Gather the list of overrides to filter out
     machine_overrides_filter_out = []
     for override in machine_overrides:
-        machine_overrides_filter_out += (d.getVar('MACHINEOVERRIDES_EXTENDER_FILTER_OUT_%s' % override, True) or '').split()
+        machine_overrides_filter_out += (d.getVar('MACHINEOVERRIDES_EXTENDER_FILTER_OUT_%s' % override) or '').split()
 
     # Drop any overrides of filter_out prior extending
     machine_overrides = [o for o in machine_overrides if o not in machine_overrides_filter_out]
 
     for override in machine_overrides:
-        extender = d.getVar('MACHINEOVERRIDES_EXTENDER_%s' % override, True)
+        extender = d.getVar('MACHINEOVERRIDES_EXTENDER_%s' % override)
 
         if extender:
             extender = extender.split(':')
@@ -43,11 +39,18 @@ def machine_overrides_extender(d):
                 index = machine_overrides.index(override)
                 for e in extender:
                     machine_overrides.insert(index, e)
-    d.setVar('MACHINEOVERRIDES', ':'.join(machine_overrides))
+
+    return ':'.join(machine_overrides)
 
 python machine_overrides_extender_handler() {
-    machine_overrides_extender(e.data)
+    # Ideally we'd use a separate variable name for this however
+    # historically NXP BSPs used this. We save it to a known good name
+    # so we can reprocess OVERRIDES if/as/when needed.
+    d.renameVar("MACHINEOVERRIDES", "PRISTINE_MACHINEOVERRIDES")
+
+    # Now we add our own function intercept in instead
+    d.setVar("MACHINEOVERRIDES", "${@machine_overrides_extender(d)}")
 }
 
-machine_overrides_extender_handler[eventmask] = "bb.event.RecipePreFinalise"
+machine_overrides_extender_handler[eventmask] = "bb.event.ConfigParsed"
 addhandler machine_overrides_extender_handler

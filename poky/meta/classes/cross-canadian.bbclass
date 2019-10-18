@@ -8,6 +8,8 @@
 # SDK packages are built either explicitly by the user,
 # or indirectly via dependency.  No need to be in 'world'.
 EXCLUDE_FROM_WORLD = "1"
+NATIVESDKLIBC ?= "libc-glibc"
+LIBCOVERRIDE = ":${NATIVESDKLIBC}"
 CLASSOVERRIDE = "class-cross-canadian"
 STAGING_BINDIR_TOOLCHAIN = "${STAGING_DIR_NATIVE}${bindir_native}/${SDK_ARCH}${SDK_VENDOR}-${SDK_OS}:${STAGING_DIR_NATIVE}${bindir_native}/${TARGET_ARCH}${TARGET_VENDOR}-${TARGET_OS}"
 
@@ -30,7 +32,7 @@ python () {
     if d.getVar("MODIFYTOS") != "1":
         return
 
-    if d.getVar("TCLIBC") == "baremetal":
+    if d.getVar("TCLIBC") in [ 'baremetal', 'newlib' ]:
         return
 
     tos = d.getVar("TARGET_OS")
@@ -38,7 +40,7 @@ python () {
     extralibcs = [""]
     if "musl" in d.getVar("BASECANADIANEXTRAOS"):
         extralibcs.append("musl")
-    for variant in ["", "spe", "x32", "eabi", "n32", "ilp32"]:
+    for variant in ["", "spe", "x32", "eabi", "n32", "_ilp32"]:
         for libc in extralibcs:
             entry = "linux"
             if variant and libc:
@@ -122,8 +124,6 @@ CXXFLAGS = "${BUILDSDK_CFLAGS}"
 LDFLAGS = "${BUILDSDK_LDFLAGS} \
            -Wl,-rpath-link,${STAGING_LIBDIR}/.. \
            -Wl,-rpath,${libdir}/.. "
-
-DEPENDS_GETTEXT = "gettext-native nativesdk-gettext"
 
 #
 # We need chrpath >= 0.14 to ensure we can deal with 32 and 64 bit

@@ -15,24 +15,37 @@ EXTRA_OECONF_PATHS = "\
 "
 
 EXTRA_OECONF_append_linuxstdbase = " --enable-clocale=gnu"
+EXTRA_OECONF_append = " --cache-file=${B}/config.cache"
 
 RUNTIMELIBITM = "libitm"
+RUNTIMELIBITM_arc = ""
 RUNTIMELIBITM_mipsarch = ""
 RUNTIMELIBITM_nios2 = ""
 RUNTIMELIBITM_microblaze = ""
 RUNTIMELIBITM_riscv32 = ""
 RUNTIMELIBITM_riscv64 = ""
+RUNTIMELIBSSP ?= ""
+RUNTIMELIBSSP_mingw32 ?= "libssp"
 
-RUNTIMETARGET = "libssp libstdc++-v3 libgomp libatomic ${RUNTIMELIBITM} \
+RUNTIMETARGET = "${RUNTIMELIBSSP} libstdc++-v3 libgomp libatomic ${RUNTIMELIBITM} \
     ${@bb.utils.contains_any('FORTRAN', [',fortran',',f77'], 'libquadmath', '', d)} \
 "
-RUNTIMETARGET_append_x86 = " libmpx"
-RUNTIMETARGET_append_x86-64 = " libmpx"
-RUNTIMETARGET_remove_libc-musl = "libmpx"
 
 # libiberty
 # libmudflap
 # libgfortran needs separate recipe due to libquadmath dependency
+
+SLIB = "${TMPDIR}/work-shared/gcc-${PV}-${PR}/gcc-${PV}"
+SLIB_NEW = "/usr/src/debug/${PN}/${EXTENDPE}${PV}-${PR}"
+
+DEBUG_PREFIX_MAP_class-target = " \
+   -fdebug-prefix-map=${WORKDIR}/recipe-sysroot= \
+   -fdebug-prefix-map=${WORKDIR}/recipe-sysroot-native= \
+   -fdebug-prefix-map=${SLIB}=${SLIB_NEW} \
+   -fdebug-prefix-map=${SLIB}/include=${SLIB_NEW}/libstdc++-v3/../include \
+   -fdebug-prefix-map=${SLIB}/libiberty=${SLIB_NEW}/libstdc++-v3/../libiberty \
+   -fdebug-prefix-map=${B}=${SLIB_NEW} \
+   "
 
 do_configure () {
 	export CXX="${CXX} -nostdinc++ -nostdlib++"
@@ -113,7 +126,7 @@ do_install_append_class-target () {
 }
 
 INHIBIT_DEFAULT_DEPS = "1"
-DEPENDS = "virtual/${TARGET_PREFIX}gcc virtual/${TARGET_PREFIX}g++ libgcc"
+DEPENDS = "virtual/${TARGET_PREFIX}gcc virtual/${TARGET_PREFIX}g++ libgcc virtual/${MLPREFIX}libc"
 PROVIDES = "virtual/${TARGET_PREFIX}compilerlibs"
 
 BBCLASSEXTEND = "nativesdk"
@@ -145,18 +158,6 @@ PACKAGES = "\
     libitm-dev \
     libitm-staticdev \
 "
-PACKAGES_append_x86 = "\
-    libmpx \
-    libmpx-dev \
-    libmpx-staticdev \
-"
-
-PACKAGES_append_x86-64 = "\
-    libmpx \
-    libmpx-dev \
-    libmpx-staticdev \
-"
-
 # The base package doesn't exist, so we clear the recommends.
 RRECOMMENDS_${PN}-dbg = ""
 
@@ -259,21 +260,3 @@ FILES_libitm-dev = "\
 SUMMARY_libitm-dev = "GNU transactional memory support library - development files"
 FILES_libitm-staticdev = "${libdir}/libitm.a"
 SUMMARY_libitm-staticdev = "GNU transactional memory support library - static development files"
-
-
-FILES_libmpx = "${libdir}/libmpx.so.* ${libdir}/libmpxwrappers.so.*"
-SUMMARY_libmpx = "Intel Memory Protection Extension library"
-FILES_libmpx-dev = "\
-    ${libdir}/libmpxwrappers.so \
-    ${libdir}/libmpxwrappers.la \
-    ${libdir}/libmpx.so \
-    ${libdir}/libmpx.la \
-    ${libdir}/libmpx.spec \
-"
-SUMMARY_libmpx-dev = "Intel Memory Protection Extension library - development files"
-FILES_libmpx-staticdev = "${libdir}/libmpx.a ${libdir}/libmpxwrappers.a"
-SUMMARY_libmpx-staticdev = "Intel Memory Protection Extension library - static development files"
-
-do_package_write_ipk[depends] += "virtual/${MLPREFIX}libc:do_packagedata"
-do_package_write_deb[depends] += "virtual/${MLPREFIX}libc:do_packagedata"
-do_package_write_rpm[depends] += "virtual/${MLPREFIX}libc:do_packagedata"

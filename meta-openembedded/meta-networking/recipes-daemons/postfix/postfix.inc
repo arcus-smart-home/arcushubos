@@ -6,19 +6,18 @@ has a definite Sendmail-ish flavor, but the inside is completely different."
 
 HOMEPAGE= "http://www.postfix.org"
 SECTION = "mail"
-DEPENDS = "virtual/db icu libpcre openssl postfix-native \
+DEPENDS = "db icu libpcre libnsl2 openssl postfix-native \
     ${@bb.utils.contains('DISTRO_FEATURES', 'ldap', 'openldap', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'sasl', 'cyrus-sasl', '', d)} \
 "
-DEPENDS_class-native = "virtual/db-native icu-native openssl-native libpcre-native"
 
-LICENSE = "IPL-1.0"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=64375f37431336ea1b1b3005fe3fa354"
+LICENSE = "IPL-1.0 | EPL-2.0"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=b181651ad99a7dc4cc8c4ce2f491ed1a"
 
 SRC_URI = "ftp://ftp.porcupine.org/mirrors/postfix-release/official/postfix-${PV}.tar.gz \
     file://makedefs.patch \
     file://install.patch \
-    file://main.cf_2.0 \
+    file://main.cf \
     file://postfix \
     file://internal_recipient \
     file://postfix.service \
@@ -77,7 +76,6 @@ export CCARGS  = "${CFLAGS} -DHAS_PCRE -DUSE_TLS -I${STAGING_INCDIR}/openssl ${C
 export AUXLIBS = "-lpcre -lssl -lcrypto ${AUXLIBS-sasl} ${AUXLIBS-ldap}"
 export POSTCONF = "${STAGING_DIR_NATIVE}${sbindir_native}/postconf"
 
-export CCARGS-nonis_libc-musl = "-DNO_NIS"
 # OPT,DEBUG is aready in CFLAGS
 # ignore the OPTS="CC=$CC" in Makefile it will not use the CC=$CC $CCARGS
 EXTRA_OEMAKE += "OPT= DEBUG= OPTS= "
@@ -99,27 +97,9 @@ do_compile () {
             "s:\$(SHELL) makedefs):\$(SHELL) makedefs $SYSTEM $RELEASE):" \
             ${S}/Makefile.in
         export BUILD_SYSROOT="${STAGING_DIR_HOST}"
-        export BUILD_SYSROOT_NSL_PATH="${STAGING_BASELIBDIR} \
-                                       ${STAGING_LIBDIR}"
     else
         # native build
         export BUILD_SYSROOT="${STAGING_DIR_NATIVE}"
-
-        # ubuntu x86 host: /lib/x86_64-linux-gnu(64) /lib/i386-linux-gnu (32)
-        #             on 64 bits, 32 libs in i386-linux-gnu
-        # let makedefs finds nsl and resolv libs, host CC will link
-        # the correct libraries
-        BUILD_SYSROOT_NSL_PATH="$(${CC} -print-search-dirs 2>/dev/null | \
-                      sed -n '/^libraries: =/s/libraries: =//p' | \
-                      sed -e 's/:/\n/g' | xargs -n1 readlink -f | \
-                      grep -v 'gcc\|/[0-9.]\+$' | sort -u)"
-        if [ -z "$BUILD_SYSROOT_NSL_PATH" ]; then
-            BUILD_SYSROOT_NSL_PATH="/usr/lib64 /lib64 \
-                                    /lib/x86_64-linux-gnu \
-                                    /usr/lib   /lib \
-                                    /lib/i386-linux-gnu"
-        fi
-        export BUILD_SYSROOT_NSL_PATH
     fi
 
     oe_runmake makefiles
@@ -135,7 +115,7 @@ SYSTEMD_SERVICE_${PN} = "postfix.service"
 do_install () {
     sh ./postfix-install 'install_root=${D}' \
         'config_directory=${sysconfdir}/postfix' \
-        'daemon_directory=${libexecdir}' \
+        'daemon_directory=${libexecdir}/postfix' \
         'command_directory=${sbindir}' \
         'queue_directory=${localstatedir}/spool/postfix' \
         'sendmail_path=${sbindir}/sendmail.postfix' \
@@ -149,7 +129,7 @@ do_install () {
     mv ${D}${sysconfdir}/postfix/main.cf ${D}${sysconfdir}/postfix/sample-main.cf
     install -m 755 ${S}/bin/smtp-sink ${D}/${sbindir}/
     install -d ${D}${sysconfdir}/init.d
-    install -m 644 ${WORKDIR}/main.cf_2.0 ${D}${sysconfdir}/postfix/main.cf
+    install -m 644 ${WORKDIR}/main.cf ${D}${sysconfdir}/postfix/main.cf
     sed -i 's#@LIBEXECDIR@#${libexecdir}#' ${D}${sysconfdir}/postfix/main.cf
 
     install -m 755 ${WORKDIR}/check_hostname.sh ${D}${sbindir}/
@@ -163,7 +143,7 @@ do_install () {
     sed -i -e 's#@LOCALSTATEDIR@#${localstatedir}#g' ${D}${systemd_unitdir}/system/postfix.service
     sed -i -e 's#@SBINDIR@#${sbindir}#g' ${D}${systemd_unitdir}/system/postfix.service
 
-    install -m 0755 ${WORKDIR}/aliasesdb ${D}${libexecdir}
+    install -m 0755 ${WORKDIR}/aliasesdb ${D}${libexecdir}/postfix
 
     install -m 770 -d ${D}${localstatedir}/spool/postfix
     chown postfix:postfix ${D}${localstatedir}/spool/postfix
@@ -207,6 +187,8 @@ do_install () {
     chown :postdrop ${D}${sbindir}/postdrop
     chmod g+s ${D}${sbindir}/postqueue
     chmod g+s ${D}${sbindir}/postdrop
+
+    rm -rf ${D}/etc/postfix/makedefs.out
 }
 
 do_install_append_class-native() {
@@ -214,16 +196,12 @@ do_install_append_class-native() {
     ln -sf ../sbin/sendmail.postfix ${D}${bindir}/mailq
 }
 
-do_install_append_class-target() {
-    # Remove references to buildmachine paths in target makedefs.out
-    sed -i 's:-fdebug-prefix-map[^ ]*::g; s:--sysroot=${STAGING_DIR_TARGET}::g' ${D}/etc/postfix/makedefs.out
-}
-
-NATIVE_INSTALL_WORKS = "1"
-
-ALTERNATIVE_${PN} = "sendmail"
+ALTERNATIVE_${PN} += "sendmail mailq newaliases"
+ALTERNATIVE_TARGET[mailq] = "${bindir}/mailq"
+ALTERNATIVE_TARGET[newaliases] = "${bindir}/newaliases"
 ALTERNATIVE_TARGET[sendmail] = "${sbindir}/sendmail.postfix"
 ALTERNATIVE_LINK_NAME[sendmail] = "${sbindir}/sendmail"
+
 ALTERNATIVE_PRIORITY = "120"
 
 ALTERNATIVE_${PN}-doc += "mailq.1 newaliases.1 sendmail.1"
@@ -231,6 +209,7 @@ ALTERNATIVE_LINK_NAME[mailq.1] = "${mandir}/man1/mailq.1"
 ALTERNATIVE_LINK_NAME[newaliases.1] = "${mandir}/man1/newaliases.1"
 ALTERNATIVE_LINK_NAME[sendmail.1] = "${mandir}/man1/sendmail.1"
 
+PACKAGE_WRITE_DEPS += "postfix-native"
 pkg_postinst_${PN} () {
     if [ "x$D" = "x" ]; then
         touch /etc/aliases
@@ -240,19 +219,24 @@ pkg_postinst_${PN} () {
         touch /etc/postfix/virtual_alias
         postmap /etc/postfix/virtual_alias
     else
-        touch $D/etc/aliases
-        newaliases -C $D/etc/postfix/main.cf -oA$D/etc/aliases
-        touch $D/etc/postfix/virtual_alias
-        postmap -c $D/etc/postfix $D/etc/postfix/virtual_alias
-
         if ${@'true' if 'linuxstdbase' in d.getVar('DISTROOVERRIDES', False) else 'false'}; then
-            # /usr/lib/sendmial is required by LSB core test
+            # /usr/lib/sendmail is required by LSB core test
             [ ! -L $D/usr/lib/sendmail ] && ln -sf ${sbindir}/sendmail $D/usr/lib/
         fi
+
+        touch $D/etc/aliases
+        # This can fail depending on host setup
+        if ! newaliases -C $D/etc/postfix/main.cf -oA$D/etc/aliases; then
+            $INTERCEPT_DIR/postinst_intercept delay_to_first_boot ${PKG} mlprefix=${MLPREFIX}
+        else
+            touch $D/etc/postfix/virtual_alias
+            postmap -c $D/etc/postfix $D/etc/postfix/virtual_alias
+        fi
+
     fi
 }
 
 # Exclude .debug directories from the main package
 FILES_${PN} = "${sysconfdir} ${localstatedir} ${bindir}/* ${sbindir}/* \
                ${libexecdir}/* ${systemd_unitdir}/*"
-FILES_${PN}-dbg += "${libexecdir}/.debug"
+FILES_${PN}-dbg += "${libexecdir}/postfix/.debug"

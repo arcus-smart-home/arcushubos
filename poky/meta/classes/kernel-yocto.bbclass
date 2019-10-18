@@ -5,12 +5,21 @@ PATCH_GIT_USER_NAME ?= "OpenEmbedded"
 
 # returns local (absolute) path names for all valid patches in the
 # src_uri
-def find_patches(d):
+def find_patches(d,subdir):
     patches = src_patches(d)
     patch_list=[]
     for p in patches:
-        _, _, local, _, _, _ = bb.fetch.decodeurl(p)
-        patch_list.append(local)
+        _, _, local, _, _, parm = bb.fetch.decodeurl(p)
+        # if patchdir has been passed, we won't be able to apply it so skip
+        # the patch for now, and special processing happens later
+        patchdir = ''
+        if "patchdir" in parm:
+            patchdir = parm["patchdir"]
+        if subdir:
+            if subdir == patchdir:
+                patch_list.append(local)
+        else:
+            patch_list.append(local)
 
     return patch_list
 
@@ -119,8 +128,20 @@ do_kernel_metadata() {
 		fi
 	fi
 
+	# was anyone trying to patch the kernel meta data ?, we need to do
+	# this here, since the scc commands migrate the .cfg fragments to the
+	# kernel source tree, where they'll be used later.
+	check_git_config
+	patches="${@" ".join(find_patches(d,'kernel-meta'))}"
+	for p in $patches; do
+	    (
+		cd ${WORKDIR}/kernel-meta
+		git am -s $p
+	    )
+	done
+
 	sccs_from_src_uri="${@" ".join(find_sccs(d))}"
-	patches="${@" ".join(find_patches(d))}"
+	patches="${@" ".join(find_patches(d,''))}"
 	feat_dirs="${@" ".join(find_kernel_feature_dirs(d))}"
 
 	# a quick check to make sure we don't have duplicate defconfigs
@@ -138,6 +159,8 @@ do_kernel_metadata() {
 	for f in ${feat_dirs}; do
 		if [ -d "${WORKDIR}/$f/meta" ]; then
 			includes="$includes -I${WORKDIR}/$f/kernel-meta"
+		elif [ -d "${WORKDIR}/../oe-local-files/$f" ]; then
+			includes="$includes -I${WORKDIR}/../oe-local-files/$f"
 	        elif [ -d "${WORKDIR}/$f" ]; then
 			includes="$includes -I${WORKDIR}/$f"
 		fi
@@ -247,6 +270,7 @@ do_kernel_checkout() {
 		fi
 		rm -f .gitignore
 		git init
+		check_git_config
 		git add .
 		git commit -q -m "baseline commit: creating repo for ${PN}-${PV}"
 		git clean -d -f
@@ -274,6 +298,9 @@ addtask kernel_metadata after do_validate_branches do_unpack before do_patch
 do_kernel_metadata[depends] = "kern-tools-native:do_populate_sysroot"
 do_validate_branches[depends] = "kern-tools-native:do_populate_sysroot"
 
+do_kernel_configme[depends] += "virtual/${TARGET_PREFIX}binutils:do_populate_sysroot"
+do_kernel_configme[depends] += "virtual/${TARGET_PREFIX}gcc:do_populate_sysroot"
+do_kernel_configme[depends] += "bc-native:do_populate_sysroot bison-native:do_populate_sysroot"
 do_kernel_configme[dirs] += "${S} ${B}"
 do_kernel_configme() {
 	set +e
@@ -303,7 +330,7 @@ do_kernel_configme() {
 		bbfatal_log "Could not find configuration queue (${meta_dir}/config.queue)"
 	fi
 
-	CFLAGS="${CFLAGS} ${TOOLCHAIN_OPTIONS}"	ARCH=${ARCH} merge_config.sh -O ${B} ${config_flags} ${configs} > ${meta_dir}/cfg/merge_config_build.log 2>&1
+	CFLAGS="${CFLAGS} ${TOOLCHAIN_OPTIONS}"	HOSTCC="${BUILD_CC} ${BUILD_CFLAGS} ${BUILD_LDFLAGS}" HOSTCPP="${BUILD_CPP}" CC="${KERNEL_CC}" ARCH=${ARCH} merge_config.sh -O ${B} ${config_flags} ${configs} > ${meta_dir}/cfg/merge_config_build.log 2>&1
 	if [ $? -ne 0 ]; then
 		bbfatal_log "Could not configure ${KMACHINE}-${LINUX_KERNEL_TYPE}"
 	fi
@@ -315,7 +342,7 @@ do_kernel_configme() {
 addtask kernel_configme before do_configure after do_patch
 
 python do_kernel_configcheck() {
-    import re, string, sys
+    import re, string, sys, subprocess
 
     # if KMETA isn't set globally by a recipe using this routine, we need to
     # set the default to 'meta'. Otherwise, kconf_check is not passed a valid
@@ -324,13 +351,24 @@ python do_kernel_configcheck() {
     if not os.path.exists(kmeta):
         kmeta = "." + kmeta
 
-    pathprefix = "export PATH=%s:%s; " % (d.getVar('PATH'), "${S}/scripts/util/")
+    s = d.getVar('S')
 
-    cmd = d.expand("scc --configs -o ${S}/.kernel-meta")
-    ret, configs = oe.utils.getstatusoutput("%s%s" % (pathprefix, cmd))
+    env = os.environ.copy()
+    env['PATH'] = "%s:%s%s" % (d.getVar('PATH'), s, "/scripts/util/")
 
-    cmd = d.expand("cd ${S}; kconf_check --report -o ${S}/%s/cfg/ ${B}/.config ${S} %s" % (kmeta,configs))
-    ret, result = oe.utils.getstatusoutput("%s%s" % (pathprefix, cmd))
+    try:
+        configs = subprocess.check_output(['scc', '--configs', '-o', s + '/.kernel-meta'], env=env).decode('utf-8')
+    except subprocess.CalledProcessError as e:
+        bb.fatal( "Cannot gather config fragments for audit: %s" % e.output.decode("utf-8") )
+
+    try:
+        subprocess.check_call(['kconf_check', '--report', '-o',
+                '%s/%s/cfg' % (s, kmeta), d.getVar('B') + '/.config', s, configs], cwd=s, env=env)
+    except subprocess.CalledProcessError:
+        # The configuration gathering can return different exit codes, but
+        # we interpret them based on the KCONF_AUDIT_LEVEL variable, so we catch
+        # everything here, and let the run continue.
+        pass
 
     config_check_visibility = int(d.getVar("KCONF_AUDIT_LEVEL") or 0)
     bsp_check_visibility = int(d.getVar("KCONF_BSP_AUDIT_LEVEL") or 0)
@@ -342,6 +380,27 @@ python do_kernel_configcheck() {
             with open (mismatch_file, "r") as myfile:
                 results = myfile.read()
                 bb.warn( "[kernel config]: specified values did not make it into the kernel's final configuration:\n\n%s" % results)
+
+    if bsp_check_visibility:
+        invalid_file = d.expand("${S}/%s/cfg/invalid.cfg" % kmeta)
+        if os.path.exists(invalid_file) and os.stat(invalid_file).st_size > 0:
+            with open (invalid_file, "r") as myfile:
+                results = myfile.read()
+                bb.warn( "[kernel config]: This BSP sets config options that are not offered anywhere within this kernel:\n\n%s" % results)
+        errors_file = d.expand("${S}/%s/cfg/fragment_errors.txt" % kmeta)
+        if os.path.exists(errors_file) and os.stat(errors_file).st_size > 0:
+            with open (errors_file, "r") as myfile:
+               results = myfile.read()
+               bb.warn( "[kernel config]: This BSP contains fragments with errors:\n\n%s" % results)
+
+    # if the audit level is greater than two, we report if a fragment has overriden
+    # a value from a base fragment. This is really only used for new kernel introduction
+    if bsp_check_visibility > 2:
+        redefinition_file = d.expand("${S}/%s/cfg/redefinition.txt" % kmeta)
+        if os.path.exists(redefinition_file) and os.stat(redefinition_file).st_size > 0:
+            with open (redefinition_file, "r") as myfile:
+                results = myfile.read()
+                bb.warn( "[kernel config]: This BSP has configuration options defined in more than one config, with differing values:\n\n%s" % results)
 }
 
 # Ensure that the branches (BSP and meta) are on the locations specified by

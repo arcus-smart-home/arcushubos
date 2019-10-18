@@ -12,7 +12,7 @@ PR = "r15"
 SRC_URI = "git://git.yoctoproject.org/${BPN} \
            file://psplash-init \
            ${SPLASH_IMAGES}"
-UPSTREAM_VERSION_UNKNOWN = "1"
+UPSTREAM_CHECK_COMMITS = "1"
 
 SPLASH_IMAGES = "file://psplash-poky-img.h;outsuffix=default"
 
@@ -73,6 +73,7 @@ ALTERNATIVE_LINK_NAME[psplash] = "${bindir}/psplash"
 
 python do_compile () {
     import shutil
+    import subprocess
 
     # Build a separate executable for each splash image
     workdir = d.getVar('WORKDIR')
@@ -82,10 +83,10 @@ python do_compile () {
     outputfiles = d.getVar('SPLASH_INSTALL').split()
     for localfile, outputfile in zip(localfiles, outputfiles):
         if localfile.endswith(".png"):
-            outp = oe.utils.getstatusoutput('%s %s POKY' % (convertscript, os.path.join(workdir, localfile)))
-            print(outp[1])
+            if subprocess.call([ convertscript, os.path.join(workdir, localfile), 'POKY' ], cwd=workdir):
+                bb.fatal("Error calling convert script '%s'" % (convertscript))
             fbase = os.path.splitext(localfile)[0]
-            shutil.copyfile("%s-img.h" % fbase, destfile)
+            shutil.copyfile(os.path.join(workdir, "%s-img.h" % fbase), destfile)
         else:
             shutil.copyfile(os.path.join(workdir, localfile), destfile)
         # For some reason just updating the header is not enough, we have to touch the .c

@@ -4,7 +4,7 @@ HOMEPAGE = "http://opensource.dyc.edu/sthttpd"
 LICENSE = "BSD-2-Clause"
 LIC_FILES_CHKSUM = "file://src/thttpd.c;beginline=1;endline=26;md5=0c5762c2c34dcbe9eb18815516502872"
 
-DEPENDS += "base-passwd"
+DEPENDS += "base-passwd virtual/crypt"
 
 SRC_URI = "https://github.com/blueness/${BPN}/archive/v${PV}.tar.gz;downloadfilename=${BP}.tar.gz \
            file://thttpd.service \
@@ -14,9 +14,16 @@ SRC_URI = "https://github.com/blueness/${BPN}/archive/v${PV}.tar.gz;downloadfile
 SRC_URI[md5sum] = "3cda1b6c8c8542b1510eadb8e540d8b6"
 SRC_URI[sha256sum] = "a1ee2806432eaf5b5dd267a0523701f9f1fa00fefd499d5bec42165a41e05846"
 
+UPSTREAM_CHECK_URI = "https://github.com/blueness/sthttpd/releases/"
+UPSTREAM_CHECK_REGEX = "v(?P<pver>\d+(\.\d+)+).tar.gz"
+
 S = "${WORKDIR}/sthttpd-${PV}"
 
-inherit autotools update-rc.d systemd
+inherit autotools update-rc.d systemd update-alternatives
+
+ALTERNATIVE_PRIORITY = "100"
+ALTERNATIVE_${PN}-doc = "htpasswd.1"
+ALTERNATIVE_LINK_NAME[htpasswd.1] = "${mandir}/man1/htpasswd.1"
 
 SRV_DIR ?= "${servicedir}/www"
 

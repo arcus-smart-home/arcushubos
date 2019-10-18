@@ -1,16 +1,19 @@
+#
 # Copyright (C) 2016 Intel Corporation
-# Released under the MIT license (see COPYING.MIT)
+#
+# SPDX-License-Identifier: MIT
+#
 
 from functools import wraps
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 decoratorClasses = set()
 
-def registerDecorator(obj):
-    decoratorClasses.add(obj)
-    return obj
+def registerDecorator(cls):
+    decoratorClasses.add(cls)
+    return cls
 
-class OETestDecorator(object):
+class OETestDecorator(object, metaclass=ABCMeta):
     case = None # Reference of OETestCase decorated
     attrs = None # Attributes to be loaded by decorator implementation
 

@@ -10,18 +10,8 @@ BitBake 'Fetch' implementation for bzr.
 #   BitBake build tools.
 #   Copyright (C) 2003, 2004  Chris Larson
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
 import sys
@@ -41,8 +31,9 @@ class Bzr(FetchMethod):
         init bzr specific variable within url data
         """
         # Create paths to bzr checkouts
+        bzrdir = d.getVar("BZRDIR") or (d.getVar("DL_DIR") + "/bzr")
         relpath = self._strip_leading_slashes(ud.path)
-        ud.pkgdir = os.path.join(d.expand('${BZRDIR}'), ud.host, relpath)
+        ud.pkgdir = os.path.join(bzrdir, ud.host, relpath)
 
         ud.setup_revisions(d)
 
@@ -57,7 +48,7 @@ class Bzr(FetchMethod):
         command is "fetch", "update", "revno"
         """
 
-        basecmd = d.expand('${FETCHCMD_bzr}')
+        basecmd = d.getVar("FETCHCMD_bzr") or "/usr/bin/env bzr"
 
         proto =  ud.parm.get('protocol', 'http')
 

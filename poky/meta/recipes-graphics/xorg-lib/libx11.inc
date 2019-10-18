@@ -6,11 +6,12 @@ basic functions of the window system."
 
 require xorg-lib-common.inc
 
-inherit siteinfo
-
 FILESEXTRAPATHS =. "${FILE_DIRNAME}/libx11:"
 
 PE = "1"
+
+SRC_URI[md5sum] = "034fdd6cc5393974d88aec6f5bc96162"
+SRC_URI[sha256sum] = "910e9e30efba4ad3672ca277741c2728aebffa7bc526f04dcfa74df2e52a1348"
 
 PROVIDES = "virtual/libx11"
 
@@ -18,8 +19,8 @@ XORG_PN = "libX11"
 LICENSE = "MIT & MIT-style & BSD"
 LIC_FILES_CHKSUM = "file://COPYING;md5=172255dee66bb0151435b2d5d709fcf7"
 
-DEPENDS += "xproto xextproto xtrans libxcb kbproto inputproto"
-DEPENDS += "xproto-native"
+DEPENDS += "xorgproto xtrans libxcb"
+DEPENDS += "xorgproto-native"
 
 EXTRA_OECONF += "--with-keysymdefdir=${STAGING_INCDIR}/X11/ --disable-xf86bigfont"
 EXTRA_OEMAKE += 'CWARNFLAGS=""'
@@ -35,7 +36,3 @@ PACKAGES =+ "${PN}-xcb"
 FILES_${PN} += "${datadir}/X11/XKeysymDB ${datadir}/X11/XErrorDB ${datadir}/X11/Xcms.txt"
 FILES_${PN}-xcb += "${libdir}/libX11-xcb.so.*"
 FILES_${PN}-locale += "${datadir}/X11/locale ${libdir}/X11/locale"
-
-# Multiple libx11 derivatives from from this file and are selected by virtual/libx11
-# A world build should only build the correct version, not all of them.
-EXCLUDE_FROM_WORLD = "1"

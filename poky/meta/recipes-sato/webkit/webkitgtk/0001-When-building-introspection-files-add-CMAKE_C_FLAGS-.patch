@@ -1,8 +1,8 @@
-From 98b1359a0cd87bbdb22cef98ba594440f4c57d92 Mon Sep 17 00:00:00 2001
+From 8f1e170a6de8036ab50eb35834a77f2c79412ee3 Mon Sep 17 00:00:00 2001
 From: Alexander Kanavin <alex.kanavin@gmail.com>
 Date: Wed, 28 Oct 2015 14:18:57 +0200
-Subject: [PATCH 2/9] When building introspection files, add CMAKE_C_FLAGS to
- the compiler flags.
+Subject: [PATCH] When building introspection files, add CMAKE_C_FLAGS to the
+ compiler flags.
 
 g-ir-compiler is using a C compiler internally, so it needs to set
 the proper flags for it.
@@ -11,31 +11,42 @@ Upstream-Status: Pending [review on oe-core list]
 Signed-off-by: Alexander Kanavin <alex.kanavin@gmail.com>
 
 ---
- Source/WebKit/PlatformGTK.cmake | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Source/JavaScriptCore/PlatformGTK.cmake | 2 +-
+ Source/WebKit/PlatformGTK.cmake         | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/Source/JavaScriptCore/PlatformGTK.cmake b/Source/JavaScriptCore/PlatformGTK.cmake
+index 0b2968d2..2742ad80 100644
+--- a/Source/JavaScriptCore/PlatformGTK.cmake
++++ b/Source/JavaScriptCore/PlatformGTK.cmake
+@@ -71,7 +71,7 @@ if (ENABLE_INTROSPECTION)
+     add_custom_command(
+         OUTPUT ${CMAKE_BINARY_DIR}/JavaScriptCore-${WEBKITGTK_API_VERSION}.gir
+         DEPENDS JavaScriptCore
+-        COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations LDFLAGS=
++        COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations\ ${CMAKE_C_FLAGS} LDFLAGS=
+             ${LOADER_LIBRARY_PATH_VAR}="${INTROSPECTION_ADDITIONAL_LIBRARY_PATH}"
+             ${INTROSPECTION_SCANNER}
+             --quiet
 diff --git a/Source/WebKit/PlatformGTK.cmake b/Source/WebKit/PlatformGTK.cmake
-index 7f92ae72..a33c6a86 100644
+index e36e4c35..943f9794 100644
 --- a/Source/WebKit/PlatformGTK.cmake
 +++ b/Source/WebKit/PlatformGTK.cmake
-@@ -1126,7 +1126,7 @@ add_custom_command(
-     OUTPUT ${CMAKE_BINARY_DIR}/WebKit2-${WEBKITGTK_API_VERSION}.gir
-     DEPENDS WebKit2
-     DEPENDS ${CMAKE_BINARY_DIR}/JavaScriptCore-${WEBKITGTK_API_VERSION}.gir
--    COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations LDFLAGS=
-+    COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations\ ${CMAKE_C_FLAGS} LDFLAGS=
-         ${LOADER_LIBRARY_PATH_VAR}="${INTROSPECTION_ADDITIONAL_LIBRARY_PATH}"
-         ${INTROSPECTION_SCANNER}
-         --quiet
-@@ -1169,7 +1169,7 @@ add_custom_command(
-     OUTPUT ${CMAKE_BINARY_DIR}/WebKit2WebExtension-${WEBKITGTK_API_VERSION}.gir
-     DEPENDS ${CMAKE_BINARY_DIR}/JavaScriptCore-${WEBKITGTK_API_VERSION}.gir
-     DEPENDS ${CMAKE_BINARY_DIR}/WebKit2-${WEBKITGTK_API_VERSION}.gir
--    COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations
-+    COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations\ ${CMAKE_C_FLAGS}
-         LDFLAGS="${INTROSPECTION_ADDITIONAL_LDFLAGS}"
-         ${LOADER_LIBRARY_PATH_VAR}="${INTROSPECTION_ADDITIONAL_LIBRARY_PATH}"
-         ${INTROSPECTION_SCANNER}
--- 
-2.14.1
-
+@@ -742,7 +742,7 @@ if (ENABLE_INTROSPECTION)
+         OUTPUT ${CMAKE_BINARY_DIR}/WebKit2-${WEBKITGTK_API_VERSION}.gir
+         DEPENDS WebKit
+         DEPENDS ${CMAKE_BINARY_DIR}/JavaScriptCore-${WEBKITGTK_API_VERSION}.gir
+-        COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations LDFLAGS=
++        COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations\ ${CMAKE_C_FLAGS} LDFLAGS=
+             ${LOADER_LIBRARY_PATH_VAR}="${INTROSPECTION_ADDITIONAL_LIBRARY_PATH}"
+             ${INTROSPECTION_SCANNER}
+             --quiet
+@@ -786,7 +786,7 @@ if (ENABLE_INTROSPECTION)
+         OUTPUT ${CMAKE_BINARY_DIR}/WebKit2WebExtension-${WEBKITGTK_API_VERSION}.gir
+         DEPENDS ${CMAKE_BINARY_DIR}/JavaScriptCore-${WEBKITGTK_API_VERSION}.gir
+         DEPENDS ${CMAKE_BINARY_DIR}/WebKit2-${WEBKITGTK_API_VERSION}.gir
+-        COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations
++        COMMAND CC=${CMAKE_C_COMPILER} CFLAGS=-Wno-deprecated-declarations\ ${CMAKE_C_FLAGS}
+             LDFLAGS="${INTROSPECTION_ADDITIONAL_LDFLAGS}"
+             ${LOADER_LIBRARY_PATH_VAR}="${INTROSPECTION_ADDITIONAL_LIBRARY_PATH}"
+             ${INTROSPECTION_SCANNER}

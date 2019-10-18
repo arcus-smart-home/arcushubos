@@ -1,3 +1,7 @@
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
@@ -49,7 +53,7 @@ class Command(BaseCommand):
                 # we could not find a BEC; postpone the BR
                 br.state = BuildRequest.REQ_QUEUED
                 br.save()
-                logger.debug("runbuilds: No build env")
+                logger.debug("runbuilds: No build env (%s)" % e)
                 return
 
             logger.info("runbuilds: starting build %s, environment %s" %

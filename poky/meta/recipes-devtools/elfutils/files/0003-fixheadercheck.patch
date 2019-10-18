@@ -1,7 +1,7 @@
-From 565d5935abf5b58773f9c8385c00189221980d98 Mon Sep 17 00:00:00 2001
+From dd7c8c730457def5f62ebd43022b2f06df8c6ed9 Mon Sep 17 00:00:00 2001
 From: Hongxu Jia <hongxu.jia@windriver.com>
 Date: Tue, 15 Aug 2017 17:17:20 +0800
-Subject: [PATCH 3/7] fixheadercheck
+Subject: [PATCH] fixheadercheck
 
 For some binaries we can get a invalid section alignment, for example if
 sh_align = 1 and sh_addralign is 0. In the case of a zero size section
@@ -16,12 +16,13 @@ Upstream-Status: Pending
 
 Rebase to 0.170
 Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
+
 ---
  libelf/elf32_updatenull.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/libelf/elf32_updatenull.c b/libelf/elf32_updatenull.c
-index d83c0b3..a51bf70 100644
+index 3e9ef61..5351518 100644
 --- a/libelf/elf32_updatenull.c
 +++ b/libelf/elf32_updatenull.c
 @@ -339,8 +339,8 @@ __elfw2(LIBELFBITS,updatenull_wrlock) (Elf *elf, int *change_bop, size_t shnum)
@@ -35,6 +36,3 @@ index d83c0b3..a51bf70 100644
  		    {
  		      __libelf_seterrno (ELF_E_INVALID_ALIGN);
  		      return -1;
--- 
-1.8.3.1
-

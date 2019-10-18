@@ -130,7 +130,7 @@ typedef enum
 #define PWM_ENABLE              "/tmp/io/pwmEnable"
 
 // Platform specific GPIO related defines
-#if beaglebone
+#if beaglebone_yocto
 // USB Over-current signals
 #define USB0_OC_GPIO_VALUE_FILE "/sys/class/gpio/gpio116/value"
 #define USB1_OC_GPIO_VALUE_FILE "/sys/class/gpio/gpio58/value"
@@ -203,7 +203,7 @@ typedef enum
 #define FIRMWARE_PREFIX    "hubOS"
 
 // Default image build info
-#if beaglebone
+#if beaglebone_yocto
 #define DEFAULT_MODEL      "IH200"
 #else
 // We default to the v3 hub with LTE support, image works on wifi-only

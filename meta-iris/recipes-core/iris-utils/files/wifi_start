@@ -60,8 +60,7 @@ case $SECURITY in
 
     *WEP* )
 	# Use wpa_supplicant for WEP config as well as there are issues
-	#  switching to WEP (using iwconfig) after wpa_supplicant has been
-	#  running
+	#  switching to WEP after wpa_supplicant has been running
 	KEYLEN=`echo -n $KEY | wc -m`
 	if [ $KEYLEN == 5 ] || [ $KEYLEN == 13 ]; then
 	    KEYSTR="\"$KEY\""
@@ -81,8 +80,7 @@ EOF
 	;;
 
     * )
-	/sbin/iwconfig $INTF mode Managed
-	/sbin/iwconfig $INTF essid "$SSID"
+	/usr/sbin/iw dev $INTF connect "$SSID"
 	/sbin/ifup $INTF
 	;;
 esac

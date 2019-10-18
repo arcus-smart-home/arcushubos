@@ -1,3 +1,7 @@
+#
+# SPDX-License-Identifier: MIT
+#
+
 import os
 import json
 import shutil
@@ -14,20 +18,23 @@ def get_package_manager(d, root_path):
     if pkg_class == "rpm":
         pm = RpmPM(d,
                    root_path,
-                   d.getVar('TARGET_VENDOR'))
+                   d.getVar('TARGET_VENDOR'),
+                   filterbydependencies=False)
         pm.create_configs()
 
     elif pkg_class == "ipk":
         pm = OpkgPM(d,
                     root_path,
                     d.getVar("IPKGCONF_TARGET"),
-                    d.getVar("ALL_MULTILIB_PACKAGE_ARCHS"))
+                    d.getVar("ALL_MULTILIB_PACKAGE_ARCHS"),
+                    filterbydependencies=False)
 
     elif pkg_class == "deb":
         pm = DpkgPM(d,
                     root_path,
                     d.getVar('PACKAGE_ARCHS'),
-                    d.getVar('DPKG_ARCH'))
+                    d.getVar('DPKG_ARCH'),
+                    filterbydependencies=False)
 
     pm.write_index()
     pm.update()

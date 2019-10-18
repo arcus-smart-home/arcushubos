@@ -19,6 +19,10 @@ SRC_URI = "git://github.com/tianocore/edk2.git;branch=master \
 	file://0004-ovmf-enable-long-path-file.patch \
 	file://VfrCompile-increase-path-length-limit.patch \
 	file://no-stack-protector-all-archs.patch \
+	file://0001-BaseTools-header.makefile-add-Wno-stringop-truncatio.patch \
+	file://0002-BaseTools-header.makefile-add-Wno-restrict.patch \
+	file://0003-BaseTools-header.makefile-revert-gcc-8-Wno-xxx-optio.patch \
+	file://0004-BaseTools-GenVtf-silence-false-stringop-overflow-war.patch \
         "
 UPSTREAM_VERSION_UNKNOWN = "1"
 
@@ -35,12 +39,11 @@ SRC_URI[openssl.sha256sum] = "57be8618979d80c910728cfc99369bf97b2a1abd8f366ab6eb
 
 inherit deploy
 
-PARALLEL_MAKE_class-native = ""
+PARALLEL_MAKE = ""
 
 S = "${WORKDIR}/git"
 
-DEPENDS_class-native="util-linux-native iasl-native ossp-uuid-native qemu-native"
-
+DEPENDS_class-native="util-linux-native iasl-native"
 DEPENDS_class-target="ovmf-native"
 
 DEPENDS_append = " nasm-native"
@@ -151,7 +154,7 @@ do_compile_class-native() {
 
 do_compile_class-target() {
     export LFLAGS="${LDFLAGS}"
-    PARALLEL_JOBS="${@ '${PARALLEL_MAKE}'.replace('-j', '-n ')}"
+    PARALLEL_JOBS="${@oe.utils.parallel_make_argument(d, '-n %d')}"
     OVMF_ARCH="X64"
     if [ "${TARGET_ARCH}" != "x86_64" ] ; then
         OVMF_ARCH="IA32"
@@ -227,6 +230,10 @@ FILES_ovmf-shell-efi = " \
     EnrollDefaultKeys.efi \
     efi/ \
 "
+
+DEPLOYDEP = ""
+DEPLOYDEP_class-target = "qemu-system-native:do_populate_sysroot"
+do_deploy[depends] += "${DEPLOYDEP}"
 
 do_deploy() {
 }

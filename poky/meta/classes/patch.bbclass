@@ -26,8 +26,22 @@ python () {
 
 python patch_task_patch_prefunc() {
     # Prefunc for do_patch
-    func = d.getVar('BB_RUNTASK')
     srcsubdir = d.getVar('S')
+
+    workdir = os.path.abspath(d.getVar('WORKDIR'))
+    testsrcdir = os.path.abspath(srcsubdir)
+    if (testsrcdir + os.sep).startswith(workdir + os.sep):
+        # Double-check that either workdir or S or some directory in-between is a git repository
+        found = False
+        while testsrcdir != workdir:
+            if os.path.exists(os.path.join(testsrcdir, '.git')):
+                found = True
+                break
+            if testsrcdir == workdir:
+                break
+            testsrcdir = os.path.dirname(testsrcdir)
+        if not found:
+            bb.fatal('PATCHTOOL = "git" set for source tree that is not a git repository. Refusing to continue as that may result in commits being made in your metadata repository.')
 
     patchdir = os.path.join(srcsubdir, 'patches')
     if os.path.exists(patchdir):
@@ -139,6 +153,7 @@ python patch_do_patch() {
 patch_do_patch[vardepsexclude] = "PATCHRESOLVE"
 
 addtask patch after do_unpack
+do_patch[umask] = "022"
 do_patch[dirs] = "${WORKDIR}"
 do_patch[depends] = "${PATCHDEPENDENCY}"
 

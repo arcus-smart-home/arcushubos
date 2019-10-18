@@ -1,3 +1,7 @@
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+
 import oe.path
 import oe.types
 
@@ -21,6 +25,7 @@ class CmdError(bb.BBHandledException):
 
 def runcmd(args, dir = None):
     import pipes
+    import subprocess
 
     if dir:
         olddir = os.path.abspath(os.curdir)
@@ -33,9 +38,14 @@ def runcmd(args, dir = None):
         args = [ pipes.quote(str(arg)) for arg in args ]
         cmd = " ".join(args)
         # print("cmd: %s" % cmd)
-        (exitstatus, output) = oe.utils.getstatusoutput(cmd)
+        (exitstatus, output) = subprocess.getstatusoutput(cmd)
         if exitstatus != 0:
             raise CmdError(cmd, exitstatus >> 8, output)
+        if " fuzz " in output:
+            # Drop patch fuzz info with header and footer to log file so
+            # insane.bbclass can handle to throw error/warning
+            bb.note("--- Patch fuzz start ---\n%s\n--- Patch fuzz end ---" % format(output))
+
         return output
 
     finally:
@@ -212,7 +222,7 @@ class PatchTree(PatchSet):
         self.patches.insert(i, patch)
 
     def _applypatch(self, patch, force = False, reverse = False, run = True):
-        shellcmd = ["cat", patch['file'], "|", "patch", "-p", patch['strippath']]
+        shellcmd = ["cat", patch['file'], "|", "patch", "--no-backup-if-mismatch", "-p", patch['strippath']]
         if reverse:
             shellcmd.append('-R')
 
@@ -317,8 +327,8 @@ class GitApplyTree(PatchTree):
     @staticmethod
     def interpretPatchHeader(headerlines):
         import re
-        author_re = re.compile('[\S ]+ <\S+@\S+\.\S+>')
-        from_commit_re = re.compile('^From [a-z0-9]{40} .*')
+        author_re = re.compile(r'[\S ]+ <\S+@\S+\.\S+>')
+        from_commit_re = re.compile(r'^From [a-z0-9]{40} .*')
         outlines = []
         author = None
         date = None
@@ -432,7 +442,7 @@ class GitApplyTree(PatchTree):
         import re
         tempdir = tempfile.mkdtemp(prefix='oepatch')
         try:
-            shellcmd = ["git", "format-patch", startcommit, "-o", tempdir]
+            shellcmd = ["git", "format-patch", "--no-signature", "--no-numbered", startcommit, "-o", tempdir]
             if paths:
                 shellcmd.append('--')
                 shellcmd.extend(paths)
@@ -773,9 +783,11 @@ class UserResolver(Resolver):
 
 
 def patch_path(url, fetch, workdir, expand=True):
-    """Return the local path of a patch, or None if this isn't a patch"""
+    """Return the local path of a patch, or return nothing if this isn't a patch"""
 
     local = fetch.localpath(url)
+    if os.path.isdir(local):
+        return
     base, ext = os.path.splitext(os.path.basename(local))
     if ext in ('.gz', '.bz2', '.xz', '.Z'):
         if expand:

@@ -20,8 +20,8 @@ S = "${WORKDIR}/git"
 inherit cmake
 
 EXTRA_OECMAKE = "-DWITH_PYTHON=ON \
-                 ${@base_conditional("libdir", "/usr/lib64", "-DLIB_SUFFIX=64", "", d)} \
-                 ${@base_conditional("libdir", "/usr/lib32", "-DLIB_SUFFIX=32", "", d)} \
+                 ${@oe.utils.conditional("libdir", "/usr/lib64", "-DLIB_SUFFIX=64", "", d)} \
+                 ${@oe.utils.conditional("libdir", "/usr/lib32", "-DLIB_SUFFIX=32", "", d)} \
                 "
 
 LDFLAGS_append = "${@bb.utils.contains('DISTRO_FEATURES', 'ld-is-gold', ' -fuse-ld=bfd ', '', d)}"
@@ -30,9 +30,10 @@ do_install_append() {
     rm -rf ${D}${datadir}
 }
 
-PACKAGES =+ "${PN}-python ${PN}-python-dbg"
+PACKAGES =+ "${PN}-python"
+
+RPROVIDES_${PN}-dbg += "${PN}-python-dbg"
 
 FILES_${PN}-python = "${libdir}/python2.7/site-packages/konkretmof.py* ${libdir}/python2.7/site-packages/_konkretmof.so"
-FILES_${PN}-python-dbg = "${libdir}/python2.7/site-packages/.debug/*"
 
 BBCLASSEXTEND = "native"
