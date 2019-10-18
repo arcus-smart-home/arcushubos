@@ -126,3 +126,6 @@ $ fwinstall /tmp/i2hubos_update.bin
 
 Once this install completes reboot the hub so the new firmware is used.
 
+# Password
+
+The default root password for hubOS 3.x, regardless of hardare revision or platform is `zm{[*f6gB5X($]R9`.
