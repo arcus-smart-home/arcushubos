@@ -6,7 +6,7 @@ of the BeagleBone Black for our second generation Hub, and a custom
 NXP imx6DualLite design for the 3rd generation Hub.
 
 Our changes to the OSS packages used are marked with "IRIS Change" additions
-to the files touched.  A list of changes can be found in the ChangeLog_oss.txt
+to the files touched.  A list of changes can be found in the [ChangeLog_oss.txt](ChangeLog_oss.txt)
 file.
 
 
@@ -14,6 +14,8 @@ file.
 ## Instructions for build environment set up
 
 Please use a Yocto Supported Operating system. For Yocto 2.4.3, this is **CentOS 7**, **Debian 9**, Fedora 26, Fedora 27, OpenSuse 42.3, **Ubuntu 16.04**, and Ubuntu 17.10.
+
+As with any Yocto project, you should be using a fairly capable system (e.g. modern core "i" series processor, 25GB or more of disk space, and ideally an SSD) to achieve reasoanble build times.
 
 Follow the Yocto environment set up instructions in "The Packages" section at:
 
@@ -53,7 +55,7 @@ to another location:
 
 
 
-Makefile Targets:
+## Makefile Targets
 
 The following targets are valid:
 
@@ -81,9 +83,9 @@ hub builds, and build-fsl/tmp/deploy/images for v3 hub builds.
 
 
 
-Build Output Files:
+## Build Output Files
 
-*i2hubos_update.bin - v2 image without the build header (which includes
+* i2hubos_update.bin - v2 image without the build header (which includes
                      checksum, signature, etc)
 * i2hubos_update_bootloader.bin - Above, but with v2 boot loader files as well
 * hubOS_X.Y.Z.xxx.bin - v2 Release image with Java support with release boot
@@ -99,6 +101,15 @@ Build Output Files:
 * hubBLv3_X.Y.Z.xxx.bin - v3 Release image with Java support, plus development
                         boot loader files
 
+# Release Testing
+
+```
+$ scp /tftpboot/hubOS_X.Y.Z.xxx.bin root@your_v2_hub:/tmp
+$ ssh root@your_hub_ip
+$ install -f file:///tmp/hubOS_X.Y.Z.xxx.bin
+```
+
+# Development
 
 For development, it is not necessary to use the complete images as the
 validation takes additional time.  Also, since the boot loader files will
