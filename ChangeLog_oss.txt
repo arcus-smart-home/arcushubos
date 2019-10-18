@@ -338,6 +338,10 @@ Import of latest "Rocko" branch support from FSL Community BSP
 
 IRIS Changes to meta-iris/conf
 
+Actually, wireless-tools addition needs to be in distro config
+ meta-iris/conf/distro/poky-iris-fsl.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
 Limit v2 SERIAL_CONSOLES to just the one we actually use
  meta-iris/conf/distro/poky-iris-ti.conf | 3 +++
  1 file changed, 3 insertions(+)
