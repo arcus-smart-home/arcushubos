@@ -78,10 +78,10 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit core-image
 
-# Set default password
+# Set default password - generated with "openssl passwd -1"
 ROOTFS_POSTPROCESS_COMMAND += "set_root_passwd;"
 set_root_passwd() {
-   sed 's%^root:[^:]*:%root:7ntGA0iAoUfsQ:%' \
+   sed 's%^root:[^:]*:%root:$1$kPV0Qb8o$qUfyuYjesQTASUz4WGm3i1:%' \
        < ${IMAGE_ROOTFS}/etc/shadow \
        > ${IMAGE_ROOTFS}/etc/shadow.new;
    mv ${IMAGE_ROOTFS}/etc/shadow.new ${IMAGE_ROOTFS}/etc/shadow ;
