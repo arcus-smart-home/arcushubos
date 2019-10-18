@@ -35,7 +35,6 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     cryptodev-module \
     iris-4g \
     openjdk-8-armhf \
-    wireless-tools \
     "
 
 
