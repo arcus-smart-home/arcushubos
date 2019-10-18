@@ -35,6 +35,7 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     cryptodev-module \
     iris-4g \
     openjdk-8-armhf \
+    wireless-tools \
     "
 
 
@@ -82,6 +83,7 @@ set_reboot_permissions() {
 
       # Needed for agent to run wifi scan
       chmod 4755 ${IMAGE_ROOTFS}/usr/sbin/iw ;
+      chmod 4755 ${IMAGE_ROOTFS}/sbin/iwconfig ;
    fi
 }
 
