@@ -7,7 +7,13 @@ provide support for some backported features and fixes, or because it was applie
 and takes some time to become part of a stable version, or because it is not applicable for \
 upstreaming."
 
-include linux-fslc.inc
+require recipes-kernel/linux/linux-imx.inc
+
+DEPENDS += "lzop-native bc-native"
+
+SRC_URI = "git://github.com/Freescale/linux-fslc.git;branch=${SRCBRANCH} \
+           file://defconfig"
+LOCALVERSION = "-fslc"
 
 PV = "4.14+git${SRCPV}"
 
