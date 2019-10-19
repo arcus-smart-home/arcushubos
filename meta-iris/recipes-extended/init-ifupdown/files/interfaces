@@ -14,7 +14,8 @@ iface wlan0 inet dhcp
 iface atml0 inet dhcp
 
 # Wired or wireless interfaces
-auto eth0
+# IRIS Change - we will start interface via ifplugd...
+# auto eth0
 iface eth0 inet dhcp
 iface eth1 inet dhcp
 
