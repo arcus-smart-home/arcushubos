@@ -21,33 +21,9 @@ Import of Yocto 2.4.2 (poky-rocko-18.0.2) release
  ...
  342 files changed, 17421 insertions(+), 16791 deletions(-)
 
-Assume keytool is at /usr/bin/keytool rather than a package specific path
- poky/meta/recipes-support/ca-certificates/ca-certificates_20170717.bb | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
 Import of Yocto 2.4.1 (poky-rocko-18.0.1) release
  ...
  213 files changed, 6466 insertions(+), 4365 deletions(-)
-
-Cleaned up some items missed in merge but caught in file diff
- poky/meta/conf/bitbake.conf | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Added IRIS changes to latest ca-certificates 20170717 recipe
- .../ca-certificates/ca-certificates_20170717.bb              | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-Removed alsamixer from base packages
- poky/meta/recipes-core/packagegroups/packagegroup-base.bb | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Removed vfat and alsa from Beaglebone MACHINE_FEATURES
- poky/meta-yocto-bsp/conf/machine/beaglebone.conf | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-We still want to use uImage rather than zImage output
- poky/meta-yocto-bsp/conf/machine/beaglebone.conf | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
 Import of Yocto 2.4.0 (poky-rocko-18.0.0) release
  ...
@@ -65,10 +41,6 @@ Import of Yocto 2.2.2 (poky-morty-16.0.2) release
  ...
  219 files changed, 18188 insertions(+), 872 deletions(-)
 
-Go back to where we used to install cacerts file
- .../recipes-support/ca-certificates/ca-certificates_20160104.bb     | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
 Import of Yocto 2.2.1 (poky-morty-16.0.1) release
  ...
  230 files changed, 6069 insertions(+), 2819 deletions(-)
@@ -77,21 +49,9 @@ Import of Yocto 2.2.0 (poky-morty-16.0.0) release
  ...
  2759 files changed, 115681 insertions(+), 104669 deletions(-)
 
-Update to last checkin - use java-8-oracle keytool instead
- poky/meta/recipes-support/ca-certificates/ca-certificates_20160104.bb | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Update keytool to java-8 version
- poky/meta/recipes-support/ca-certificates/ca-certificates_20160104.bb | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
 Import of Yocto 2.1.2 (poky-krogoth-15.0.2) release candidate
  ...
  208 files changed, 12069 insertions(+), 826 deletions(-)
-
-Install cacerts in java-8-openjdk/lib/security/ now that /jre is gone
- .../recipes-support/ca-certificates/ca-certificates_20160104.bb     | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
 Update to 4.4.26 kernel to get "Dirty COW" fix
  .../recipes-kernel/linux/linux-yocto_4.4.bbappend    | 17 ++++++++++-------
@@ -99,10 +59,6 @@ Update to 4.4.26 kernel to get "Dirty COW" fix
  .../recipes-kernel/linux/linux-yocto-tiny_4.4.bb     |  6 +++---
  poky/meta/recipes-kernel/linux/linux-yocto_4.4.bb    | 20 ++++++++++----------
  4 files changed, 26 insertions(+), 23 deletions(-)
-
-Move cacerts updates to java-8-openjdk install directory
- poky/meta/recipes-support/ca-certificates/ca-certificates_20130610.bb | 6 +++--
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
 Import of Yocto 2.1.1 (poky-krogoth-15.0.1) release
  ...
@@ -114,14 +70,6 @@ Update to kernel 4.4.11 for beaglebone builds
  poky/meta/recipes-kernel/linux/linux-yocto-tiny_4.4.bb         |  6 +++---
  poky/meta/recipes-kernel/linux/linux-yocto_4.4.bb              | 20 ++++++++++-
  4 files changed, 33 insertions(+), 24 deletions(-)
-
-Merged in Iris patches to latest version of ca-certificates package
- poky/meta/recipes-support/ca-certificates/ca-certificates_20160104.bb | 12 ++++
- 1 file changed, 12 insertions(+)
-
-Merged our changes from nss 3.15.1 recipe to new 3.21 one
- poky/meta/recipes-support/nss/nss_3.21.bb | 60 +++++++++++++++++++++++++------
- 1 file changed, 37 insertions(+), 23 deletions(-)
 
 Import of Yocto 2.1 "Krogoth" release (poky-krogoth-15.0.0)
  ...
@@ -159,56 +107,6 @@ Import of Yocto 1.7.0 release (poky-dizzy-12.0.0)
  ...
  2469 files changed, 121767 insertions(+), 110089 deletions(-)
 
-Port 22 (SSH) is left open after boot in some cases
- poky/meta/recipes-core/dropbear/dropbear/init       | 16 +++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletions(-)
-
-Removed NSS SSL support to avoid memory leaks
- poky/meta/recipes-support/nss/nss.inc | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-When creating keystore, do not leave around temporary files
- poky/meta/recipes-support/ca-certificates/ca-certificates_20130610.bb | 1 +
- 1 file changed, 1 insertion(+)
-
-Create java keystore file using ca-certificate certs
- .../ca-certificates/ca-certificates_20130610.bb                | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-Disable "auto" mode for eth0 in interfaces file
- poky/meta/recipes-core/init-ifupdown/init-ifupdown-1.0/interfaces | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-Hardware crypto extensions exposed to Java
- poky/meta/recipes-support/nss/nss.inc | 6 ------
- 1 file changed, 6 deletions(-)
-
-Cleaned up rtc related error messages on boot and shutdown
- poky/meta/conf/bitbake.conf | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-Final release image size cleanup - trim nss libraries
- poky/meta/recipes-support/nss/nss.inc | 102 ++++++++++++++++++++--------------
- 1 file changed, 61 insertions(+), 41 deletions(-)
-
-Final release image size cleanup - remove usbutils-ids
- poky/meta/recipes-bsp/usbutils/usbutils_007.bb | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-Rolled poky u-boot patch into our patch to make further patches easier
- poky/meta/recipes-bsp/u-boot/u-boot_2013.07.bb | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-Enable USB drive auto-mounting
- poky/meta/recipes-core/udev/udev-extraconf/mount.blacklist |  1 +
- poky/meta/recipes-core/udev/udev-extraconf/mount.sh        | 14 +++++++-------
- 2 files changed, 8 insertions(+), 7 deletions(-)
-
-Modified dropbear configuration so key is kept in /data partition
- poky/meta/recipes-core/dropbear/dropbear/dropbear@.service   | 2 +-
- poky/meta/recipes-core/dropbear/dropbear/dropbearkey.service | 4 ++--
- poky/meta/recipes-core/dropbear/dropbear/init                | 6 +++---
- 3 files changed, 6 insertions(+), 6 deletions(-)
 
 
 
@@ -277,10 +175,6 @@ Import of meta-openembedded daisy snapshot
 
 IRIS Changes to meta-freescale
 
-Added last FSL community 4.14.x kernel recipe linux-fslc-iris.bb
- meta-freescale/recipes-kernel/linux/linux-fslc-iris.bb | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
 Import of latest "Warrior" branch support from FSL Community BSP, circa 21.0.1
  ...
  31 files changed, 30 insertions(+), 376 deletions(-)
@@ -322,10 +216,6 @@ Import of latest "Rocko" branch support from FSL Community BSP, circa 18.0.3
  meta-freescale-3rdparty/recipes-kernel/linux/linux-warp7/defconfig     | 1 +
  6 files changed, 8 insertions(+), 5 deletions(-)
 
-Cleaned up machine config files (wandboard) for new Yocto
- meta-freescale-3rdparty/conf/machine/wandboard.conf | 8 +-------
- 1 file changed, 1 insertions(+), 7 deletions(-)
-
 Import of latest "Rocko" branch support from FSL Community BSP
  ...
  215 files changed, 22935 insertions(+)
@@ -333,6 +223,10 @@ Import of latest "Rocko" branch support from FSL Community BSP
 
 
 IRIS Changes to meta-iris/conf
+
+Moved some beaglebone related config to poky-iris-ti.conf from poky files
+ meta-iris/conf/distro/poky-iris-ti.conf | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 Actually, wireless-tools addition needs to be in distro config
  meta-iris/conf/distro/poky-iris-fsl.conf | 2 +-
@@ -766,6 +660,32 @@ Fixed how e2fsprogs are built to remove duplicate copies of applications
 
 IRIS Changes to meta-iris/recipes-extended
 
+Added recipe to extend packagegroup-base rather than changing poky files
+ meta-iris/recipes-extended/packagegroups/packagegroup-base.bbappend | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+Added recipe to extend init-ifupdown rather than changing poky files
+ .../init-ifupdown/files/interfaces                 | 32 ++++++++++++++++++++++
+ .../init-ifupdown/init-ifupdown_1.%.bbappend       |  7 +++++
+ 2 files changed, 39 insertions(+)
+
+Added recipe to extend udev-extraconf rather than changing poky files
+ .../recipes-extended/udev/files/mount.blacklist    |   7 +
+ meta-iris/recipes-extended/udev/files/mount.sh     | 152 +++++++++++++++++++++
+ .../udev/udev-extraconf_1.%.bbappend               |   8 ++
+ 3 files changed, 167 insertions(+)
+
+Added recipe to extend ca-certificates rather than changing poky files
+ .../ca-certificates/ca-certificates_2019%.bbappend | 32 ++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+Added recipe to extend dropbear rather than direct changes to poky files
+ .../dropbear/dropbear_2019.%.bbappend              |   9 ++
+ .../dropbear/files/dropbear@.service               |  12 +++
+ .../dropbear/files/dropbearkey.service             |  12 +++
+ meta-iris/recipes-extended/dropbear/files/init     | 114 +++++++++++++++++++++
+ 4 files changed, 147 insertions(+)
+
 Rename nspr bbappend file so it works with newer version of package
  meta-iris/recipes-extended/nspr/{nspr_4.16.bbappend => nspr_4.%.bbappend} | 0
  1 file changed, 0 insertions(+), 0 deletions(-)
@@ -953,6 +873,10 @@ Extended i2c-tools recipe to avoid the need for perl on target
 
 
 IRIS Changes to meta-iris/recipes-kernel
+
+Added last FSL community 4.14.x kernel recipe linux-fslc-iris.bb
+ meta-freescale/recipes-kernel/linux/linux-fslc-iris.bb | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
 Move to 4.19.x kernel for TI build
  .../0001-Iris-dtsi-config-changes.patch            |  0
