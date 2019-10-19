@@ -173,10 +173,10 @@ RRECOMMENDS_packagegroup-base-vfat = "\
     kernel-module-nls-cp437 \
     dosfstools"
 
-# IRIS Change - removed alsa-utils-alsamixer since we do not need it
 SUMMARY_packagegroup-base-alsa = "ALSA sound support"
 RDEPENDS_packagegroup-base-alsa = "\
     alsa-utils-alsactl \
+    alsa-utils-alsamixer \
     ${VIRTUAL-RUNTIME_alsa-state}"
 
 RRECOMMENDS_packagegroup-base-alsa = "\
