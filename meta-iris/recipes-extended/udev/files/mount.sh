@@ -124,8 +124,9 @@ rm_dir() {
 }
 
 # No ID_FS_TYPE for cdrom device, yet it should be mounted
+# IRIS Change - modify mount path
 name="`basename "$DEVNAME"`"
-[ -e /sys/block/$name/device/media ] && media_type=`cat /sys/block/$name/device/media`
+[ -e /sys/block/$name/device/tmp/media ] && media_type=`cat /sys/block/$name/device/tmp/media`
 
 if [ "$ACTION" = "add" ] && [ -n "$DEVNAME" ] && [ -n "$ID_FS_TYPE" -o "$media_type" = "cdrom" ]; then
     # Note the root filesystem can show up as /dev/root in /proc/mounts,
