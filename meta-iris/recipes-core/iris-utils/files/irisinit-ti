@@ -106,6 +106,7 @@ echo Done with gpio setup
 echo Setup buzzer pwm
 cd /sys/class/pwm/pwmchip0
 echo 1 > export
+chmod o+x pwm1
 chmod 0666 -R pwm1
 cd pwm1
 echo 0 > enable
