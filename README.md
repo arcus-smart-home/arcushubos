@@ -108,6 +108,15 @@ $ scp /tftpboot/hubOS_X.Y.Z.xxx.bin root@your_v2_hub:/tmp
 $ ssh root@your_hub_ip
 $ install -f file:///tmp/hubOS_X.Y.Z.xxx.bin
 ```
+# Common Tasks
+
+## Updating Firmware Version
+
+Bump the version number in [meta-iris/recipes-core/iris-lib/files/irisversion.h](meta-iris/recipes-core/iris-lib/files/irisversion.h)
+
+## Updating the Agent
+
+Bump the version number in [meta-iris/recipes-core/iris-agent/iris-agent.bb#L40](meta-iris/recipes-core/iris-agent/iris-agent.bb#L40) and change the hashes of the target tar.gz file:
 
 # Development
 
