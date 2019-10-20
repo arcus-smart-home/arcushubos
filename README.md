@@ -23,8 +23,7 @@ http://www.yoctoproject.org/docs/current/yocto-project-qs/yocto-project-qs.html
 
 For a Ubuntu distribution, the following tools are needed:
 
-`$ sudo apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib \
-build-essential chrpath socat libsdl1.2-dev xterm python chrpath`
+`$ sudo apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat libsdl1.2-dev xterm python chrpath`
 
 We have only tested building under Ubuntu, but other environments should
 also work.
