@@ -34,6 +34,8 @@
 #define BATTERYD_PROCESS_NAME      "batteryd"
 #define IRIS4GD_PROCESS_NAME       "iris4gd"
 #define IRISNFCD_PROCESS_NAME      "irisnfcd"
+#define IRIS4GD_PATH               "/usr/bin/iris4gd"
+#define IRISNFCD_PATH              "/usr/bin/irisnfcd"
 
 
 static int checkProcess(char *process)
@@ -93,17 +95,21 @@ int main(int argc, char** argv)
             }
 
             // 4G daemon
-            if (!checkProcess(IRIS4GD_PROCESS_NAME)) {
+            if ((access(IRIS4GD_PATH, F_OK) != -1) &&
+		!checkProcess(IRIS4GD_PROCESS_NAME)) {
                 syslog(LOG_INFO, "Restarting 4G daemon...");
                 system(IRIS4GD_PROCESS_NAME);
             }
 
 #ifdef imxdimagic
-            // NFC daemon
-            if (!checkProcess(IRISNFCD_PROCESS_NAME)) {
+#ifdef LATER
+            // NFC daemon - not supported yet...
+            if ((access(IRISNFCD_PATH, F_OK) != -1) &&
+		!checkProcess(IRISNFCD_PROCESS_NAME)) {
                 syslog(LOG_INFO, "Restarting NFC daemon...");
                 system(IRISNFCD_PROCESS_NAME);
             }
+#endif
 #endif
         }
     }

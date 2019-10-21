@@ -330,8 +330,8 @@ if [ ${hwVer} -ge 2 ]; then
     rm -rf /tmp/io/zigbeeReset
     ln -s /sys/class/gpio/gpio148/value /tmp/io/zigbeeReset
 
-    # NFC support was added, start up daemon
-    irisnfcd
+    # NFC support was added, start up daemon - leave off for now...
+    # irisnfcd
 fi
 
 # Setup wlan0
