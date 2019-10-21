@@ -5,6 +5,13 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/linux-4.x:"
 KERNEL_EXTRA_FEATURES = ""
 KERNEL_FEATURES_append = ""
 
+# Upgrade to 4.19.78 kernel until Yocto release catches up...
+SRCREV_machine_beaglebone-yocto ?= "a915fbeae8ed987402f69666d90bef15a01c5823"
+LINUX_VERSION_beaglebone-yocto = "4.19.78"
+KERNEL_VERSION_SANITY_SKIP="1"
+LINUX_VERSION = "4.19.78"
+PV = "${LINUX_VERSION}+git${SRCPV}"
+
 # Create a uImage output file to match what we have done in past
 KERNEL_IMAGETYPE = "uImage"
 
