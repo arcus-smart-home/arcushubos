@@ -31,7 +31,7 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     iris-agent \
     ca-certificates \
     tcpdump \
-    tzdata \
+    tzdata-americas \
     cryptodev-module \
     iris-4g \
     openjdk-8-armhf \

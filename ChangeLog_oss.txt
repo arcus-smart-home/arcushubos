@@ -751,28 +751,10 @@ Move extended recipes to later versions
  .../rrdtool/rrdtool_1.6.0.bbappend                 | 22 +++++++++++
  6 files changed, 69 insertions(+), 69 deletions(-)
 
-Cleaned up localtime error messages in boot log
- meta-iris/recipes-extended/tzdata/tzdata_2016i.bb | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
 Update to i2c-tools to v3.1.2
  .../recipes-extended/i2c-tools/i2c-tools_3.1.0.bb  | 22 ----------------------
  .../recipes-extended/i2c-tools/i2c-tools_3.1.2.bb  | 22 ++++++++++++++++++++++
  2 files changed, 22 insertions(+), 22 deletions(-)
-
-Update to tzdata 2016i package
- meta-iris/recipes-extended/tzdata/tzdata_2016g.bb | 61 -----------------------
- meta-iris/recipes-extended/tzdata/tzdata_2016i.bb | 61 +++++++++++++++++++++++
- 2 files changed, 61 insertions(+), 61 deletions(-)
-
-Cleaned up localtime error messages in boot log
- meta-iris/recipes-extended/tzdata/tzdata_2016g.bb | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletions(-)
-
-Upgraded to tzdata 2016g package
- meta-iris/recipes-extended/tzdata/tzdata_2013i.bb | 54 --------------------
- meta-iris/recipes-extended/tzdata/tzdata_2016g.bb | 61 +++++++++++++++++++++++
- 2 files changed, 61 insertions(+), 54 deletions(-)
 
 Merged in iris-4g-hilink branch with initial Huawae LTE dongle support
  meta-iris/recipes-extended/usb-modeswitch/usb-modeswitch_%.bbappend | 10 ++++
@@ -819,10 +801,6 @@ Moved to v1.5.4 of rrdtool
 Errors seen in hubOS system log due to incorrect ping host
  meta-iris/recipes-extended/collectd/files/collectd.conf | 16 ++++++++--------
  1 file changed, 8 insertions(+), 8 deletions(-)
-
-Added recipe to support stripped down timezone data in hubOS
- meta-iris/recipes-extended/tzdata/tzdata_2013i.bb | 54 +++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
 
 Add more collectd support needed by hub agent
  .../recipes-extended/collectd/collectd_%.bbappend  |   9 +-
