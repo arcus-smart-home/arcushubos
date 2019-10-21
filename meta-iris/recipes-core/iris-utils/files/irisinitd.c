@@ -883,7 +883,7 @@ static int checkConnection(void)
             // Address 1: 192.168.1.253
             //
             // Name:      google.com
-            // Address 1: 172.217.10.14
+            // Address: 172.217.10.14
             //
             // Want to make sure the server address and host address are
             //  not the same as that would signal DNS redirection (likely
@@ -897,7 +897,7 @@ static int checkConnection(void)
                 }
 
                 // Parse off address data
-                if (strncmp(line, "Address 1:", 10) == 0) {
+                if (strncmp(line, "Address:", 8) == 0) {
                     char *end, *ptr = line + 11;
 
                     // Just want address, remove any resolved name
