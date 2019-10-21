@@ -46,11 +46,8 @@
 
 int IRIS_isReleaseImage(void)
 {
-    // Check for presense of Java support to determine if release image
-    if (access(JAVA_BIN_FILE, F_OK) != -1) {
-        return 1;
-    }
-    return 0;
+    // Support for manufacturing image is gone, all are "release" images...
+    return 1;
 }
 
 int IRIS_isMfgImage(void)
@@ -64,7 +61,7 @@ int IRIS_isMfgImage(void)
 
 int IRIS_isDevImage(void)
 {
-    // Do we lack java and serial number supporti
+    // Do we lack java and serial number support?
     if ((access(SERIALIZE_BIN_FILE, F_OK) == -1) &&
         (access(JAVA_BIN_FILE, F_OK) == -1)) {
         return 1;

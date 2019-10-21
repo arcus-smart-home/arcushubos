@@ -289,9 +289,8 @@ fi
 modprobe cryptodev
 
 # Create link to securetty (for console port login control)
-# We do not allow console login for release image (with java support)
-#  unless there is an override file
-if [ -e /usr/bin/java ] && ! [ -e /data/config/enable_console ]; then
+# We do not allow console login for release image unless there is an override file
+if [ ! [ -e /data/config/enable_console ]; then
     cp /home/root/etc/securetty_noconsole /var/run/securetty
 else
     cp /home/root/etc/securetty /var/run/securetty
@@ -331,10 +330,8 @@ if [ ${hwVer} -ge 2 ]; then
     rm -rf /tmp/io/zigbeeReset
     ln -s /sys/class/gpio/gpio148/value /tmp/io/zigbeeReset
 
-    # NFC support was added, start up daemon if not diags image
-    if [ -e /usr/bin/java ]; then
-	irisnfcd
-    fi
+    # NFC support was added, start up daemon
+    irisnfcd
 fi
 
 # Setup wlan0
@@ -344,19 +341,8 @@ chmod 666 /data/config/wifiCfg
 touch /tmp/testWifiCfg
 chmod 666 /tmp/testWifiCfg
 
-# Set up BLE for Bluez usage on production image - this will break
-#  diagnostics if done for mfg image!
-if [ -e /usr/bin/java ]; then
-    hciattach /dev/ttyO4 any 115200 flow
-else
-    # Flash LED ring blue before setting to solid blue
-    ledRing -b 100 -g 0 -r 0 -m 5
-    usleep 100000
-    ledRing -b 100 -g 0 -r 0 -m 6
-
-    # Start up diags server for mfg image (no java)
-    gs_hubdiags
-fi
+# Set up BLE for Bluez usage on production image
+hciattach /dev/ttyO4 any 115200 flow
 
 # Start watcher to restart other daemons if they fail
 dwatcher
