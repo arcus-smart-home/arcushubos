@@ -1,11 +1,11 @@
 # IRIS HubOS Build Instructions for OSS Redistribution
 
 The development environment for the IRIS HubOS is currently based on the
-Yocto 2.4.3 "Rocko" release.  Our proprietary hardware is similar to that
+Yocto 2.4.3 "Rocko" release.  The proprietary hardware is similar to that
 of the BeagleBone Black for our second generation Hub, and a custom
 NXP imx6DualLite design for the 3rd generation Hub.
 
-Our changes to the OSS packages used are marked with "IRIS Change" additions
+The changes to the OSS packages used are marked with "IRIS Change" additions
 to the files touched.  A list of changes can be found in the [ChangeLog_oss.txt](ChangeLog_oss.txt)
 file.
 
@@ -13,7 +13,7 @@ file.
 
 ## Instructions for build environment set up
 
-Please use a Yocto Supported Operating system. For Yocto 2.4.3, this is **CentOS 7**, **Debian 9**, Fedora 26, Fedora 27, OpenSuse 42.3, **Ubuntu 16.04**, and Ubuntu 17.10.
+Please use a Yocto Supported Operating system. For Yocto 2.4.3, this is **CentOS 7**, **Debian 9**, Fedora 26, Fedora 27, OpenSuse 42.3, **Ubuntu 16.04**, and Ubuntu 17.10. Only Debian 9 and Ubuntu 16.04 are known to work at this time.
 
 As with any Yocto project, you should be using a fairly capable system (e.g. modern core "i" series processor, 25GB or more of disk space, and ideally an SSD) to achieve reasoanble build times.
 
@@ -23,14 +23,10 @@ http://www.yoctoproject.org/docs/current/yocto-project-qs/yocto-project-qs.html
 
 For a Ubuntu distribution, the following tools are needed:
 
-`$ sudo apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib \
-build-essential chrpath socat libsdl1.2-dev xterm python chrpath`
+`$ sudo apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat libsdl1.2-dev xterm python chrpath`
 
-We have only tested building under Ubuntu, but other environments should
-also work.
-
-We have added JDK support to the base Yocto build, so you will also
-need to install the following (assuming Ubuntu environment):
+Arcus HubOS has added JDK support to the base Yocto build, so you will also
+need to install the following (assuming Ubuntu/Debian environment):
 
 `$ sudo apt-get install openjdk-8-jdk galternatives srecord`
 
@@ -52,7 +48,6 @@ the configuration in build/conf/local.conf to comment out this line or change
 to another location:
 
 `SSTATE_DIR ?= "/build/sstate-cache"`
-
 
 
 ## Makefile Targets
@@ -78,9 +73,8 @@ These builds will take a hour or so (depending on your machine) to complete
 as it has to build all the cross-compiler toolchains as well as all packages
 in the build.
 
-When complete, the outputs will be in build-ti/tmp/deploy/images for v2
-hub builds, and build-fsl/tmp/deploy/images for v3 hub builds.
-
+When complete, the outputs will be in `build-ti/tmp/deploy/images` for v2
+hub builds, and `build-fsl/tmp/deploy/images` for v3 hub builds.
 
 
 ## Build Output Files
@@ -108,6 +102,15 @@ $ scp /tftpboot/hubOS_X.Y.Z.xxx.bin root@your_v2_hub:/tmp
 $ ssh root@your_hub_ip
 $ install -f file:///tmp/hubOS_X.Y.Z.xxx.bin
 ```
+# Common Tasks
+
+## Updating Firmware Version
+
+Bump the version number in [meta-iris/recipes-core/iris-lib/files/irisversion.h](meta-iris/recipes-core/iris-lib/files/irisversion.h)
+
+## Updating the Agent
+
+Bump the version number in [meta-iris/recipes-core/iris-agent/iris-agent.bb#L40](meta-iris/recipes-core/iris-agent/iris-agent.bb#L40) and change the hashes of the target tar.gz file:
 
 # Development
 
