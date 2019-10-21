@@ -24,7 +24,7 @@ S = "${WORKDIR}"
 
 DEPENDS = "zip-native"
 
-OPENJDK_VERSION = "8u171-b11-2"
+OPENJDK_VERSION = "8u212-b01-1"
 
 libdir_jvm ?= "${libdir}/jvm"
 JDK_HOME = "${libdir_jvm}/java-8-openjdk"
@@ -37,13 +37,13 @@ OPENJDK_DEBIAN_URL = "http://old.kali.org/kali/pool/main/o/openjdk-8"
 
 JDK_FILE = "openjdk-8-jdk-headless_${OPENJDK_VERSION}_armhf.deb"
 JDK_URI = "${OPENJDK_DEBIAN_URL}/${JDK_FILE};name=jdk;unpack=false"
-SRC_URI[jdk.md5sum] = "6aa795be17f042aa4058648e6330dd5a"
-SRC_URI[jdk.sha256sum] = "74e6e21f27a141da5969ec14fbfa92754656c1b2003766a6b8d8eb87d33fccd6"
+SRC_URI[jdk.md5sum] = "8a2cd69b25a6460537a82f4a1cedc18f"
+SRC_URI[jdk.sha256sum] = "c758f2609ab573608053fd9964a28c3d7722b7b739a77acd60208d87aefac4b9"
 
 JRE_FILE = "openjdk-8-jre-headless_${OPENJDK_VERSION}_armhf.deb"
 JRE_URI = "${OPENJDK_DEBIAN_URL}/${JRE_FILE};name=jre;unpack=false"
-SRC_URI[jre.md5sum] = "891b711eafae7ddc19849c6d20c25235"
-SRC_URI[jre.sha256sum] = "0be7b638d7f4c21565bc1d4b3d5c14a37fd788e5d236f4fda4f82095646daf32"
+SRC_URI[jre.md5sum] = "79ce9e127ce5f5336622e5ce52e86e4f"
+SRC_URI[jre.sha256sum] = "2dc734e824906cc3b191e93adb1b939057da5dfca21670b0dcae7fb44e79357c"
 
 # Files we override
 SRC_URI = " \
