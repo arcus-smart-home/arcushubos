@@ -258,7 +258,7 @@ typedef enum
 #define WIFI_TEST_CMD           "/usr/bin/wifi_test %s %s"
 #define WIFI_STOP_CMD           "ifdown %s; ifconfig %s up"
 #define WIFI_PROV_DAEMON        "wifi_prov"
-#define TEST_RESOLVE_HOST       "irisbylowes.com"
+#define TEST_RESOLVE_HOST       "google.com"
 
 // Files used for agent control of LTE
 #define LTE_CONTROL_FILE        "/tmp/lteControl"

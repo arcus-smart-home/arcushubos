@@ -882,8 +882,8 @@ static int checkConnection(void)
             // Server:    192.168.1.253
             // Address 1: 192.168.1.253
             //
-            // Name:      irisbylowes.com
-            // Address 1: 13.77.110.211
+            // Name:      google.com
+            // Address 1: 172.217.10.14
             //
             // Want to make sure the server address and host address are
             //  not the same as that would signal DNS redirection (likely
