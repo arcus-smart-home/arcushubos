@@ -613,8 +613,8 @@ static gboolean sshCheckAccess(gpointer data)
             restartAgent = 1;
         }
 
-        /* Restart agent if necessary */
-        if (restartAgent) {
+        /* Restart Iris agent if necessary */
+        if (restartAgent && (access(IRIS_AGENT_BIN_FILE, F_OK) != -1)) {
             syslog(LOG_ERR, "Restarting Hub Agent due to new configuration.");
             /* If we kill the agent, the watchdog will restart it */
             system("killall java");
