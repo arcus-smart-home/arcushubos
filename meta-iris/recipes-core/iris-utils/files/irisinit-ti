@@ -229,7 +229,7 @@ modprobe cryptodev
 
 # Create link to securetty (for console port login control)
 # We do not allow console login for release image unless there is an override file
-if [ ! [ -e /data/config/enable_console ]; then
+if [ ! -e /data/config/enable_console ]; then
     cp /home/root/etc/securetty_noconsole /var/run/securetty
 else
     cp /home/root/etc/securetty /var/run/securetty
