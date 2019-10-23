@@ -133,7 +133,7 @@ set_file_links() {
 	# Replace wireless configuration files with links
 	if [ "${MACHINE}" != "beaglebone-yocto" ]; then
 	   rm -f ${IMAGE_ROOTFS}/etc/network/interfaces
-	   ln -s /data/config/interfaces ${IMAGE_ROOTFS}/etc/network/interfaces
+	   ln -s /home/root/etc/interfaces ${IMAGE_ROOTFS}/etc/network/interfaces
 	   rm -f ${IMAGE_ROOTFS}/etc/wpa_supplicant.conf
 	   ln -s /data/config/wpa_supplicant.conf ${IMAGE_ROOTFS}/etc/wpa_supplicant.conf
 	fi
