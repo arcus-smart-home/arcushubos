@@ -37,19 +37,18 @@ INITSCRIPT_PARAMS = "start 99 S ."
 inherit autotools update-rc.d
 
 # These need to be updated with each agent version change
-AGENT_VERSION="2.13.25"
-SRC_URI[md5sum] = "e203ef0370f22135642035852ff6c140"
-SRC_URI[sha256sum] = "1d69db92c8ff0bfb5a707ddd3e930d3c0db5f87b7b9a35164ceacd765b4e210e"
+AGENT_VERSION="2.13.26"
+SRC_URI[md5sum] = "cefcf87c43a5fef4795f8119895bf3d9"
+SRC_URI[sha256sum] = "2d16e871d6ba1d4c75ecb30f46e802bec2ec7dd3d9add446ce66b3f30570102d"
 AGENT_FILE="iris-agent-hub-v2-${AGENT_VERSION}.tar.gz"
 
 SRC_URI = "file://irisagent \
            file://irisagentd.c \
            file://0hourly \
-           https://www.dropbox.com/s/4k1u4afn632jzoo/${AGENT_FILE}?dl=1 \
+           https://www.dropbox.com/s/4qtphxo52ckt3u3/${AGENT_FILE}?dl=1 \
            "
 # Add to list if using local binary and remove server file https line
 #	   file://iris-agent-hub
-
 
 FILES_${PN} += "/home/agent \
                /home/root/.ssh \
