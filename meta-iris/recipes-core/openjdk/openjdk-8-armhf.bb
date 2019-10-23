@@ -24,7 +24,7 @@ S = "${WORKDIR}"
 
 DEPENDS = "zip-native"
 
-OPENJDK_VERSION = "8u212-b01-1"
+OPENJDK_VERSION = "8u232-b09-1~deb9u1"
 
 libdir_jvm ?= "${libdir}/jvm"
 JDK_HOME = "${libdir_jvm}/java-8-openjdk"
@@ -33,17 +33,17 @@ BIN_DIR = "${S}/openjdk-${OPENJDK_VERSION}"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${BIN_DIR}/usr/lib/jvm/java-8-openjdk-armhf/ASSEMBLY_EXCEPTION;md5=d94f7c92ff61c5d3f8e9433f76e39f74"
 
-OPENJDK_DEBIAN_URL = "http://old.kali.org/kali/pool/main/o/openjdk-8"
+OPENJDK_DEBIAN_URL = "http://security.debian.org/debian-security/pool/updates/main/o/openjdk-8/"
 
 JDK_FILE = "openjdk-8-jdk-headless_${OPENJDK_VERSION}_armhf.deb"
 JDK_URI = "${OPENJDK_DEBIAN_URL}/${JDK_FILE};name=jdk;unpack=false"
-SRC_URI[jdk.md5sum] = "8a2cd69b25a6460537a82f4a1cedc18f"
-SRC_URI[jdk.sha256sum] = "c758f2609ab573608053fd9964a28c3d7722b7b739a77acd60208d87aefac4b9"
+SRC_URI[jdk.md5sum] = "470867bdfb8269d99052efa09b4670c4"
+SRC_URI[jdk.sha256sum] = "266a9fa0646a95faadb389e6453c0e811579cb1b39d88faa68a80c85c4db017a"
 
 JRE_FILE = "openjdk-8-jre-headless_${OPENJDK_VERSION}_armhf.deb"
 JRE_URI = "${OPENJDK_DEBIAN_URL}/${JRE_FILE};name=jre;unpack=false"
-SRC_URI[jre.md5sum] = "79ce9e127ce5f5336622e5ce52e86e4f"
-SRC_URI[jre.sha256sum] = "2dc734e824906cc3b191e93adb1b939057da5dfca21670b0dcae7fb44e79357c"
+SRC_URI[jre.md5sum] = "9a5be0f4cdd1dfddc0a30b4abe2dc400"
+SRC_URI[jre.sha256sum] = "89c1d5db55aa293795f123fb31618143e14bb5bc471c03109cf2e808a774289a"
 
 # Files we override
 SRC_URI = " \
