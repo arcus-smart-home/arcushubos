@@ -5,13 +5,13 @@ require recipes-core/images/core-image-minimal.bb
 # to build multiple virtual/kernel providers.
 python () {
     if d.getVar("PREFERRED_PROVIDER_virtual/kernel") != "linux-yocto-rt":
-        raise bb.parse.SkipPackage("Set PREFERRED_PROVIDER_virtual/kernel to linux-yocto-rt to enable it")
+        raise bb.parse.SkipRecipe("Set PREFERRED_PROVIDER_virtual/kernel to linux-yocto-rt to enable it")
 }
 
 DESCRIPTION = "Small image capable of booting a device with a test suite and \
 tools for real-time use. It includes the full meta-toolchain, development \
 headers and libraries to form a standalone SDK."
-DEPENDS = "linux-yocto-rt"
+DEPENDS += "linux-yocto-rt"
 
 IMAGE_FEATURES += "dev-pkgs tools-sdk tools-debug eclipse-debug tools-profile tools-testapps debug-tweaks"
 

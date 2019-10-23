@@ -31,8 +31,8 @@ SRC_URI = "file://nfc_test.c \
 
 FILES_${PN} += "${libdir}"
 
-# Consider any warnings errors
-CFLAGS += "-Werror"
+# Consider any warnings errors (well, not ignored results)
+CFLAGS += "-Werror -Wno-unused-result"
 
 # Make sure we build position independent code
 CFLAGS += "-fPIC"

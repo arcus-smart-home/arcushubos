@@ -6,23 +6,24 @@ LICENSE = "GPLv2"
 LICENSE_FLAGS = "commercial"
 LIC_FILES_CHKSUM = "file://COPYING;md5=94d55d512a9ba36caa9b7df079bae19f"
 
-DEPENDS = "yasm-native"
+DEPENDS = "nasm-native"
 
 SRC_URI = "git://github.com/mirror/x264;branch=stable \
            file://don-t-default-to-cortex-a9-with-neon.patch \
            file://Fix-X32-build-by-disabling-asm.patch \
            "
-UPSTREAM_VERSION_UNKNOWN = "1"
+UPSTREAM_CHECK_COMMITS = "1"
 
-SRCREV = "2b741f81e51f92d053d87a49f59ff1026553a0f6"
+SRCREV = "0a84d986e7020f8344f00752e3600b9769cc1e85"
 
-PV = "r2731+git${SRCPV}"
+PV = "r2917+git${SRCPV}"
 
 S = "${WORKDIR}/git"
 
-inherit lib_package pkgconfig perlnative
+inherit lib_package pkgconfig
 
 X264_DISABLE_ASM = ""
+X264_DISABLE_ASM_x86 = "--disable-asm"
 X264_DISABLE_ASM_armv4 = "--disable-asm"
 X264_DISABLE_ASM_armv5 = "--disable-asm"
 X264_DISABLE_ASM_powerpc = "${@bb.utils.contains("TUNE_FEATURES", "spe", "--disable-asm", "", d)}"
@@ -43,6 +44,8 @@ EXTRA_OECONF = '--prefix=${prefix} \
                '
 
 do_configure() {
+    install -m 0755 ${STAGING_DATADIR_NATIVE}/gnu-config/config.guess ${S}
+    install -m 0755 ${STAGING_DATADIR_NATIVE}/gnu-config/config.sub ${S}
     ./configure ${EXTRA_OECONF}
 }
 

@@ -10,20 +10,9 @@ BitBake build tools.
 
 # Copyright (C) 2003, 2004  Chris Larson
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-#
-#Based on functions from the base bb module, Copyright 2003 Holger Schurig
+# Based on functions from the base bb module, Copyright 2003 Holger Schurig
 #
 
 import os
@@ -110,7 +99,7 @@ class Cvs(FetchMethod):
         if ud.tag:
             options.append("-r %s" % ud.tag)
 
-        cvsbasecmd = d.getVar("FETCHCMD_cvs")
+        cvsbasecmd = d.getVar("FETCHCMD_cvs") or "/usr/bin/env cvs"
         cvscmd = cvsbasecmd + " '-d" + cvsroot + "' co " + " ".join(options) + " " + ud.module
         cvsupdatecmd = cvsbasecmd + " '-d" + cvsroot + "' update -d -P " + " ".join(options)
 
@@ -121,7 +110,8 @@ class Cvs(FetchMethod):
         # create module directory
         logger.debug(2, "Fetch: checking for module directory")
         pkg = d.getVar('PN')
-        pkgdir = os.path.join(d.getVar('CVSDIR'), pkg)
+        cvsdir = d.getVar("CVSDIR") or (d.getVar("DL_DIR") + "/cvs")
+        pkgdir = os.path.join(cvsdir, pkg)
         moddir = os.path.join(pkgdir, localdir)
         workdir = None
         if os.access(os.path.join(moddir, 'CVS'), os.R_OK):

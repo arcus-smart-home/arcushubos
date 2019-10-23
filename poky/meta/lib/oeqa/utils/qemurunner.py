@@ -1,6 +1,8 @@
+#
 # Copyright (C) 2013 Intel Corporation
 #
-# Released under the MIT license (see COPYING.MIT)
+# SPDX-License-Identifier: MIT
+#
 
 # This module provides a class for starting qemu images using runqemu.
 # It's used by testimage.bbclass.
@@ -28,7 +30,8 @@ re_control_char = re.compile('[%s]' % re.escape("".join(control_chars)))
 
 class QemuRunner:
 
-    def __init__(self, machine, rootfs, display, tmpdir, deploy_dir_image, logfile, boottime, dump_dir, dump_host_cmds, use_kvm, logger):
+    def __init__(self, machine, rootfs, display, tmpdir, deploy_dir_image, logfile, boottime, dump_dir, dump_host_cmds,
+                 use_kvm, logger, use_slirp=False):
 
         # Popen object for runqemu
         self.runqemu = None
@@ -51,11 +54,13 @@ class QemuRunner:
         self.logged = False
         self.thread = None
         self.use_kvm = use_kvm
+        self.use_slirp = use_slirp
         self.msg = ''
 
         self.runqemutime = 120
         self.qemu_pidfile = 'pidfile_'+str(os.getpid())
         self.host_dumper = HostDumper(dump_host_cmds, dump_dir)
+        self.monitorpipe = None
 
         self.logger = logger
 
@@ -129,13 +134,15 @@ class QemuRunner:
                 self.logger.debug('Not using kvm for runqemu')
             if not self.display:
                 launch_cmd += ' nographic'
+            if self.use_slirp:
+                launch_cmd += ' slirp'
             launch_cmd += ' %s %s' % (self.machine, self.rootfs)
 
         return self.launch(launch_cmd, qemuparams=qemuparams, get_ip=get_ip, extra_bootparams=extra_bootparams, env=env)
 
     def launch(self, launch_cmd, get_ip = True, qemuparams = None, extra_bootparams = None, env = None):
         try:
-            threadsock, threadport = self.create_socket()
+            self.threadsock, threadport = self.create_socket()
             self.server_socket, self.serverport = self.create_socket()
         except socket.error as msg:
             self.logger.error("Failed to create listening socket: %s" % msg[1])
@@ -149,11 +156,11 @@ class QemuRunner:
         # and analyze descendents in order to determine it.
         if os.path.exists(self.qemu_pidfile):
             os.remove(self.qemu_pidfile)
-        self.qemuparams = 'bootparams="{0}" qemuparams="-serial tcp:127.0.0.1:{1} -pidfile {2}"'.format(bootparams, threadport, self.qemu_pidfile)
+        self.qemuparams = 'bootparams="{0}" qemuparams="-pidfile {1}"'.format(bootparams, self.qemu_pidfile)
         if qemuparams:
             self.qemuparams = self.qemuparams[:-1] + " " + qemuparams + " " + '\"'
 
-        launch_cmd += ' tcpserial=%s %s' % (self.serverport, self.qemuparams)
+        launch_cmd += ' tcpserial=%s:%s %s' % (threadport, self.serverport, self.qemuparams)
 
         self.origchldhandler = signal.getsignal(signal.SIGCHLD)
         signal.signal(signal.SIGCHLD, self.handleSIGCHLD)
@@ -194,7 +201,8 @@ class QemuRunner:
             sys.exit(0)
 
         self.logger.debug("runqemu started, pid is %s" % self.runqemu.pid)
-        self.logger.debug("waiting at most %s seconds for qemu pid" % self.runqemutime)
+        self.logger.debug("waiting at most %s seconds for qemu pid (%s)" %
+                          (self.runqemutime, time.strftime("%D %H:%M:%S")))
         endtime = time.time() + self.runqemutime
         while not self.is_alive() and time.time() < endtime:
             if self.runqemu.poll():
@@ -202,20 +210,21 @@ class QemuRunner:
                     # No point waiting any longer
                     self.logger.debug('runqemu exited with code %d' % self.runqemu.returncode)
                     self._dump_host()
-                    self.stop()
                     self.logger.debug("Output from runqemu:\n%s" % self.getOutput(output))
+                    self.stop()
                     return False
             time.sleep(0.5)
 
         if not self.is_alive():
-            self.logger.error("Qemu pid didn't appear in %s seconds" % self.runqemutime)
+            self.logger.error("Qemu pid didn't appear in %s seconds (%s)" %
+                              (self.runqemutime, time.strftime("%D %H:%M:%S")))
             # Dump all processes to help us to figure out what is going on...
             ps = subprocess.Popen(['ps', 'axww', '-o', 'pid,ppid,command '], stdout=subprocess.PIPE).communicate()[0]
             processes = ps.decode("utf-8")
             self.logger.debug("Running processes:\n%s" % processes)
             self._dump_host()
-            self.stop()
             op = self.getOutput(output)
+            self.stop()
             if op:
                 self.logger.error("Output from runqemu:\n%s" % op)
             else:
@@ -225,7 +234,9 @@ class QemuRunner:
         # We are alive: qemu is running
         out = self.getOutput(output)
         netconf = False # network configuration is not required by default
-        self.logger.debug("qemu started in %s seconds - qemu procces pid is %s" % (time.time() - (endtime - self.runqemutime), self.qemupid))
+        self.logger.debug("qemu started in %s seconds - qemu procces pid is %s (%s)" %
+                          (time.time() - (endtime - self.runqemutime),
+                           self.qemupid, time.strftime("%D %H:%M:%S")))
         if get_ip:
             cmdline = ''
             with open('/proc/%s/cmdline' % self.qemupid) as p:
@@ -234,13 +245,18 @@ class QemuRunner:
                 # because is possible to have control characters
                 cmdline = re_control_char.sub(' ', cmdline)
             try:
-                ips = re.findall("((?:[0-9]{1,3}\.){3}[0-9]{1,3})", cmdline.split("ip=")[1])
-                self.ip = ips[0]
-                self.server_ip = ips[1]
+                if self.use_slirp:
+                    tcp_ports = cmdline.split("hostfwd=tcp::")[1]
+                    host_port = tcp_ports[:tcp_ports.find('-')]
+                    self.ip = "localhost:%s" % host_port
+                else:
+                    ips = re.findall(r"((?:[0-9]{1,3}\.){3}[0-9]{1,3})", cmdline.split("ip=")[1])
+                    self.ip = ips[0]
+                    self.server_ip = ips[1]
                 self.logger.debug("qemu cmdline used:\n{}".format(cmdline))
             except (IndexError, ValueError):
                 # Try to get network configuration from runqemu output
-                match = re.match('.*Network configuration: ([0-9.]+)::([0-9.]+):([0-9.]+)$.*',
+                match = re.match(r'.*Network configuration: ([0-9.]+)::([0-9.]+):([0-9.]+)$.*',
                                  out, re.MULTILINE|re.DOTALL)
                 if match:
                     self.ip, self.server_ip, self.netmask = match.groups()
@@ -259,7 +275,7 @@ class QemuRunner:
         self.logger.debug("Target IP: %s" % self.ip)
         self.logger.debug("Server IP: %s" % self.server_ip)
 
-        self.thread = LoggingThread(self.log, threadsock, self.logger)
+        self.thread = LoggingThread(self.log, self.threadsock, self.logger)
         self.thread.start()
         if not self.thread.connection_established.wait(self.boottime):
             self.logger.error("Didn't receive a console connection from qemu. "
@@ -269,7 +285,8 @@ class QemuRunner:
             return False
 
         self.logger.debug("Output from runqemu:\n%s", out)
-        self.logger.debug("Waiting at most %d seconds for login banner" % self.boottime)
+        self.logger.debug("Waiting at most %d seconds for login banner (%s)" %
+                          (self.boottime, time.strftime("%D %H:%M:%S")))
         endtime = time.time() + self.boottime
         socklist = [self.server_socket]
         reachedlogin = False
@@ -298,16 +315,24 @@ class QemuRunner:
                             self.server_socket = qemusock
                             stopread = True
                             reachedlogin = True
-                            self.logger.debug("Reached login banner")
+                            self.logger.debug("Reached login banner in %s seconds (%s)" %
+                                              (time.time() - (endtime - self.boottime),
+                                              time.strftime("%D %H:%M:%S")))
                     else:
+                        # no need to check if reachedlogin unless we support multiple connections
+                        self.logger.debug("QEMU socket disconnected before login banner reached. (%s)" %
+                                          time.strftime("%D %H:%M:%S"))
                         socklist.remove(sock)
                         sock.close()
                         stopread = True
 
 
         if not reachedlogin:
-            self.logger.debug("Target didn't reached login boot in %d seconds" % self.boottime)
+            if time.time() >= endtime:
+                self.logger.debug("Target didn't reach login banner in %d seconds (%s)" %
+                                  (self.boottime, time.strftime("%D %H:%M:%S")))
             tail = lambda l: "\n".join(l.splitlines()[-25:])
+            bootlog = bootlog.decode("utf-8")
             # in case bootlog is empty, use tail qemu log store at self.msg
             lines = tail(bootlog if bootlog else self.msg)
             self.logger.debug("Last 25 lines of text:\n%s" % lines)
@@ -319,29 +344,30 @@ class QemuRunner:
         # If we are not able to login the tests can continue
         try:
             (status, output) = self.run_serial("root\n", raw=True)
-            if re.search("root@[a-zA-Z0-9\-]+:~#", output):
+            if re.search(r"root@[a-zA-Z0-9\-]+:~#", output):
                 self.logged = True
                 self.logger.debug("Logged as root in serial console")
                 if netconf:
                     # configure guest networking
                     cmd = "ifconfig eth0 %s netmask %s up\n" % (self.ip, self.netmask)
                     output = self.run_serial(cmd, raw=True)[1]
-                    if re.search("root@[a-zA-Z0-9\-]+:~#", output):
+                    if re.search(r"root@[a-zA-Z0-9\-]+:~#", output):
                         self.logger.debug("configured ip address %s", self.ip)
                     else:
                         self.logger.debug("Couldn't configure guest networking")
             else:
                 self.logger.debug("Couldn't login into serial console"
                             " as root using blank password")
+                self.logger.debug("The output:\n%s" % output)
         except:
             self.logger.debug("Serial console failed while trying to login")
         return True
 
     def stop(self):
-        self.stop_thread()
-        self.stop_qemu_system()
         if hasattr(self, "origchldhandler"):
             signal.signal(signal.SIGCHLD, self.origchldhandler)
+        self.stop_thread()
+        self.stop_qemu_system()
         if self.runqemu:
             if hasattr(self, "monitorpid"):
                 os.kill(self.monitorpid, signal.SIGKILL)
@@ -357,14 +383,22 @@ class QemuRunner:
             if self.runqemu.poll() is None:
                 self.logger.debug("Sending SIGKILL to runqemu")
                 os.killpg(os.getpgid(self.runqemu.pid), signal.SIGKILL)
+            self.runqemu.stdin.close()
+            self.runqemu.stdout.close()
             self.runqemu = None
+
         if hasattr(self, 'server_socket') and self.server_socket:
             self.server_socket.close()
             self.server_socket = None
+        if hasattr(self, 'threadsock') and self.threadsock:
+            self.threadsock.close()
+            self.threadsock = None
         self.qemupid = None
         self.ip = None
         if os.path.exists(self.qemu_pidfile):
             os.remove(self.qemu_pidfile)
+        if self.monitorpipe:
+            self.monitorpipe.close()
 
     def stop_qemu_system(self):
         if self.qemupid:
@@ -372,7 +406,7 @@ class QemuRunner:
                 # qemu-system behaves well and a SIGTERM is enough
                 os.kill(self.qemupid, signal.SIGTERM)
             except ProcessLookupError as e:
-                self.logger.warn('qemu-system ended unexpectedly')
+                self.logger.warning('qemu-system ended unexpectedly')
 
     def stop_thread(self):
         if self.thread and self.thread.is_alive():
@@ -388,7 +422,7 @@ class QemuRunner:
         return False
 
     def is_alive(self):
-        if not self.runqemu:
+        if not self.runqemu or self.runqemu.poll() is not None:
             return False
         if os.path.isfile(self.qemu_pidfile):
             f = open(self.qemu_pidfile, 'r')
@@ -400,7 +434,7 @@ class QemuRunner:
                 return True
         return False
 
-    def run_serial(self, command, raw=False, timeout=5):
+    def run_serial(self, command, raw=False, timeout=60):
         # We assume target system have echo to get command status
         if not raw:
             command = "%s; echo $?\n" % command
@@ -424,7 +458,7 @@ class QemuRunner:
                 if answer:
                     data += answer.decode('utf-8')
                     # Search the prompt to stop
-                    if re.search("[a-zA-Z0-9]+@[a-zA-Z0-9\-]+:~#", data):
+                    if re.search(r"[a-zA-Z0-9]+@[a-zA-Z0-9\-]+:~#", data):
                         break
                 else:
                     raise Exception("No data on serial console socket")
@@ -449,7 +483,7 @@ class QemuRunner:
 
     def _dump_host(self):
         self.host_dumper.create_dir("qemu")
-        self.logger.warn("Qemu ended unexpectedly, dump data from host"
+        self.logger.warning("Qemu ended unexpectedly, dump data from host"
                 " is in %s" % self.host_dumper.dump_dir)
         self.host_dumper.dump_host()
 

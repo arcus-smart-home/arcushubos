@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 # Copyright (C) 2016 Intel Corporation
-# Released under the MIT license (see COPYING.MIT)
+#
+# SPDX-License-Identifier: MIT
+#
 
 import unittest
 import logging
@@ -21,7 +23,7 @@ class TestData(TestBase):
 
         tc = self._testLoader(modules=self.modules)
         self.assertEqual(False, tc.runTests().wasSuccessful())
-        for test, data in tc._results['errors']:
+        for test, data in tc.errors:
             expect = False
             if expectedException in data:
                 expect = True
@@ -34,7 +36,7 @@ class TestData(TestBase):
 
         tc = self._testLoader(d=d, modules=self.modules)
         self.assertEqual(False, tc.runTests().wasSuccessful())
-        for test, data in tc._results['failures']:
+        for test, data in tc.failures:
             expect = False
             if expectedError in data:
                 expect = True

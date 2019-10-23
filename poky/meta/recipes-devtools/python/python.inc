@@ -5,12 +5,13 @@ SECTION = "devel/python"
 # bump this on every change in contrib/python/generate-manifest-2.7.py
 INC_PR = "r1"
 
-LIC_FILES_CHKSUM = "file://LICENSE;md5=6b60258130e4ed10d3101517eb5b9385"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=e466242989bd33c1bd2b6a526a742498"
 
-SRC_URI = "http://www.python.org/ftp/python/${PV}/Python-${PV}.tar.xz"
+SRC_URI = "http://www.python.org/ftp/python/${PV}/Python-${PV}.tar.xz \
+           "
 
-SRC_URI[md5sum] = "53b43534153bb2a0363f08bae8b9d990"
-SRC_URI[sha256sum] = "35d543986882f78261f97787fd3e06274bfa6df29fac9b4a94f73930ff98f731"
+SRC_URI[md5sum] = "30157d85a2c0479c09ea2cbe61f2aaf5"
+SRC_URI[sha256sum] = "f222ef602647eecb6853681156d32de4450a2c39f4de93bd5b20235f2e660ed7"
 
 # python recipe is actually python 2.x
 # also, exclude pre-releases for both python 2.x and 3.x
@@ -32,6 +33,12 @@ EXTRA_OECONF = "\
   ac_cv_header_bluetooth_bluetooth_h=no ac_cv_header_bluetooth_h=no \
   ${PYTHONLSBOPTS} \
 "
+
+do_configure_prepend() {
+	libdirleaf="$(echo ${libdir} | sed -e 's:${prefix}/::')"
+	sed -i -e "s:SEDMELIBLEAF:${libdirleaf}:g" \
+		${S}/configure.ac
+}
 
 do_install_append () {
 	sed -i -e 's:${HOSTTOOLS_DIR}/install:install:g' \

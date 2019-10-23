@@ -15,18 +15,8 @@
 # Copyright (C) 2005        Holger Hans Peter Freyther
 # Copyright (C) 2005        ROAD GmbH
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
 import sys
@@ -37,7 +27,7 @@ import bb.utils
 
 logger = logging.getLogger("BitBake.Cache")
 
-__cache_version__ = "151"
+__cache_version__ = "152"
 
 def getCacheFile(path, filename, data_hash):
     return os.path.join(path, filename + "." + data_hash)
@@ -97,7 +87,7 @@ class CoreRecipeInfo(RecipeInfoCommon):
 
         self.skipreason = self.getvar('__SKIPPED', metadata)
         if self.skipreason:
-            self.pn = self.getvar('PN', metadata) or bb.parse.BBHandler.vars_from_file(filename,metadata)[0]
+            self.pn = self.getvar('PN', metadata) or bb.parse.vars_from_file(filename,metadata)[0]
             self.skipped = True
             self.provides  = self.depvar('PROVIDES', metadata)
             self.rprovides = self.depvar('RPROVIDES', metadata)
@@ -395,7 +385,7 @@ class Cache(NoCache):
         self.has_cache = True
         self.cachefile = getCacheFile(self.cachedir, "bb_cache.dat", self.data_hash)
 
-        logger.debug(1, "Using cache in '%s'", self.cachedir)
+        logger.debug(1, "Cache dir: %s", self.cachedir)
         bb.utils.mkdirhier(self.cachedir)
 
         cache_ok = True
@@ -408,6 +398,8 @@ class Cache(NoCache):
             self.load_cachefile()
         elif os.path.isfile(self.cachefile):
             logger.info("Out of date cache found, rebuilding...")
+        else:
+            logger.debug(1, "Cache file %s not found, building..." % self.cachefile)
 
     def load_cachefile(self):
         cachesize = 0
@@ -424,6 +416,7 @@ class Cache(NoCache):
 
         for cache_class in self.caches_array:
             cachefile = getCacheFile(self.cachedir, cache_class.cachefile, self.data_hash)
+            logger.debug(1, 'Loading cache file: %s' % cachefile)
             with open(cachefile, "rb") as cachefile:
                 pickled = pickle.Unpickler(cachefile)
                 # Check cache version information

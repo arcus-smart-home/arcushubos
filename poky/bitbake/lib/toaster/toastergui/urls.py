@@ -3,18 +3,8 @@
 #
 # Copyright (C) 2013-2017    Intel Corporation
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from django.conf.urls import include, url
 from django.views.generic import RedirectView, TemplateView
@@ -115,6 +105,11 @@ urlpatterns = [
         url(r'^project/(?P<pid>\d+)/builds/$',
             tables.ProjectBuildsTable.as_view(template_name="projectbuilds-toastertable.html"),
             name='projectbuilds'),
+
+        url(r'^newproject_specific/(?P<pid>\d+)/$', views.newproject_specific, name='newproject_specific'),
+        url(r'^project_specific/(?P<pid>\d+)/$', views.project_specific, name='project_specific'),
+        url(r'^landing_specific/(?P<pid>\d+)/$', views.landing_specific, name='landing_specific'),
+        url(r'^landing_specific_cancel/(?P<pid>\d+)/$', views.landing_specific_cancel, name='landing_specific_cancel'),
 
         # the import layer is a project-specific functionality;
         url(r'^project/(?P<pid>\d+)/importlayer$', views.importlayer, name='importlayer'),
@@ -232,6 +227,14 @@ urlpatterns = [
         url(r'^xhr_buildrequest/project/(?P<pid>\d+)$',
             api.XhrBuildRequest.as_view(),
             name='xhr_buildrequest'),
+
+        url(r'^xhr_projectupdate/project/(?P<pid>\d+)$',
+            api.XhrProjectUpdate.as_view(),
+            name='xhr_projectupdate'),
+
+        url(r'^xhr_setdefaultimage/project/(?P<pid>\d+)$',
+            api.XhrSetDefaultImageUrl.as_view(),
+            name='xhr_setdefaultimage'),
 
         url(r'xhr_project/(?P<project_id>\d+)$',
             api.XhrProject.as_view(),

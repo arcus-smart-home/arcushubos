@@ -55,8 +55,8 @@ FILES_${PN} += "/home/agent \
                /home/root/.ssh \
                "
 
-# Consider any warnings errors
-CFLAGS += "-Wall -Werror"
+# Consider any warnings errors (well, not ignored results)
+CFLAGS += "-Wall -Werror -Wno-unused-result"
 
 # Add platform specific defines
 TARGET_MACHINE := "${@'${MACHINE}'.replace('-', '_')}"

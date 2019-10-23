@@ -14,12 +14,15 @@ REQUIRED_DISTRO_FEATURES = "x11"
 # libglu needs virtual/libgl, which requires opengl in DISTRO_FEATURES
 REQUIRED_DISTRO_FEATURES += "opengl"
 
+# libpam, pam-plugin-wheel requires pam in DISTRO_FEATURES
+REQUIRED_DISTRO_FEATURES += "pam"
+
 #
 # We will skip parsing this packagegeoup for non-glibc systems
 #
 python __anonymous () {
     if d.getVar('TCLIBC') != "glibc":
-        raise bb.parse.SkipPackage("incompatible with %s C library" %
+        raise bb.parse.SkipRecipe("incompatible with %s C library" %
                                    d.getVar('TCLIBC'))
 }
 
@@ -68,13 +71,12 @@ RDEPENDS_packagegroup-core-sys-extended = "\
     mc-helpers-perl \
     mdadm \
     minicom \
-    neon \
     parted \
     quota \
     screen \
     setserial \
     sysstat \
-    udev-extraconf \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '', 'udev-extraconf', d)} \
     unzip \
     watchdog \
     wget \
@@ -134,6 +136,7 @@ RDEPENDS_packagegroup-core-lsb-core = "\
     bc \
     binutils \
     binutils-symlinks \
+    bzip2 \
     coreutils \
     cpio \
     cronie \
@@ -156,10 +159,8 @@ RDEPENDS_packagegroup-core-lsb-core = "\
     make \
     man \
     man-pages \
-    mktemp \
     msmtp \
     patch \
-    pax \
     procps \
     psmisc \
     sed \
@@ -219,7 +220,7 @@ RDEPENDS_packagegroup-core-lsb-desktop = "\
     liberation-fonts \
     gtk+ \
     atk \
-    libasound \
+    alsa-lib \
 "
 
 RDEPENDS_packagegroup-core-lsb-runtime-add = "\

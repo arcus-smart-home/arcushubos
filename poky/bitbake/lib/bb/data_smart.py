@@ -14,18 +14,8 @@ BitBake build tools.
 # Copyright (C) 2005        Uli Luckas
 # Copyright (C) 2005        ROAD GmbH
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 # Based on functions from the base bb module, Copyright 2003 Holger Schurig
 
 import copy, re, sys, traceback
@@ -39,9 +29,11 @@ from bb.COW  import COWDictBase
 logger = logging.getLogger("BitBake.Data")
 
 __setvar_keyword__ = ["_append", "_prepend", "_remove"]
-__setvar_regexp__ = re.compile('(?P<base>.*?)(?P<keyword>_append|_prepend|_remove)(_(?P<add>[^A-Z]*))?$')
-__expand_var_regexp__ = re.compile(r"\${[^{}@\n\t :]+}")
+__setvar_regexp__ = re.compile(r'(?P<base>.*?)(?P<keyword>_append|_prepend|_remove)(_(?P<add>[^A-Z]*))?$')
+__expand_var_regexp__ = re.compile(r"\${[a-zA-Z0-9\-_+./~]+?}")
 __expand_python_regexp__ = re.compile(r"\${@.+?}")
+__whitespace_split__ = re.compile(r'(\s)')
+__override_regexp__ = re.compile(r'[a-z0-9]+')
 
 def infer_caller_details(loginfo, parent = False, varval = True):
     """Save the caller the trouble of specifying everything."""
@@ -104,11 +96,7 @@ class VariableParse:
             if self.varname and key:
                 if self.varname == key:
                     raise Exception("variable %s references itself!" % self.varname)
-            if key in self.d.expand_cache:
-                varparse = self.d.expand_cache[key]
-                var = varparse.value
-            else:
-                var = self.d.getVarFlag(key, "_content")
+            var = self.d.getVarFlag(key, "_content")
             self.references.add(key)
             if var is not None:
                 return var
@@ -125,7 +113,11 @@ class VariableParse:
                 connector = self.d["_remote_data"]
                 return connector.expandPythonRef(self.varname, code, self.d)
 
-            codeobj = compile(code.strip(), self.varname or "<expansion>", "eval")
+            if self.varname:
+                varname = 'Var <%s>' % self.varname
+            else:
+                varname = '<expansion>'
+            codeobj = compile(code.strip(), varname, "eval")
 
             parser = bb.codeparser.PythonParser(self.varname, logger)
             parser.parse_python(code)
@@ -267,6 +259,16 @@ class VariableHistory(object):
             return
         self.variables[var].append(loginfo.copy())
 
+    def rename_variable_hist(self, oldvar, newvar):
+        if not self.dataroot._tracking:
+            return
+        if oldvar not in self.variables:
+            return
+        if newvar not in self.variables:
+            self.variables[newvar] = []
+        for i in self.variables[oldvar]:
+            self.variables[newvar].append(i.copy())
+
     def variable(self, var):
         remote_connector = self.dataroot.getVar('_remote_data', False)
         if remote_connector:
@@ -401,9 +403,6 @@ class DataSmart(MutableMapping):
         if not isinstance(s, str): # sanity check
             return VariableParse(varname, self, s)
 
-        if varname and varname in self.expand_cache:
-            return self.expand_cache[varname]
-
         varparse = VariableParse(varname, self)
 
         while s.find('${') != -1:
@@ -423,12 +422,10 @@ class DataSmart(MutableMapping):
             except bb.parse.SkipRecipe:
                 raise
             except Exception as exc:
-                raise ExpansionError(varname, s, exc) from exc
+                tb = sys.exc_info()[2]
+                raise ExpansionError(varname, s, exc).with_traceback(tb) from exc
 
         varparse.value = s
-
-        if varname:
-            self.expand_cache[varname] = varparse
 
         return varparse
 
@@ -498,6 +495,7 @@ class DataSmart(MutableMapping):
 
     def setVar(self, var, value, **loginfo):
         #print("var=" + str(var) + "  val=" + str(value))
+        self.expand_cache = {}
         parsing=False
         if 'parsing' in loginfo:
             parsing=True
@@ -510,7 +508,7 @@ class DataSmart(MutableMapping):
 
         if 'op' not in loginfo:
             loginfo['op'] = "set"
-        self.expand_cache = {}
+
         match  = __setvar_regexp__.match(var)
         if match and match.group("keyword") in __setvar_keyword__:
             base = match.group('base')
@@ -590,7 +588,7 @@ class DataSmart(MutableMapping):
         # aka pay the cookie monster
         override = var[var.rfind('_')+1:]
         shortvar = var[:var.rfind('_')]
-        while override and override.islower():
+        while override and __override_regexp__.match(override):
             if shortvar not in self.overridedata:
                 self.overridedata[shortvar] = []
             if [var, override] not in self.overridedata[shortvar]:
@@ -619,6 +617,7 @@ class DataSmart(MutableMapping):
 
         val = self.getVar(key, 0, parsing=True)
         if val is not None:
+            self.varhistory.rename_variable_hist(key, newkey)
             loginfo['variable'] = newkey
             loginfo['op'] = 'rename from %s' % key
             loginfo['detail'] = val
@@ -660,6 +659,7 @@ class DataSmart(MutableMapping):
         self.setVar(var + "_prepend", value, ignore=True, parsing=True)
 
     def delVar(self, var, **loginfo):
+        self.expand_cache = {}
         if '_remote_data' in self.dict:
             connector = self.dict["_remote_data"]["_content"]
             res = connector.delVar(var)
@@ -669,7 +669,6 @@ class DataSmart(MutableMapping):
         loginfo['detail'] = ""
         loginfo['op'] = 'del'
         self.varhistory.record(**loginfo)
-        self.expand_cache = {}
         self.dict[var] = {}
         if var in self.overridedata:
             del self.overridedata[var]
@@ -692,13 +691,13 @@ class DataSmart(MutableMapping):
                          override = None
 
     def setVarFlag(self, var, flag, value, **loginfo):
+        self.expand_cache = {}
         if '_remote_data' in self.dict:
             connector = self.dict["_remote_data"]["_content"]
             res = connector.setVarFlag(var, flag, value)
             if not res:
                 return
 
-        self.expand_cache = {}
         if 'op' not in loginfo:
             loginfo['op'] = "set"
         loginfo['flag'] = flag
@@ -719,9 +718,21 @@ class DataSmart(MutableMapping):
                 self.dict["__exportlist"]["_content"] = set()
             self.dict["__exportlist"]["_content"].add(var)
 
-    def getVarFlag(self, var, flag, expand=True, noweakdefault=False, parsing=False):
+    def getVarFlag(self, var, flag, expand=True, noweakdefault=False, parsing=False, retparser=False):
+        if flag == "_content":
+            cachename = var
+        else:
+            if not flag:
+                bb.warn("Calling getVarFlag with flag unset is invalid")
+                return None
+            cachename = var + "[" + flag + "]"
+
+        if expand and cachename in self.expand_cache:
+            return self.expand_cache[cachename].value
+
         local_var, overridedata = self._findVar(var)
         value = None
+        removes = set()
         if flag == "_content" and overridedata is not None and not parsing:
             match = False
             active = {}
@@ -748,7 +759,11 @@ class DataSmart(MutableMapping):
                             match = active[a]
                             del active[a]
             if match:
-                value = self.getVar(match, False)
+                value, subparser = self.getVarFlag(match, "_content", False, retparser=True)
+                if hasattr(subparser, "removes"):
+                    # We have to carry the removes from the overridden variable to apply at the
+                    # end of processing
+                    removes = subparser.removes
 
         if local_var is not None and value is None:
             if flag in local_var:
@@ -784,17 +799,13 @@ class DataSmart(MutableMapping):
                 if match:
                     value = r + value
 
-        if expand and value:
-            # Only getvar (flag == _content) hits the expand cache
-            cachename = None
-            if flag == "_content":
-                cachename = var
-            else:
-                cachename = var + "[" + flag + "]"
-            value = self.expand(value, cachename)
+        parser = None
+        if expand or retparser:
+            parser = self.expandWithRefs(value, cachename)
+        if expand:
+            value = parser.value
 
-        if value and flag == "_content" and local_var is not None and "_remove" in local_var:
-            removes = []
+        if value and flag == "_content" and local_var is not None and "_remove" in local_var and not parsing:
             self.need_overrides()
             for (r, o) in local_var["_remove"]:
                 match = True
@@ -803,26 +814,45 @@ class DataSmart(MutableMapping):
                         if not o2 in self.overrides:
                             match = False                            
                 if match:
-                    removes.extend(self.expand(r).split())
+                    removes.add(r)
 
-            if removes:
-                filtered = filter(lambda v: v not in removes,
-                                  value.split())
-                value = " ".join(filtered)
-                if expand and var in self.expand_cache:
-                    # We need to ensure the expand cache has the correct value
-                    # flag == "_content" here
-                    self.expand_cache[var].value = value
+        if value and flag == "_content" and not parsing:
+            if removes and parser:
+                expanded_removes = {}
+                for r in removes:
+                    expanded_removes[r] = self.expand(r).split()
+
+                parser.removes = set()
+                val = ""
+                for v in __whitespace_split__.split(parser.value):
+                    skip = False
+                    for r in removes:
+                        if v in expanded_removes[r]:
+                            parser.removes.add(r)
+                            skip = True
+                    if skip:
+                        continue
+                    val = val + v
+                parser.value = val
+                if expand:
+                    value = parser.value
+
+        if parser:
+            self.expand_cache[cachename] = parser
+
+        if retparser:
+            return value, parser
+
         return value
 
     def delVarFlag(self, var, flag, **loginfo):
+        self.expand_cache = {}
         if '_remote_data' in self.dict:
             connector = self.dict["_remote_data"]["_content"]
             res = connector.delVarFlag(var, flag)
             if not res:
                 return
 
-        self.expand_cache = {}
         local_var, _ = self._findVar(var)
         if not local_var:
             return
@@ -1034,4 +1064,4 @@ class DataSmart(MutableMapping):
                     data.update({i:value})
 
         data_str = str([(k, data[k]) for k in sorted(data.keys())])
-        return hashlib.md5(data_str.encode("utf-8")).hexdigest()
+        return hashlib.sha256(data_str.encode("utf-8")).hexdigest()

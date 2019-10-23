@@ -4,12 +4,39 @@ OECMAKE_SOURCEPATH ??= "${S}"
 DEPENDS_prepend = "cmake-native "
 B = "${WORKDIR}/build"
 
-# We need to unset CCACHE otherwise cmake gets too confused
-CCACHE = ""
+# What CMake generator to use.
+# The supported options are "Unix Makefiles" or "Ninja".
+OECMAKE_GENERATOR ?= "Ninja"
 
-# C/C++ Compiler (without cpu arch/tune arguments)
-OECMAKE_C_COMPILER ?= "`echo ${CC} | sed 's/^\([^ ]*\).*/\1/'`"
-OECMAKE_CXX_COMPILER ?= "`echo ${CXX} | sed 's/^\([^ ]*\).*/\1/'`"
+python() {
+    generator = d.getVar("OECMAKE_GENERATOR")
+    if "Unix Makefiles" in generator:
+        args = "-G '" + generator +  "' -DCMAKE_MAKE_PROGRAM=" + d.getVar("MAKE")
+        d.setVar("OECMAKE_GENERATOR_ARGS", args)
+        d.setVarFlag("do_compile", "progress", "percent")
+    elif "Ninja" in generator:
+        args = "-G '" + generator + "' -DCMAKE_MAKE_PROGRAM=ninja"
+        d.appendVar("DEPENDS", " ninja-native")
+        d.setVar("OECMAKE_GENERATOR_ARGS", args)
+        d.setVarFlag("do_compile", "progress", r"outof:^\[(\d+)/(\d+)\]\s+")
+    else:
+        bb.fatal("Unknown CMake Generator %s" % generator)
+
+    # C/C++ Compiler (without cpu arch/tune arguments)
+    if not d.getVar('OECMAKE_C_COMPILER'):
+        cc_list = d.getVar('CC').split()
+        if cc_list[0] == 'ccache':
+            d.setVar('OECMAKE_C_COMPILER', '%s %s' % (cc_list[0], cc_list[1]))
+        else:
+            d.setVar('OECMAKE_C_COMPILER', cc_list[0])
+
+    if not d.getVar('OECMAKE_CXX_COMPILER'):
+        cxx_list = d.getVar('CXX').split()
+        if cxx_list[0] == 'ccache':
+            d.setVar('OECMAKE_CXX_COMPILER', '%s %s' % (cxx_list[0], cxx_list[1]))
+        else:
+            d.setVar('OECMAKE_CXX_COMPILER', cxx_list[0])
+}
 OECMAKE_AR ?= "${AR}"
 
 # Compiler flags
@@ -33,6 +60,9 @@ EXTRA_OECMAKE_append = " ${PACKAGECONFIG_CONFARGS}"
 
 EXTRA_OECMAKE_BUILD_prepend_task-compile = "${PARALLEL_MAKE} "
 EXTRA_OECMAKE_BUILD_prepend_task-install = "${PARALLEL_MAKEINST} "
+
+OECMAKE_TARGET_COMPILE ?= "all"
+OECMAKE_TARGET_INSTALL ?= "install"
 
 # CMake expects target architectures in the format of uname(2),
 # which do not always match TARGET_ARCH, so all the necessary
@@ -88,6 +118,10 @@ list(APPEND CMAKE_MODULE_PATH "${STAGING_DATADIR}/cmake/Modules/")
 # add for non /usr/lib libdir, e.g. /usr/lib64
 set( CMAKE_LIBRARY_PATH ${libdir} ${base_libdir})
 
+# add include dir to implicit includes in case it differs from /usr/include
+list(APPEND CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES ${includedir})
+list(APPEND CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES ${includedir})
+
 EOF
 }
 
@@ -116,6 +150,7 @@ cmake_do_configure() {
 	fi
 
 	cmake \
+	  ${OECMAKE_GENERATOR_ARGS} \
 	  $oecmake_sitefile \
 	  ${OECMAKE_SOURCEPATH} \
 	  -DCMAKE_INSTALL_PREFIX:PATH=${prefix} \
@@ -130,21 +165,22 @@ cmake_do_configure() {
 	  -DCMAKE_INSTALL_DATAROOTDIR:PATH=${@os.path.relpath(d.getVar('datadir'), d.getVar('prefix'))} \
 	  -DCMAKE_INSTALL_SO_NO_EXE=0 \
 	  -DCMAKE_TOOLCHAIN_FILE=${WORKDIR}/toolchain.cmake \
-	  -DCMAKE_VERBOSE_MAKEFILE=1 \
 	  -DCMAKE_NO_SYSTEM_FROM_IMPORTED=1 \
 	  ${EXTRA_OECMAKE} \
 	  -Wno-dev
 }
 
-do_compile[progress] = "percent"
+cmake_runcmake_build() {
+	bbnote ${DESTDIR:+DESTDIR=${DESTDIR} }VERBOSE=1 cmake --build '${B}' "$@" -- ${EXTRA_OECMAKE_BUILD}
+	eval ${DESTDIR:+DESTDIR=${DESTDIR} }VERBOSE=1 cmake --build '${B}' "$@" -- ${EXTRA_OECMAKE_BUILD}
+}
+
 cmake_do_compile()  {
-	bbnote VERBOSE=1 cmake --build '${B}' -- ${EXTRA_OECMAKE_BUILD}
-	VERBOSE=1 cmake --build '${B}' -- ${EXTRA_OECMAKE_BUILD}
+	cmake_runcmake_build --target ${OECMAKE_TARGET_COMPILE}
 }
 
 cmake_do_install() {
-	bbnote DESTDIR='${D}' cmake --build '${B}' --target install -- ${EXTRA_OECMAKE_BUILD}
-	DESTDIR='${D}' cmake --build '${B}' --target install -- ${EXTRA_OECMAKE_BUILD}
+	DESTDIR='${D}' cmake_runcmake_build --target ${OECMAKE_TARGET_INSTALL}
 }
 
 EXPORT_FUNCTIONS do_configure do_compile do_install do_generate_toolchain_file

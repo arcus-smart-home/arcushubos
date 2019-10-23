@@ -21,11 +21,19 @@ CVE_PRODUCT = "sqlite"
 
 inherit autotools pkgconfig
 
-PACKAGECONFIG ?= ""
-PACKAGECONFIG_class-native = ""
+# enable those which are enabled by default in configure
+PACKAGECONFIG ?= "fts4 fts5 json1 rtree dyn_ext"
+PACKAGECONFIG_class-native ?= "fts4 fts5 json1 rtree dyn_ext"
 
 PACKAGECONFIG[editline] = "--enable-editline,--disable-editline,libedit"
 PACKAGECONFIG[readline] = "--enable-readline,--disable-readline,readline ncurses"
+PACKAGECONFIG[fts3] = "--enable-fts3,--disable-fts3"
+PACKAGECONFIG[fts4] = "--enable-fts4,--disable-fts4"
+PACKAGECONFIG[fts5] = "--enable-fts5,--disable-fts5"
+PACKAGECONFIG[json1] = "--enable-json1,--disable-json1"
+PACKAGECONFIG[rtree] = "--enable-rtree,--disable-rtree"
+PACKAGECONFIG[session] = "--enable-session,--disable-session"
+PACKAGECONFIG[dyn_ext] = "--enable-dynamic-extensions,--disable-dynamic-extensions"
 
 EXTRA_OECONF = " \
     --enable-shared \
@@ -36,12 +44,10 @@ EXTRA_OECONF = " \
 CFLAGS_append = " -fPIC"
 
 # pread() is in POSIX.1-2001 so any reasonable system must surely support it
-BUILD_CFLAGS += "-DUSE_PREAD"
-TARGET_CFLAGS += "-DUSE_PREAD"
+CFLAGS += "-DUSE_PREAD"
 
 # Provide column meta-data API
-BUILD_CFLAGS += "-DSQLITE_ENABLE_COLUMN_METADATA"
-TARGET_CFLAGS += "-DSQLITE_ENABLE_COLUMN_METADATA"
+CFLAGS += "-DSQLITE_ENABLE_COLUMN_METADATA"
 
 PACKAGES = "lib${BPN} lib${BPN}-dev lib${BPN}-doc ${PN}-dbg lib${BPN}-staticdev ${PN}"
 

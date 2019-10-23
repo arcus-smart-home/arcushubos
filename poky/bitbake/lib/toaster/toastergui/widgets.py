@@ -6,18 +6,8 @@
 #
 # Copyright (C) 2015        Intel Corporation
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from django.views.generic import View, TemplateView
 from django.views.decorators.cache import cache_control
@@ -89,6 +79,10 @@ class ToasterTable(TemplateView):
 
         # global variables
         context['project_enable'] = ('1' == os.environ.get('TOASTER_BUILDSERVER'))
+        try:
+            context['project_specific'] = ('1' == os.environ.get('TOASTER_PROJECTSPECIFIC'))
+        except:
+            context['project_specific'] = ''
 
         return context
 
@@ -511,13 +505,20 @@ class MostRecentBuildsView(View):
                 buildrequest_id = build_obj.buildrequest.pk
             build['buildrequest_id'] = buildrequest_id
 
-            build['recipes_parsed_percentage'] = \
-                int((build_obj.recipes_parsed /
-                     build_obj.recipes_to_parse) * 100)
+            if build_obj.recipes_to_parse > 0:
+                build['recipes_parsed_percentage'] = \
+                    int((build_obj.recipes_parsed /
+                         build_obj.recipes_to_parse) * 100)
+            else:
+                build['recipes_parsed_percentage'] = 0
+            if build_obj.repos_to_clone > 0:
+                build['repos_cloned_percentage'] = \
+                    int((build_obj.repos_cloned /
+                         build_obj.repos_to_clone) * 100)
+            else:
+                build['repos_cloned_percentage'] = 0
 
-            build['repos_cloned_percentage'] = \
-                int((build_obj.repos_cloned /
-                     build_obj.repos_to_clone) * 100)
+            build['progress_item'] = build_obj.progress_item
 
             tasks_complete_percentage = 0
             if build_obj.outcome in (Build.SUCCEEDED, Build.FAILED):

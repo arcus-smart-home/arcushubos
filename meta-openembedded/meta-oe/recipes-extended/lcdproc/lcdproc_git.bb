@@ -9,11 +9,11 @@ DEPENDS = "ncurses lirc"
 LIC_FILES_CHKSUM = "file://COPYING;md5=18810669f13b87348459e611d31ab760 \
                     file://README.md;beginline=107;md5=5c927ce1742d6d5cddc45b7ad6230f75"
 
-BASEPV = "0.5.8"
+BASEPV = "0.5.9"
 PV = "${BASEPV}+git${SRCPV}"
-SRCREV = "f5156e2e41bb418f14761afea22eee8efb49fb85"
-SRC_URI = "git://github.com/lcdproc/lcdproc;branch=lcdproc-${BASEPV} \
-           file://0001-include-asm-ioctl.h-explicitly.patch \
+SRCREV = "e08546c13a4157ed98cd4a8e9086e7acd66f93c0"
+SRC_URI = "git://github.com/lcdproc/lcdproc \
+           file://0001-Fix-parallel-build-fix-port-internal-make-dependenci.patch \
            "
 
 S = "${WORKDIR}/git"
@@ -21,6 +21,9 @@ S = "${WORKDIR}/git"
 inherit autotools pkgconfig update-rc.d
 
 LCD_DRIVERS ?= "all,!irman,!svga"
+LCD_DRIVERS_append_aarch64 = ",!serialVFD"
+LCD_DRIVERS_append_arm = ",!serialVFD"
+
 LCD_DEFAULT_DRIVER ?= "curses"
 
 PACKAGECONFIG ??= "usb"

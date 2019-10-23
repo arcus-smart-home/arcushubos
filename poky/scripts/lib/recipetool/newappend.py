@@ -7,18 +7,8 @@
 #
 # Copyright (C) 2015 Christopher Larson <kergoth@gmail.com>
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import argparse
 import errno
@@ -58,11 +48,11 @@ def newappend(args):
         return 1
 
     if not path_ok:
-        logger.warn('Unable to determine correct subdirectory path for bbappend file - check that what %s adds to BBFILES also matches .bbappend files. Using %s for now, but until you fix this the bbappend will not be applied.', os.path.join(args.destlayer, 'conf', 'layer.conf'), os.path.dirname(append_path))
+        logger.warning('Unable to determine correct subdirectory path for bbappend file - check that what %s adds to BBFILES also matches .bbappend files. Using %s for now, but until you fix this the bbappend will not be applied.', os.path.join(args.destlayer, 'conf', 'layer.conf'), os.path.dirname(append_path))
 
     layerdirs = [os.path.abspath(layerdir) for layerdir in rd.getVar('BBLAYERS').split()]
     if not os.path.abspath(args.destlayer) in layerdirs:
-        logger.warn('Specified layer is not currently enabled in bblayers.conf, you will need to add it before this bbappend will be active')
+        logger.warning('Specified layer is not currently enabled in bblayers.conf, you will need to add it before this bbappend will be active')
 
     if not os.path.exists(append_path):
         bb.utils.mkdirhier(os.path.dirname(append_path))

@@ -19,9 +19,6 @@
 
 # External variables (also used by syslinux.bbclass)
 # ${INITRD} - indicates a list of filesystem images to concatenate and use as an initrd (optional)
-# ${COMPRESSISO} - Transparent compress ISO, reduce size ~40% if set to 1
-# ${NOISO}  - skip building the ISO image if set to 1
-# ${NOHDD}  - skip building the HDD image if set to 1
 # ${HDDIMG_ID} - FAT image volume-id
 # ${ROOTFS} - indicates a filesystem image to include as the root filesystem (optional)
 
@@ -33,7 +30,6 @@ do_bootimg[depends] += "dosfstools-native:do_populate_sysroot \
                         virtual/kernel:do_deploy \
                         ${MLPREFIX}syslinux:do_populate_sysroot \
                         syslinux-native:do_populate_sysroot \
-                        ${@oe.utils.ifelse(d.getVar('COMPRESSISO', False),'zisofs-tools-native:do_populate_sysroot','')} \
                         ${PN}:do_image_${@d.getVar('LIVE_ROOTFS_TYPE').replace('-', '_')} \
                         "
 
@@ -65,7 +61,6 @@ HDDDIR = "${S}/hddimg"
 ISODIR = "${S}/iso"
 EFIIMGDIR = "${S}/efi_img"
 COMPACT_ISODIR = "${S}/iso.z"
-COMPRESSISO ?= "0"
 
 ISOLINUXDIR ?= "/isolinux"
 ISO_BOOTIMG = "isolinux/isolinux.bin"
@@ -83,8 +78,8 @@ populate_live() {
 }
 
 build_iso() {
-	# Only create an ISO if we have an INITRD and NOISO was not set
-	if [ -z "${INITRD}" ] || [ "${NOISO}" = "1" ]; then
+	# Only create an ISO if we have an INITRD and the live or iso image type was selected
+	if [ -z "${INITRD}" ] || [ "${@bb.utils.contains_any('IMAGE_FSTYPES', 'live iso', '1', '0', d)}" != "1" ]; then
 		bbnote "ISO image will not be created."
 		return
 	fi
@@ -115,18 +110,8 @@ build_iso() {
 		install -m 0644 ${STAGING_DATADIR}/syslinux/isolinux.bin ${ISODIR}${ISOLINUXDIR}
 	fi
 
-	if [ "${COMPRESSISO}" = "1" ] ; then
-		# create compact directory, compress iso
-		mkdir -p ${COMPACT_ISODIR}
-		mkzftree -z 9 -p 4 -F ${ISODIR}/rootfs.img ${COMPACT_ISODIR}/rootfs.img
-
-		# move compact iso to iso, then remove compact directory
-		mv ${COMPACT_ISODIR}/rootfs.img ${ISODIR}/rootfs.img
-		rm -Rf ${COMPACT_ISODIR}
-		mkisofs_compress_opts="-R -z -D -l"
-	else
-		mkisofs_compress_opts="-r"
-	fi
+	# We used to have support for zisofs; this is a relic of that
+	mkisofs_compress_opts="-r"
 
 	# Check the size of ${ISODIR}/rootfs.img, use mkisofs -iso-level 3
 	# when it exceeds 3.8GB, the specification is 4G - 1 bytes, we need
@@ -230,7 +215,7 @@ build_fat_img() {
 
 build_hddimg() {
 	# Create an HDD image
-	if [ "${NOHDD}" != "1" ] ; then
+	if [ "${@bb.utils.contains_any('IMAGE_FSTYPES', 'live hddimg', '1', '0', d)}" = "1" ] ; then
 		populate_live ${HDDDIR}
 
 		if [ "${PCBIOS}" = "1" ]; then
@@ -245,11 +230,11 @@ build_hddimg() {
 		if [ -f ${HDDDIR}/rootfs.img ]; then
 			rootfs_img_size=`stat -c '%s' ${HDDDIR}/rootfs.img`
 			max_size=`expr 4 \* 1024 \* 1024 \* 1024`
-			if [ $rootfs_img_size -gt $max_size ]; then
-				bberror "${HDDDIR}/rootfs.img execeeds 4GB,"
-				bberror "this doesn't work on FAT filesystem, you can try either of:"
-				bberror "1) Reduce the size of rootfs.img"
-				bbfatal "2) Use iso, vmdk or vdi to instead of hddimg\n"
+			if [ $rootfs_img_size -ge $max_size ]; then
+				bberror "${HDDDIR}/rootfs.img rootfs size is greather than or equal to 4GB,"
+				bberror "and this doesn't work on a FAT filesystem. You can either:"
+				bberror "1) Reduce the size of rootfs.img, or,"
+				bbfatal "2) Use wic, vmdk or vdi instead of hddimg\n"
 			fi
 		fi
 

@@ -1,7 +1,7 @@
-From d8bb25e34d6533ba78eaae697771ee499a66706f Mon Sep 17 00:00:00 2001
+From 103ac1c1200df8190372d973e004776cffe8e659 Mon Sep 17 00:00:00 2001
 From: Hongxu Jia <hongxu.jia@windriver.com>
-Date: Wed, 2 Aug 2017 03:41:37 -0400
-Subject: [PATCH] do not build manual
+Date: Mon, 26 Nov 2018 14:59:55 +0800
+Subject: [PATCH 2/3] do not build manual
 
 On some host (ubuntu 1404), build manual failed.
 ...
@@ -14,13 +14,18 @@ Do not build man to workaround the issue.
 Upstream-Status: Pending
 
 Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
+
+
+Update context for lvm2 2.03.02.
+
+Signed-off-by: Kai Kang <kai.kang@windriver.com>
 ---
- Makefile.in  | 4 ++--
- configure.in | 1 -
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ Makefile.in  | 6 +++---
+ configure.ac | 1 -
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index 31d428d..24f89a2 100644
+index 6a1a990..80cba91 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -18,7 +18,7 @@ top_builddir = @top_builddir@
@@ -32,7 +37,16 @@ index 31d428d..24f89a2 100644
  
  ifeq ("@UDEV_RULES@", "yes")
    SUBDIRS += udev
-@@ -69,7 +69,7 @@ liblvm.device-mapper: include.device-mapper
+@@ -33,7 +33,7 @@ ifeq ($(MAKECMDGOALS),clean)
+ endif
+ # FIXME Should use intermediate Makefiles here!
+ ifeq ($(MAKECMDGOALS),distclean)
+-  SUBDIRS = conf include man test scripts \
++  SUBDIRS = conf include test scripts \
+     libdaemon lib tools daemons libdm \
+     udev po
+ tools.distclean: test.distclean
+@@ -65,7 +65,7 @@ libdm.device-mapper: include.device-mapper
  daemons.device-mapper: libdm.device-mapper
  tools.device-mapper: libdm.device-mapper
  scripts.device-mapper: include.device-mapper
@@ -41,18 +55,18 @@ index 31d428d..24f89a2 100644
  
  ifeq ("@INTL@", "yes")
  lib.pofile: include.pofile
-diff --git a/configure.in b/configure.in
-index 1dc8819..108ace4 100644
---- a/configure.in
-+++ b/configure.in
-@@ -2213,7 +2213,6 @@ libdm/Makefile
+diff --git a/configure.ac b/configure.ac
+index 7fd0561..4154dc0 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1812,7 +1812,6 @@ libdaemon/server/Makefile
+ libdm/Makefile
+ libdm/dm-tools/Makefile
  libdm/libdevmapper.pc
- liblvm/Makefile
- liblvm/liblvm2app.pc
 -man/Makefile
  po/Makefile
- python/Makefile
- python/setup.py
+ scripts/lvm2-pvscan.service
+ scripts/blkdeactivate.sh
 -- 
-2.8.1
+2.7.4
 

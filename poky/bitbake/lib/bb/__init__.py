@@ -8,20 +8,10 @@
 #
 # Based on Gentoo's portage.py.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-__version__ = "1.36.0"
+__version__ = "1.42.0"
 
 import sys
 if sys.version_info < (3, 4, 0):
@@ -63,6 +53,10 @@ class BBLogger(Logger):
     def verbose(self, msg, *args, **kwargs):
         return self.log(logging.INFO - 1, msg, *args, **kwargs)
 
+    def verbnote(self, msg, *args, **kwargs):
+        return self.log(logging.INFO + 2, msg, *args, **kwargs)
+
+
 logging.raiseExceptions = False
 logging.setLoggerClass(BBLogger)
 
@@ -93,6 +87,18 @@ def debug(lvl, *args):
 def note(*args):
     mainlogger.info(''.join(args))
 
+#
+# A higher prioity note which will show on the console but isn't a warning
+#
+# Something is happening the user should be aware of but they probably did
+# something to make it happen
+#
+def verbnote(*args):
+    mainlogger.verbnote(''.join(args))
+
+#
+# Warnings - things the user likely needs to pay attention to and fix
+#
 def warn(*args):
     mainlogger.warning(''.join(args))
 

@@ -3,6 +3,8 @@
 # Copyright (C) 2012-2013, 2016-2017 Intel Corporation
 # Author: Paul Eggleton <paul.eggleton@linux.intel.com>
 #
+# SPDX-License-Identifier: GPL-2.0-only
+#
 # Note: requires GitPython 0.3.1+
 #
 # You can use this from the command line by running scripts/buildhistory-diff
@@ -13,6 +15,7 @@ import os.path
 import difflib
 import git
 import re
+import shlex
 import hashlib
 import collections
 import bb.utils
@@ -31,15 +34,27 @@ ver_monitor_fields = ['PKGE', 'PKGV', 'PKGR']
 monitor_numeric_threshold = 10
 # Image files to monitor (note that image-info.txt is handled separately)
 img_monitor_files = ['installed-package-names.txt', 'files-in-image.txt']
-# Related context fields for reporting (note: PE, PV & PR are always reported for monitored package fields)
-related_fields = {}
-related_fields['RDEPENDS'] = ['DEPENDS']
-related_fields['RRECOMMENDS'] = ['DEPENDS']
-related_fields['FILELIST'] = ['FILES']
-related_fields['PKGSIZE'] = ['FILELIST']
-related_fields['files-in-image.txt'] = ['installed-package-names.txt', 'USER_CLASSES', 'IMAGE_CLASSES', 'ROOTFS_POSTPROCESS_COMMAND', 'IMAGE_POSTPROCESS_COMMAND']
-related_fields['installed-package-names.txt'] = ['IMAGE_FEATURES', 'IMAGE_LINGUAS', 'IMAGE_INSTALL', 'BAD_RECOMMENDATIONS', 'NO_RECOMMENDATIONS', 'PACKAGE_EXCLUDE']
 
+colours = {
+    'colour_default': '',
+    'colour_add':     '',
+    'colour_remove':  '',
+}
+
+def init_colours(use_colours):
+    global colours
+    if use_colours:
+        colours = {
+            'colour_default': '\033[0m',
+            'colour_add':     '\033[1;32m',
+            'colour_remove':  '\033[1;31m',
+        }
+    else:
+        colours = {
+            'colour_default': '',
+            'colour_add':     '',
+            'colour_remove':  '',
+        }
 
 class ChangeRecord:
     def __init__(self, path, fieldname, oldvalue, newvalue, monitored):
@@ -48,7 +63,6 @@ class ChangeRecord:
         self.oldvalue = oldvalue
         self.newvalue = newvalue
         self.monitored = monitored
-        self.related = []
         self.filechanges = None
 
     def __str__(self):
@@ -79,7 +93,17 @@ class ChangeRecord:
                                 for name in adirs - bdirs]
             files_ba = [(name, sorted(os.path.basename(item) for item in bitems if os.path.dirname(item) == name)) \
                                 for name in bdirs - adirs]
-            renamed_dirs = [(dir1, dir2) for dir1, files1 in files_ab for dir2, files2 in files_ba if files1 == files2]
+            renamed_dirs = []
+            for dir1, files1 in files_ab:
+                rename = False
+                for dir2, files2 in files_ba:
+                    if files1 == files2 and not rename:
+                        renamed_dirs.append((dir1,dir2))
+                        # Make sure that we don't use this (dir, files) pair again.
+                        files_ba.remove((dir2,files2))
+                        # If a dir has already been found to have a rename, stop and go no further.
+                        rename = True
+
             # remove files that belong to renamed dirs from aitems and bitems
             for dir1, dir2 in renamed_dirs:
                 aitems = [item for item in aitems if os.path.dirname(item) not in (dir1, dir2)]
@@ -88,35 +112,50 @@ class ChangeRecord:
 
         if self.fieldname in list_fields or self.fieldname in list_order_fields:
             renamed_dirs = []
+            changed_order = False
             if self.fieldname in ['RPROVIDES', 'RDEPENDS', 'RRECOMMENDS', 'RSUGGESTS', 'RREPLACES', 'RCONFLICTS']:
                 (depvera, depverb) = compare_pkg_lists(self.oldvalue, self.newvalue)
                 aitems = pkglist_combine(depvera)
                 bitems = pkglist_combine(depverb)
             else:
-                aitems = self.oldvalue.split()
-                bitems = self.newvalue.split()
                 if self.fieldname == 'FILELIST':
+                    aitems = shlex.split(self.oldvalue)
+                    bitems = shlex.split(self.newvalue)
                     renamed_dirs, aitems, bitems = detect_renamed_dirs(aitems, bitems)
+                else:
+                    aitems = self.oldvalue.split()
+                    bitems = self.newvalue.split()
 
             removed = list(set(aitems) - set(bitems))
             added = list(set(bitems) - set(aitems))
 
+            if not removed and not added and self.fieldname in ['RPROVIDES', 'RDEPENDS', 'RRECOMMENDS', 'RSUGGESTS', 'RREPLACES', 'RCONFLICTS']:
+                depvera = bb.utils.explode_dep_versions2(self.oldvalue, sort=False)
+                depverb = bb.utils.explode_dep_versions2(self.newvalue, sort=False)
+                for i, j in zip(depvera.items(), depverb.items()):
+                    if i[0] != j[0]:
+                        changed_order = True
+                        break
+
             lines = []
             if renamed_dirs:
                 for dfrom, dto in renamed_dirs:
-                    lines.append('directory renamed %s -> %s' % (dfrom, dto))
+                    lines.append('directory renamed {colour_remove}{}{colour_default} -> {colour_add}{}{colour_default}'.format(dfrom, dto, **colours))
             if removed or added:
                 if removed and not bitems:
-                    lines.append('removed all items "%s"' % ' '.join(removed))
+                    lines.append('removed all items "{colour_remove}{}{colour_default}"'.format(' '.join(removed), **colours))
                 else:
                     if removed:
-                        lines.append('removed "%s"' % ' '.join(removed))
+                        lines.append('removed "{colour_remove}{value}{colour_default}"'.format(value=' '.join(removed), **colours))
                     if added:
-                        lines.append('added "%s"' % ' '.join(added))
+                        lines.append('added "{colour_add}{value}{colour_default}"'.format(value=' '.join(added), **colours))
             else:
                 lines.append('changed order')
 
-            out = '%s: %s' % (self.fieldname, ', '.join(lines))
+            if not (removed or added or changed_order):
+                out = ''
+            else:
+                out = '%s: %s' % (self.fieldname, ', '.join(lines))
 
         elif self.fieldname in numeric_fields:
             aval = int(self.oldvalue or 0)
@@ -125,9 +164,9 @@ class ChangeRecord:
                 percentchg = ((bval - aval) / float(aval)) * 100
             else:
                 percentchg = 100
-            out = '%s changed from %s to %s (%s%d%%)' % (self.fieldname, self.oldvalue or "''", self.newvalue or "''", '+' if percentchg > 0 else '', percentchg)
+            out = '{} changed from {colour_remove}{}{colour_default} to {colour_add}{}{colour_default} ({}{:.0f}%)'.format(self.fieldname, self.oldvalue or "''", self.newvalue or "''", '+' if percentchg > 0 else '', percentchg, **colours)
         elif self.fieldname in defaultval_map:
-            out = '%s changed from %s to %s' % (self.fieldname, self.oldvalue, self.newvalue)
+            out = '{} changed from {colour_remove}{}{colour_default} to {colour_add}{}{colour_default}'.format(self.fieldname, self.oldvalue, self.newvalue, **colours)
             if self.fieldname == 'PKG' and '[default]' in self.newvalue:
                 out += ' - may indicate debian renaming failure'
         elif self.fieldname in ['pkg_preinst', 'pkg_postinst', 'pkg_prerm', 'pkg_postrm']:
@@ -163,14 +202,7 @@ class ChangeRecord:
             else:
                 out = ''
         else:
-            out = '%s changed from "%s" to "%s"' % (self.fieldname, self.oldvalue, self.newvalue)
-
-        if self.related:
-            for chg in self.related:
-                if not outer and chg.fieldname in ['PE', 'PV', 'PR']:
-                    continue
-                for line in chg._str_internal(False).splitlines():
-                    out += '\n  * %s' % line
+            out = '{} changed from "{colour_remove}{}{colour_default}" to "{colour_add}{}{colour_default}"'.format(self.fieldname, self.oldvalue, self.newvalue, **colours)
 
         return '%s%s' % (prefix, out) if out else ''
 
@@ -383,9 +415,13 @@ def compare_dict_blobs(path, ablob, bblob, report_all, report_ver):
                     (depvera, depverb) = compare_pkg_lists(astr, bstr)
                     if depvera == depverb:
                         continue
-                alist = astr.split()
+                if key == 'FILELIST':
+                    alist = shlex.split(astr)
+                    blist = shlex.split(bstr)
+                else:
+                    alist = astr.split()
+                    blist = bstr.split()
                 alist.sort()
-                blist = bstr.split()
                 blist.sort()
                 # We don't care about the removal of self-dependencies
                 if pkgname in alist and not pkgname in blist:
@@ -593,17 +629,6 @@ def process_changes(repopath, revision1, revision2='HEAD', report_all=False, rep
             if filename != 'latest' and filename.startswith('latest.'):
                 chg = ChangeRecord(path, filename[7:], d.a_blob.data_stream.read().decode('utf-8'), '', True)
                 changes.append(chg)
-
-    # Link related changes
-    for chg in changes:
-        if chg.monitored:
-            for chg2 in changes:
-                # (Check dirname in the case of fields from recipe info files)
-                if chg.path == chg2.path or os.path.dirname(chg.path) == chg2.path:
-                    if chg2.fieldname in related_fields.get(chg.fieldname, []):
-                        chg.related.append(chg2)
-                    elif chg.path == chg2.path and chg.path.startswith('packages/') and chg2.fieldname in ['PE', 'PV', 'PR']:
-                        chg.related.append(chg2)
 
     # filter out unwanted paths
     if exclude_path:

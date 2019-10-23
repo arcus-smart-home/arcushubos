@@ -28,13 +28,14 @@ EXTRA_OECONF = " \
     --enable-custom-modes \
 "
 
+# ne10 is available only for armv7a, armv7ve and aarch64
+DEPENDS_append_aarch64 = " ne10"
+DEPENDS_append_armv7a = " ne10"
+DEPENDS_append_armv7ve = " ne10"
+
 python () {
     if d.getVar('TARGET_FPU') in [ 'soft' ]:
         d.appendVar('PACKAGECONFIG', ' fixed-point')
-
-    # Ne10 is only available for armv7 and aarch64
-    if any((t.startswith('armv7') or t.startswith('aarch64')) for t in d.getVar('TUNE_FEATURES').split()):
-        d.appendVar('DEPENDS', ' ne10')
 }
 
 # Fails to build with thumb-1 (qemuarm)
@@ -50,3 +51,5 @@ python () {
 #| {standard input}:773: Error: selected processor does not support Thumb mode `smull fp,r3,r5,r8'
 #| make[2]: *** [celt/celt.lo] Error 1
 ARM_INSTRUCTION_SET = "arm"
+
+BBCLASSEXTEND = "native nativesdk"

@@ -55,20 +55,10 @@ Supported SRC_URI options are:
 
 """
 
-#Copyright (C) 2005 Richard Purdie
+# Copyright (C) 2005 Richard Purdie
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import collections
 import errno
@@ -125,6 +115,9 @@ class GitProgressHandler(bb.progress.LineFilterProgressHandler):
 
 
 class Git(FetchMethod):
+    bitbake_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.join(os.path.abspath(__file__))), '..', '..', '..'))
+    make_shallow_path = os.path.join(bitbake_dir, 'bin', 'git-make-shallow')
+
     """Class to fetch a module or modules from git repositories"""
     def init(self, d):
         pass
@@ -196,7 +189,7 @@ class Git(FetchMethod):
             depth_default = 1
         ud.shallow_depths = collections.defaultdict(lambda: depth_default)
 
-        revs_default = d.getVar("BB_GIT_SHALLOW_REVS", True)
+        revs_default = d.getVar("BB_GIT_SHALLOW_REVS")
         ud.shallow_revs = []
         ud.branches = {}
         for pos, name in enumerate(ud.names):
@@ -258,7 +251,7 @@ class Git(FetchMethod):
                 gitsrcname = gitsrcname + '_' + ud.revisions[name]
 
         dl_dir = d.getVar("DL_DIR")
-        gitdir = d.getVar("GITDIR") or (dl_dir + "/git2/")
+        gitdir = d.getVar("GITDIR") or (dl_dir + "/git2")
         ud.clonedir = os.path.join(gitdir, gitsrcname)
         ud.localfile = ud.clonedir
 
@@ -296,21 +289,26 @@ class Git(FetchMethod):
         return ud.clonedir
 
     def need_update(self, ud, d):
+        return self.clonedir_need_update(ud, d) or self.shallow_tarball_need_update(ud) or self.tarball_need_update(ud)
+
+    def clonedir_need_update(self, ud, d):
         if not os.path.exists(ud.clonedir):
             return True
         for name in ud.names:
             if not self._contains_ref(ud, d, name, ud.clonedir):
                 return True
-        if ud.shallow and ud.write_shallow_tarballs and not os.path.exists(ud.fullshallow):
-            return True
-        if ud.write_tarballs and not os.path.exists(ud.fullmirror):
-            return True
         return False
+
+    def shallow_tarball_need_update(self, ud):
+        return ud.shallow and ud.write_shallow_tarballs and not os.path.exists(ud.fullshallow)
+
+    def tarball_need_update(self, ud):
+        return ud.write_tarballs and not os.path.exists(ud.fullmirror)
 
     def try_premirror(self, ud, d):
         # If we don't do this, updating an existing checkout with only premirrors
         # is not possible
-        if d.getVar("BB_FETCH_PREMIRRORONLY") is not None:
+        if bb.utils.to_boolean(d.getVar("BB_FETCH_PREMIRRORONLY")):
             return True
         if os.path.exists(ud.clonedir):
             return False
@@ -319,16 +317,13 @@ class Git(FetchMethod):
     def download(self, ud, d):
         """Fetch url"""
 
-        no_clone = not os.path.exists(ud.clonedir)
-        need_update = no_clone or self.need_update(ud, d)
-
         # A current clone is preferred to either tarball, a shallow tarball is
         # preferred to an out of date clone, and a missing clone will use
         # either tarball.
-        if ud.shallow and os.path.exists(ud.fullshallow) and need_update:
+        if ud.shallow and os.path.exists(ud.fullshallow) and self.need_update(ud, d):
             ud.localpath = ud.fullshallow
             return
-        elif os.path.exists(ud.fullmirror) and no_clone:
+        elif os.path.exists(ud.fullmirror) and not os.path.exists(ud.clonedir):
             bb.utils.mkdirhier(ud.clonedir)
             runfetchcmd("tar -xzf %s" % ud.fullmirror, d, workdir=ud.clonedir)
 
@@ -350,11 +345,12 @@ class Git(FetchMethod):
         for name in ud.names:
             if not self._contains_ref(ud, d, name, ud.clonedir):
                 needupdate = True
+                break
+
         if needupdate:
-            try: 
-                runfetchcmd("%s remote rm origin" % ud.basecmd, d, workdir=ud.clonedir)
-            except bb.fetch2.FetchError:
-                logger.debug(1, "No Origin")
+            output = runfetchcmd("%s remote" % ud.basecmd, d, quiet=True, workdir=ud.clonedir)
+            if "origin" in output:
+              runfetchcmd("%s remote rm origin" % ud.basecmd, d, workdir=ud.clonedir)
 
             runfetchcmd("%s remote add --mirror=fetch origin %s" % (ud.basecmd, repourl), d, workdir=ud.clonedir)
             fetch_cmd = "LANG=C %s fetch -f --prune --progress %s refs/*:refs/*" % (ud.basecmd, repourl)
@@ -363,12 +359,14 @@ class Git(FetchMethod):
             progresshandler = GitProgressHandler(d)
             runfetchcmd(fetch_cmd, d, log=progresshandler, workdir=ud.clonedir)
             runfetchcmd("%s prune-packed" % ud.basecmd, d, workdir=ud.clonedir)
+            runfetchcmd("%s pack-refs --all" % ud.basecmd, d, workdir=ud.clonedir)
             runfetchcmd("%s pack-redundant --all | xargs -r rm" % ud.basecmd, d, workdir=ud.clonedir)
             try:
                 os.unlink(ud.fullmirror)
             except OSError as exc:
                 if exc.errno != errno.ENOENT:
                     raise
+
         for name in ud.names:
             if not self._contains_ref(ud, d, name, ud.clonedir):
                 raise bb.fetch2.FetchError("Unable to find revision %s in branch %s even from upstream" % (ud.revisions[name], ud.branches[name]))
@@ -445,7 +443,7 @@ class Git(FetchMethod):
                 shallow_branches.append(r)
 
         # Make the repository shallow
-        shallow_cmd = ['git', 'make-shallow', '-s']
+        shallow_cmd = [self.make_shallow_path, '-s']
         for b in shallow_branches:
             shallow_cmd.append('-r')
             shallow_cmd.append(b)
@@ -468,14 +466,44 @@ class Git(FetchMethod):
         if os.path.exists(destdir):
             bb.utils.prunedir(destdir)
 
-        if ud.shallow and (not os.path.exists(ud.clonedir) or self.need_update(ud, d)):
-            bb.utils.mkdirhier(destdir)
-            runfetchcmd("tar -xzf %s" % ud.fullshallow, d, workdir=destdir)
-        else:
-            runfetchcmd("%s clone %s %s/ %s" % (ud.basecmd, ud.cloneflags, ud.clonedir, destdir), d)
+        source_found = False
+        source_error = []
+
+        if not source_found:
+            clonedir_is_up_to_date = not self.clonedir_need_update(ud, d)
+            if clonedir_is_up_to_date:
+                runfetchcmd("%s clone %s %s/ %s" % (ud.basecmd, ud.cloneflags, ud.clonedir, destdir), d)
+                source_found = True
+            else:
+                source_error.append("clone directory not available or not up to date: " + ud.clonedir)
+
+        if not source_found:
+            if ud.shallow:
+                if os.path.exists(ud.fullshallow):
+                    bb.utils.mkdirhier(destdir)
+                    runfetchcmd("tar -xzf %s" % ud.fullshallow, d, workdir=destdir)
+                    source_found = True
+                else:
+                    source_error.append("shallow clone not available: " + ud.fullshallow)
+            else:
+                source_error.append("shallow clone not enabled")
+
+        if not source_found:
+            raise bb.fetch2.UnpackError("No up to date source found: " + "; ".join(source_error), ud.url)
 
         repourl = self._get_repo_url(ud)
         runfetchcmd("%s remote set-url origin %s" % (ud.basecmd, repourl), d, workdir=destdir)
+
+        if self._contains_lfs(ud, d, destdir):
+            path = d.getVar('PATH')
+            if path:
+                gitlfstool = bb.utils.which(path, "git-lfs", executable=True)
+                if not gitlfstool:
+                    raise bb.fetch2.FetchError("Repository %s has lfs content, install git-lfs plugin on host to download" % (repourl))
+            else:
+                bb.note("Could not find 'PATH'")
+
+
         if not ud.nocheckout:
             if subdir != "":
                 runfetchcmd("%s read-tree %s%s" % (ud.basecmd, ud.revisions[ud.names[0]], readpathspec), d,
@@ -495,9 +523,17 @@ class Git(FetchMethod):
     def clean(self, ud, d):
         """ clean the git directory """
 
-        bb.utils.remove(ud.localpath, True)
-        bb.utils.remove(ud.fullmirror)
-        bb.utils.remove(ud.fullmirror + ".done")
+        to_remove = [ud.localpath, ud.fullmirror, ud.fullmirror + ".done"]
+        # The localpath is a symlink to clonedir when it is cloned from a
+        # mirror, so remove both of them.
+        if os.path.islink(ud.localpath):
+            clonedir = os.path.realpath(ud.localpath)
+            to_remove.append(clonedir)
+
+        for r in to_remove:
+            if os.path.exists(r):
+                bb.note('Removing %s' % r)
+                bb.utils.remove(r, True)
 
     def supports_srcrev(self):
         return True
@@ -517,6 +553,20 @@ class Git(FetchMethod):
         if len(output.split()) > 1:
             raise bb.fetch2.FetchError("The command '%s' gave output with more then 1 line unexpectedly, output: '%s'" % (cmd, output))
         return output.split()[0] != "0"
+
+    def _contains_lfs(self, ud, d, wd):
+        """
+        Check if the repository has 'lfs' (large file) content
+        """
+        cmd = "%s grep lfs HEAD:.gitattributes | wc -l" % (
+                ud.basecmd)
+        try:
+            output = runfetchcmd(cmd, d, quiet=True, workdir=wd)
+            if int(output) > 0:
+                return True
+        except (bb.fetch2.FetchError,ValueError):
+            pass
+        return False
 
     def _get_repo_url(self, ud):
         """
@@ -588,10 +638,11 @@ class Git(FetchMethod):
         """
         pupver = ('', '')
 
-        tagregex = re.compile(d.getVar('UPSTREAM_CHECK_GITTAGREGEX') or "(?P<pver>([0-9][\.|_]?)+)")
+        tagregex = re.compile(d.getVar('UPSTREAM_CHECK_GITTAGREGEX') or r"(?P<pver>([0-9][\.|_]?)+)")
         try:
             output = self._lsremote(ud, d, "refs/tags/*")
-        except bb.fetch2.FetchError or bb.fetch2.NetworkAccess:
+        except (bb.fetch2.FetchError, bb.fetch2.NetworkAccess) as e:
+            bb.note("Could not list remote: %s" % str(e))
             return pupver
 
         verstring = ""
@@ -602,7 +653,7 @@ class Git(FetchMethod):
 
             tag_head = line.split("/")[-1]
             # Ignore non-released branches
-            m = re.search("(alpha|beta|rc|final)+", tag_head)
+            m = re.search(r"(alpha|beta|rc|final)+", tag_head)
             if m:
                 continue
 

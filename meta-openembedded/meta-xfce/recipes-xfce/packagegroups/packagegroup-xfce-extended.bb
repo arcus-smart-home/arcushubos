@@ -5,7 +5,9 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 PR = "r10"
 
-inherit packagegroup
+inherit packagegroup distro_features_check
+
+REQUIRED_DISTRO_FEATURES = "x11"
 
 # mandatory
 RDEPENDS_${PN} = " \
@@ -54,6 +56,7 @@ RRECOMMENDS_${PN} = " \
     xfce4-verve-plugin \
     \
     xfce-polkit \
+    ${@bb.utils.contains("DISTRO_FEATURES", "bluetooth", "blueman", "", d)} \
     \
     thunar-media-tags-plugin \
     thunar-archive-plugin \
@@ -61,8 +64,10 @@ RRECOMMENDS_${PN} = " \
     xfce4-appfinder \
     xfce4-screenshooter \
     xfce4-power-manager \
-    xfce4-mixer \
     ristretto \
     xfce4-taskmanager \
     gigolo \
+    mousepad \
+    catfish \
+    xfce4-panel-profiles \
 "

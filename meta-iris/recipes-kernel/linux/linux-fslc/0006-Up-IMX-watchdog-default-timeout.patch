@@ -1,5 +1,5 @@
-From c73a0f8a8bcab15a4775159d42cdfed4002e0024 Mon Sep 17 00:00:00 2001
-Date: Wed, 11 Oct 2017 13:17:19 -0400
+From b6e9d6268a87bc912f56d8aca164129f28d0a9eb Mon Sep 17 00:00:00 2001
+Date: Thu, 20 Sep 2018 13:09:24 -0400
 Subject: [PATCH] Up IMX watchdog default timeout
 
 ---
@@ -7,20 +7,19 @@ Subject: [PATCH] Up IMX watchdog default timeout
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
-index 805df6b..fb6a411 100644
+index 518dfa1..2b48b93 100644
 --- a/drivers/watchdog/imx2_wdt.c
 +++ b/drivers/watchdog/imx2_wdt.c
-@@ -61,8 +61,9 @@
- 
+@@ -59,7 +59,8 @@
  #define IMX2_WDT_WMCR		0x08		/* Misc Register */
  
-+/* IRIS CHANGE - update default to closer to limit  */
  #define IMX2_WDT_MAX_TIME	128
 -#define IMX2_WDT_DEFAULT_TIME	60		/* in seconds */
++/* IRIS CHANGE - update default to closer to limit  */
 +#define IMX2_WDT_DEFAULT_TIME	120		/* in seconds */
  
  #define WDOG_SEC_TO_COUNT(s)	((s * 2 - 1) << 8)
- #define WDOG_SEC_TO_PRECOUNT(s)	(s * 2)		/* set WDOG pre timeout count*/
+ 
 -- 
-1.9.1
+2.7.4
 

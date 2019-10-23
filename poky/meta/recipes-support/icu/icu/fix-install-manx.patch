@@ -1,3 +1,8 @@
+From a6ddabc8cadb76bfe2d2e374a6702442cfe51cce Mon Sep 17 00:00:00 2001
+From: Ross Burton <ross.burton@intel.com>
+Date: Fri, 9 Oct 2015 17:50:41 +0100
+Subject: [PATCH] icu: fix install race
+
 The generic recursive target calls target-local so also adding it to the
 dependency list results in races due to install-local being executed twice in
 parallel.  For example, install-manx can fail if the two install processes race
@@ -9,12 +14,15 @@ in the install command.
 Upstream-Status: Pending
 Signed-off-by: Ross Burton <ross.burton@intel.com>
 
+---
+ source/Makefile.in | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index 9db6c52..3441afa 100644
+index be9435b..ada20d7 100644
 --- a/Makefile.in
 +++ b/Makefile.in
-@@ -71,7 +71,7 @@ EXTRA_DATA =
+@@ -77,7 +77,7 @@ EXTRA_DATA =
  
  ## List of phony targets
  .PHONY : all all-local all-recursive install install-local install-udata install-udata-files install-udata-dlls		\
@@ -23,7 +31,7 @@ index 9db6c52..3441afa 100644
  distclean-local distclean-recursive doc dist dist-local dist-recursive	\
  check check-local check-recursive clean-recursive-with-twist install-icu \
  doc install-doc tests icu4j-data icu4j-data-install update-windows-makefiles xcheck-local xcheck-recursive xperf xcheck xperf-recursive \
-@@ -82,10 +82,10 @@ check-exhaustive check-exhaustive-local check-exhaustive-recursive releaseDist
+@@ -88,9 +88,9 @@ check-exhaustive check-exhaustive-local check-exhaustive-recursive releaseDist
  
  ## List of standard targets
  all: all-local all-recursive
@@ -31,18 +39,16 @@ index 9db6c52..3441afa 100644
 +install: install-recursive
  clean: clean-recursive-with-twist clean-local
 -distclean : distclean-recursive distclean-local
--dist: dist-recursive dist-local
 +distclean : distclean-recursive
-+dist: dist-recursive
+ dist: dist-recursive
  check: all check-recursive
  check-recursive: all
- xcheck: all xcheck-recursive
-@@ -352,7 +352,7 @@ config.status: $(srcdir)/configure $(srcdir)/common/unicode/uvernum.h
- 
+@@ -357,7 +357,7 @@ config.status: $(srcdir)/configure $(srcdir)/common/unicode/uvernum.h
  install-manx: $(MANX_FILES)
  	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man$(SECTION)
+ ifneq ($(MANX_FILES),)
 -	$(INSTALL_DATA) $? $(DESTDIR)$(mandir)/man$(SECTION)
 +	$(INSTALL_DATA) $^ $(DESTDIR)$(mandir)/man$(SECTION)
+ endif
  
  config/%.$(SECTION): $(srcdir)/config/%.$(SECTION).in
- 	cd $(top_builddir) \

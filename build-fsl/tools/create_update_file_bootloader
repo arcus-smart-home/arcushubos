@@ -27,7 +27,7 @@ mkdir update
 
 # Copy in files
 cp u-boot-imxdimagic.imx update/
-cp zImage-imx6dl-imagic.dtb update/zImage-imx6dl-imagic.dtb
+cp imx6dl-imagic.dtb update/zImage-imx6dl-imagic.dtb
 cp zImage-imxdimagic.bin update/
 cp $1-imxdimagic.squashfs update/core-image-minimal-iris-imxdimagic.squashfs
 

@@ -4,14 +4,10 @@ SECTION = "devel/python"
 LICENSE = "ISC"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=1c7a725251880af8c6a148181665385b"
 
-SRCNAME = "pexpect"
-
-SRC_URI[md5sum] = "3694410001a99dff83f0b500a1ca1c95"
-SRC_URI[sha256sum] = "3d132465a75b57aa818341c6521392a06cc660feb3988d7f1074f39bd23c9a92"
+SRC_URI[md5sum] = "d4f3372965a996238d57d19b95d2e03a"
+SRC_URI[sha256sum] = "2a8e88259839571d1251d278476f3eec5db26deb73a70be5ed5dc5435e418aba"
 
 UPSTREAM_CHECK_URI = "https://pypi.python.org/pypi/pexpect"
-
-S = "${WORKDIR}/${SRCNAME}-${PV}"
 
 RDEPENDS_${PN} = "\
     ${PYTHON_PN}-core \

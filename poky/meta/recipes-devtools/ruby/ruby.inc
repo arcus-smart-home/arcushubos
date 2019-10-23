@@ -8,14 +8,14 @@ HOMEPAGE = "http://www.ruby-lang.org/"
 SECTION = "devel/ruby"
 LICENSE = "Ruby | BSD | GPLv2"
 LIC_FILES_CHKSUM = "\
-    file://COPYING;md5=8a960b08d972f43f91ae84a6f00dcbfb \
+    file://COPYING;md5=340948e1882e579731841bf49cdc22c1 \
     file://BSDL;md5=19aaf65c88a40b508d17ae4be539c4b5\
     file://GPL;md5=b234ee4d69f5fce4486a80fdaf4a4263\
-    file://LEGAL;md5=daf349ad59dd19bd8c919171bff3c5d6 \
+    file://LEGAL;md5=23a79bb4c1a40f6cc9bcb6f4e7c39799 \
 "
 
-DEPENDS = "ruby-native zlib openssl tcl libyaml gdbm readline"
-DEPENDS_class-native = "openssl-native libyaml-native"
+DEPENDS = "ruby-native zlib openssl tcl libyaml gdbm readline libffi"
+DEPENDS_class-native = "openssl-native libyaml-native readline-native"
 
 SHRT_VER = "${@oe.utils.trim_version("${PV}", 2)}"
 SRC_URI = "http://cache.ruby-lang.org/pub/ruby/${SHRT_VER}/ruby-${PV}.tar.gz \
@@ -24,7 +24,7 @@ SRC_URI = "http://cache.ruby-lang.org/pub/ruby/${SHRT_VER}/ruby-${PV}.tar.gz \
            "
 UPSTREAM_CHECK_URI = "https://www.ruby-lang.org/en/downloads/"
 
-inherit autotools
+inherit autotools ptest
 
 
 # This snippet lets compiled extensions which rely on external libraries,

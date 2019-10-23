@@ -10,12 +10,11 @@ CVE_PRODUCT = "gcc"
 inherit autotools gettext texinfo
 
 BPN = "gcc"
-COMPILERINITIAL = ""
-COMPILERDEP = "virtual/${MLPREFIX}${TARGET_PREFIX}gcc${COMPILERINITIAL}:do_gcc_stash_builddir"
-COMPILERDEP_class-nativesdk = "virtual/${TARGET_PREFIX}gcc${COMPILERINITIAL}-crosssdk:do_gcc_stash_builddir"
+COMPILERDEP = "virtual/${MLPREFIX}${TARGET_PREFIX}gcc:do_gcc_stash_builddir"
+COMPILERDEP_class-nativesdk = "virtual/${TARGET_PREFIX}gcc-crosssdk:do_gcc_stash_builddir"
 
 python extract_stashed_builddir () {
-    src = d.expand("${COMPONENTS_DIR}/${BUILD_ARCH}/gcc-stashed-builddir${COMPILERINITIAL}-${TARGET_SYS}")
+    src = d.expand("${COMPONENTS_DIR}/${BUILD_ARCH}/gcc-stashed-builddir-${TARGET_SYS}")
     dest = d.getVar("B")
     oe.path.copyhardlinktree(src, dest)
     staging_processfixme([src + "/fixmepath"], dest, dest, dest, d)
@@ -38,7 +37,7 @@ def get_gcc_mips_plt_setting(bb, d):
     return ""
 
 def get_gcc_ppc_plt_settings(bb, d):
-    if d.getVar('TRANSLATED_TARGET_ARCH') in [ 'powerpc' ] and not bb.utils.contains('DISTRO_FEATURES', 'bssplt', True, False, d):
+    if d.getVar('TRANSLATED_TARGET_ARCH') in [ 'powerpc', 'powerpc64' ] and not bb.utils.contains('DISTRO_FEATURES', 'bssplt', True, False, d):
         return "--enable-secureplt"
     return ""
 
@@ -46,7 +45,7 @@ def get_long_double_setting(bb, d):
     if d.getVar('TRANSLATED_TARGET_ARCH') in [ 'powerpc', 'powerpc64' ] and d.getVar('TCLIBC') in [ 'glibc' ]:
         return "--with-long-double-128"
     else:
-        return "--without-long-double-128"
+        return "--without-long-double-128 libgcc_cv_powerpc_float128=no"
     return ""
 
 def get_gcc_multiarch_setting(bb, d):

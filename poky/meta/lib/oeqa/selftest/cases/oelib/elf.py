@@ -1,3 +1,7 @@
+#
+# SPDX-License-Identifier: MIT
+#
+
 from unittest.case import TestCase
 import oe.qa
 
@@ -15,6 +19,7 @@ class TestElf(TestCase):
         self.assertEqual(oe.qa.elf_machine_to_string(0x32), "IA-64")
         self.assertEqual(oe.qa.elf_machine_to_string(0x3E), "x86-64")
         self.assertEqual(oe.qa.elf_machine_to_string(0xB7), "AArch64")
+        self.assertEqual(oe.qa.elf_machine_to_string(0xF7), "BPF")
 
         self.assertEqual(oe.qa.elf_machine_to_string(0x00), "Unknown (0)")
         self.assertEqual(oe.qa.elf_machine_to_string(0xDEADBEEF), "Unknown (3735928559)")

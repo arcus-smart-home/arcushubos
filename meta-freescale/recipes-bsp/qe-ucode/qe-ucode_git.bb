@@ -1,22 +1,22 @@
 DESCRIPTION = "qe microcode binary"
 SECTION = "qe-ucode"
-LICENSE = "Freescale-Binary-EULA"
-LIC_FILES_CHKSUM = "file://Freescale-Binary-EULA;md5=f4719d59382b5ee2a2ebe4db784843a6"
+LICENSE = "NXP-Binary-EULA"
+LIC_FILES_CHKSUM = "file://NXP-Binary-EULA;md5=c62f8109b4df15ca37ceeb5e4943626c"
 
-inherit deploy
+inherit deploy fsl-eula-unpack
 
-SRC_URI = "git://github.com/qoriq-open-source/qe-ucode.git;nobranch=1"
-SRCREV= "adb1560b76090a11f61a46b7a6b3b33b1436ed4d"
+SRC_URI = "git://github.com/NXP/qoriq-qe-ucode.git;fsl-eula=true;nobranch=1"
+SRCREV= "57401f6dff6507055558eaa6838116baa8a2fd46"
 
 S = "${WORKDIR}/git"
 
 python () {
-	if not d.getVar("QE_UCODE", True):
-		PN = d.getVar("PN", True)
-		FILE = os.path.basename(d.getVar("FILE", True))
-		bb.debug(1, "To build %s, see %s for instructions on \
-			     setting up your qe-ucode" % (PN, FILE))
-		raise bb.parse.SkipPackage("because QE_UCODE is not set")
+    if not d.getVar("QE_UCODE"):
+        PN = d.getVar("PN")
+        FILE = os.path.basename(d.getVar("FILE"))
+        bb.debug(1, "To build %s, see %s for instructions on \
+                     setting up your qe-ucode" % (PN, FILE))
+        raise bb.parse.SkipRecipe("because QE_UCODE is not set")
 }
 
 do_install () {
@@ -33,6 +33,6 @@ addtask deploy before do_build after do_install
 PACKAGES += "${PN}-image"
 FILES_${PN}-image += "/boot/*"
 
-COMPATIBLE_MACHINE = "(ls1021a|ls1043a)"
+COMPATIBLE_MACHINE = "(ls1021a|ls1043a|t1042|t1024)"
 PACKAGE_ARCH = "${MACHINE_SOCARCH}"
 

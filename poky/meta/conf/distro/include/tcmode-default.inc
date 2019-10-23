@@ -3,31 +3,29 @@
 #
 
 PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}binutils = "binutils-cross-${TARGET_ARCH}"
-PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}gcc-initial = "gcc-cross-initial-${TARGET_ARCH}"
 PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}gcc = "gcc-cross-${TARGET_ARCH}"
 PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}g++ = "gcc-cross-${TARGET_ARCH}"
 PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}compilerlibs = "gcc-runtime"
 PREFERRED_PROVIDER_gdb = "gdb"
 
 PREFERRED_PROVIDER_virtual/${SDK_PREFIX}binutils-crosssdk ?= "binutils-crosssdk-${SDK_SYS}"
-PREFERRED_PROVIDER_virtual/${SDK_PREFIX}gcc-initial = "gcc-crosssdk-initial-${SDK_SYS}"
 PREFERRED_PROVIDER_virtual/${SDK_PREFIX}gcc = "gcc-crosssdk-${SDK_SYS}"
 PREFERRED_PROVIDER_virtual/${SDK_PREFIX}g++ = "gcc-crosssdk-${SDK_SYS}"
 PREFERRED_PROVIDER_virtual/${SDK_PREFIX}compilerlibs = "nativesdk-gcc-runtime"
 
 # Default libc config
-PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}libc-for-gcc = "${TCLIBC}"
-PREFERRED_PROVIDER_virtual/nativesdk-${SDK_PREFIX}libc-for-gcc ?= "nativesdk-glibc"
 PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}libc-initial = "${TCLIBC}-initial"
 PREFERRED_PROVIDER_virtual/nativesdk-${SDK_PREFIX}libc-initial ?= "nativesdk-glibc-initial"
 PREFERRED_PROVIDER_virtual/gettext ??= "gettext"
 
-GCCVERSION ?= "7.%"
+GCCVERSION ?= "8.%"
 SDKGCCVERSION ?= "${GCCVERSION}"
-BINUVERSION ?= "2.29%"
-GDBVERSION ?= "8.0%"
-GLIBCVERSION ?= "2.26%"
-LINUXLIBCVERSION ?= "4.12%"
+BINUVERSION ?= "2.32%"
+GDBVERSION ?= "8.2%"
+GLIBCVERSION ?= "2.29%"
+LINUXLIBCVERSION ?= "5.0%"
+QEMUVERSION ?= "3.1%"
+GOVERSION ?= "1.12%"
 
 PREFERRED_VERSION_gcc ?= "${GCCVERSION}"
 PREFERRED_VERSION_gcc-cross-${TARGET_ARCH} ?= "${GCCVERSION}"
@@ -63,10 +61,17 @@ PREFERRED_VERSION_nativesdk-glibc          ?= "${GLIBCVERSION}"
 PREFERRED_VERSION_glibc-initial            ?= "${GLIBCVERSION}"
 PREFERRED_VERSION_nativesdk-glibc-initial  ?= "${GLIBCVERSION}"
 PREFERRED_VERSION_cross-localedef-native   ?= "${GLIBCVERSION}"
-# don't use version earlier than 1.4 for gzip-native, as it's necessary for
-# some packages using an archive format incompatible with earlier gzip
-PREFERRED_VERSION_gzip-native ?= "1.8"
 
-# Setup suitable toolchain flags
-require conf/distro/include/as-needed.inc
+PREFERRED_VERSION_qemu ?= "${QEMUVERSION}"
+PREFERRED_VERSION_qemu-native ?= "${QEMUVERSION}"
+PREFERRED_VERSION_nativesdk-qemu ?= "${QEMUVERSION}"
 
+PREFERRED_VERSION_virtual/${TARGET_PREFIX}go ?= "${GOVERSION}"
+PREFERRED_VERSION_go-cross-${TARGET_ARCH} ?= "${GOVERSION}"
+PREFERRED_VERSION_go-crosssdk-${SDK_ARCH} ?= "${GOVERSION}"
+PREFERRED_VERSION_go-cross-canadian-${TRANSLATED_TARGET_ARCH} ?= "${GOVERSION}"
+PREFERRED_VERSION_go ?= "${GOVERSION}"
+PREFERRED_VERSION_go-native ?= "${GOVERSION}"
+PREFERRED_VERSION_go-runtime ?= "${GOVERSION}"
+PREFERRED_VERSION_nativesdk-go ?= "${GOVERSION}"
+PREFERRED_VERSION_nativesdk-go-runtime ?= "${GOVERSION}"

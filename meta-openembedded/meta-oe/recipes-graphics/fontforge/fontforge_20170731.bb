@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = " \
     file://LICENSE;md5=3f922b42ed0033fa0fd4cd3268f6429c \
 "
 
-DEPENDS = "glib-2.0 pango giflib tiff libxml2 jpeg python libtool uthash gnulib"
+DEPENDS = "glib-2.0 pango giflib tiff libxml2 jpeg python libtool uthash gnulib gettext-native"
 DEPENDS_append_class-target = " libxi"
 
 inherit autotools pkgconfig pythonnative distro_features_check gettext
@@ -45,15 +45,16 @@ EOF
     cd $currdir
 }
 
-PACKAGES =+ "${PN}-python-dbg ${PN}-python"
+PACKAGES =+ "${PN}-python"
+
+RPROVIDES_${PN}-dbg += "${PN}-python-dbg"
 
 FILES_${PN} += " \
     ${datadir}/mime \
     ${datadir}/icons \
 "
 
-FILES_${PN}-python = "${PYTHON_SITEPACKAGES_DIR} ${datadir}/${PN}/python"
-FILES_${PN}-python-dbg = "${PYTHON_SITEPACKAGES_DIR}/.debug"
+FILES_${PN}-python = "${PYTHON_SITEPACKAGES_DIR} ${datadir}/${BPN}/python"
 RDEPENDS_${PN}-python = "python"
 
 # for e.g kde's oxygen-fonts

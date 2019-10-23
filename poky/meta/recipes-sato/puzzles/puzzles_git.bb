@@ -1,48 +1,38 @@
 SUMMARY = "Simon Tatham's Portable Puzzle Collection"
 HOMEPAGE = "http://www.chiark.greenend.org.uk/~sgtatham/puzzles/"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://LICENCE;md5=da6110d4ed1225a287eab2bf0ac0193b"
 
 DEPENDS = "libxt"
 
 # The libxt requires x11 in DISTRO_FEATURES
 REQUIRED_DISTRO_FEATURES = "x11"
 
-LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://LICENCE;md5=33bcd4bce8f3c197f2aefbdbd2d299bc"
-
 SRC_URI = "git://git.tartarus.org/simon/puzzles.git \
            file://fix-compiling-failure-with-option-g-O.patch \
            file://0001-Use-labs-instead-of-abs.patch \
            file://0001-palisade-Fix-warnings-with-clang-on-arm.patch \
-           file://0001-Clarify-conditions-to-avoid-compiler-errors.patch \
            file://0001-Use-Wno-error-format-overflow-if-the-compiler-suppor.patch \
+           file://0001-pattern.c-Change-string-lenght-parameter-to-be-size_.patch \
+           file://fix-ki-uninitialized.patch \
            "
-UPSTREAM_VERSION_UNKNOWN = "1"
-SRCREV = "8dfe5cec31e784e4ece2955ecc8cc35ee7e8fbb3"
-PE = "1"
+
+UPSTREAM_CHECK_COMMITS = "1"
+SRCREV = "c6e0161dd475415316ed66dc82794d68e52f0025"
+PE = "2"
 PV = "0.0+git${SRCPV}"
 
 S = "${WORKDIR}/git"
 
 inherit autotools distro_features_check pkgconfig
 
-CFLAGS_append = " -Wno-deprecated-declarations"
-
 PACKAGECONFIG ??= "gtk3"
 PACKAGECONFIG[gtk2] = "--with-gtk=2,,gtk+,"
 PACKAGECONFIG[gtk3] = "--with-gtk=3,,gtk+3,"
 
-PACKAGES += "${PN}-extra"
-FILES_${PN} = ""
-FILES_${PN}-extra = "${prefix}/bin ${datadir}/applications"
+CFLAGS_append = " -Wno-deprecated-declarations"
 
-python __anonymous () {
-    var = d.expand("FILES_${PN}")
-    data = d.getVar(var, False)
-    for name in ("bridges", "fifteen", "inertia", "map", "samegame", "slant"):
-        data = data + " ${bindir}/%s" % name
-        data = data + " ${datadir}/applications/%s.desktop" % name
-    d.setVar(var, data)
-}
+ASNEEDED = ""
 
 do_configure_prepend () {
     cd ${S}
@@ -74,4 +64,18 @@ StartupNotify=true
 STOP
         fi
     done
+}
+
+PACKAGES += "${PN}-extra"
+
+FILES_${PN} = ""
+FILES_${PN}-extra = "${prefix}/bin ${datadir}/applications"
+
+python __anonymous () {
+    var = d.expand("FILES_${PN}")
+    data = d.getVar(var, False)
+    for name in ("bridges", "fifteen", "inertia", "map", "samegame", "slant"):
+        data = data + " ${bindir}/%s" % name
+        data = data + " ${datadir}/applications/%s.desktop" % name
+    d.setVar(var, data)
 }

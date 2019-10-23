@@ -1,4 +1,4 @@
-From 653fe8e724081d2f289c2245d1220d5f7170538d Mon Sep 17 00:00:00 2001
+From 0d1cdb59da3603e0a80913617ece0164b05380d2 Mon Sep 17 00:00:00 2001
 From: Alexandru Moise <alexandru.moise@windriver.com>
 Date: Fri, 29 Apr 2016 07:40:46 +0000
 Subject: [PATCH] mem_section: Support only 46 bit for MAX_PHYSMEM_BITS on
@@ -20,15 +20,18 @@ Upstream-Status: Pending
 
 Signed-off-by: Alexandru Moise <alexandru.moise@windriver.com>
 Signed-off-by: Yi Zhao <yi.zhao@windriver.com>
+
+[hqBai: adjusted patch for context, no logical change]
+Signed-off-by: Haiqing Bai <Haiqing.Bai@windriver.com>
 ---
- arch/ppc64.c | 28 ++--------------------------
- 1 file changed, 2 insertions(+), 26 deletions(-)
+ arch/ppc64.c | 33 ++-------------------------------
+ 1 file changed, 2 insertions(+), 31 deletions(-)
 
 diff --git a/arch/ppc64.c b/arch/ppc64.c
-index 89a7f05..6c928ab 100644
+index 947a125..458f06b 100644
 --- a/arch/ppc64.c
 +++ b/arch/ppc64.c
-@@ -302,37 +302,13 @@ ppc64_vtop_level4(unsigned long vaddr)
+@@ -463,42 +463,13 @@ ppc64_vtop_level4(unsigned long vaddr)
  }
  
  int
@@ -46,6 +49,11 @@ index 89a7f05..6c928ab 100644
 -		return TRUE;
 -
 -	info->max_physmem_bits  = _MAX_PHYSMEM_BITS_3_7;
+-	if ((array_len == (NR_MEM_SECTIONS() / _SECTIONS_PER_ROOT_EXTREME()))
+-		|| (array_len == (NR_MEM_SECTIONS() / _SECTIONS_PER_ROOT())))
+-		return TRUE;
+-
+-	info->max_physmem_bits  = _MAX_PHYSMEM_BITS_4_19;
 -	if ((array_len == (NR_MEM_SECTIONS() / _SECTIONS_PER_ROOT_EXTREME()))
 -		|| (array_len == (NR_MEM_SECTIONS() / _SECTIONS_PER_ROOT())))
 -		return TRUE;
@@ -69,5 +77,5 @@ index 89a7f05..6c928ab 100644
  
  	if (SYMBOL(_stext) == NOT_FOUND_SYMBOL) {
 -- 
-2.5.0
+2.7.4
 

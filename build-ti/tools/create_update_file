@@ -20,7 +20,7 @@ PREFIX='hubOS'
 BUILD_IMAGE="../tmp/sysroots-components/x86_64/iris-utils-native/usr/bin/build_image"
 
 # Remove existing update directory
-cd tmp/deploy/images/beaglebone
+cd tmp/deploy/images/beaglebone-yocto
 rm -rf update
 
 mkdir update
@@ -28,9 +28,9 @@ mkdir update
 # Copy in files
 cp ../../../../tools/MLO-release update/MLO-beaglebone
 cp ../../../../tools/u-boot-release.img update/u-boot-beaglebone.img
-cp uImage-beaglebone.bin update/
-cp uImage-am335x-boneblack.dtb update/
-cp $1-beaglebone.squashfs update/core-image-minimal-iris-beaglebone.squashfs
+cp uImage-beaglebone-yocto.bin update/uImage-beaglebone.bin
+cp am335x-boneblack.dtb update/uImage-am335x-boneblack.dtb
+cp $1-beaglebone-yocto.squashfs update/core-image-minimal-iris-beaglebone.squashfs
 
 # Add in latest Zwave firmware
 ZWAVE_FIRMWARE=../../../../../radios/zwave/SDK/ProductPlus/Bin/SerialAPI_Controller_Static/serialapi_controller_static_ZM5304_US.hex
@@ -58,9 +58,9 @@ tar cvfz i2hubos_update.bin update/
 
 # Create image file
 cd ../../../../tools
-$BUILD_IMAGE -p $PREFIX -c ALL ../tmp/deploy/images/beaglebone/i2hubos_update.bin
+$BUILD_IMAGE -p $PREFIX -c ALL ../tmp/deploy/images/beaglebone-yocto/i2hubos_update.bin
 
 echo "Update file created." 1>&2
 
-cp ../tmp/deploy/images/beaglebone/i2hubos_update.bin /tftpboot
+cp ../tmp/deploy/images/beaglebone-yocto/i2hubos_update.bin /tftpboot
 cp -u $PREFIX* /tftpboot

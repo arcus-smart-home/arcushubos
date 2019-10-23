@@ -16,7 +16,7 @@ LICENSE = "MIT & MIT-style"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6565b1e0094ea1caae0971cc4035f343"
 
 
-DEPENDS += "util-linux libxcb libsm virtual/libx11 kbproto libxdmcp"
+DEPENDS += "util-linux libxcb libsm virtual/libx11 xorgproto libxdmcp"
 PROVIDES = "xt"
 
 PE = "1"
@@ -27,7 +27,7 @@ SRC_URI +=  "file://libxt_fix_for_x32.patch \
              file://0001-libXt-util-don-t-link-makestrs-with-target-cflags.patch \
             "
 
-BBCLASSEXTEND = "native"
+BBCLASSEXTEND = "native nativesdk"
 
 EXTRA_OECONF += "--disable-xkb"
 

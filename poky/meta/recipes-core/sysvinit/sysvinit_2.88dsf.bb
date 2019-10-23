@@ -15,6 +15,7 @@ SRC_URI = "${SAVANNAH_GNU_MIRROR}/sysvinit/sysvinit-${PV}.tar.bz2 \
            file://pidof-add-m-option.patch \
            file://0001-This-fixes-an-issue-that-clang-reports-about-mutlipl.patch \
            file://realpath.patch \
+           file://0001-include-sys-sysmacros.h-for-major-minor-defines-in-g.patch \
            file://rcS-default \
            file://rc \
            file://rcS \
@@ -28,8 +29,10 @@ SRC_URI[sha256sum] = "60bbc8c1e1792056e23761d22960b30bb13eccc2cabff8c7310a01f4d5
 S = "${WORKDIR}/sysvinit-${PV}"
 B = "${S}/src"
 
-inherit update-alternatives
-DEPENDS_append = " update-rc.d-native base-passwd"
+inherit update-alternatives distro_features_check
+DEPENDS_append = " update-rc.d-native base-passwd virtual/crypt"
+
+REQUIRED_DISTRO_FEATURES = "sysvinit"
 
 ALTERNATIVE_${PN} = "init mountpoint halt reboot runlevel shutdown poweroff last lastb mesg utmpdump wall"
 
@@ -102,11 +105,6 @@ do_install () {
 	install -d ${D}${sysconfdir}/default/volatiles
 	install -m 0644 ${WORKDIR}/01_bootlogd ${D}${sysconfdir}/default/volatiles
 
-	chown root.shutdown ${D}${base_sbindir}/halt ${D}${base_sbindir}/shutdown
+	chown root:shutdown ${D}${base_sbindir}/halt ${D}${base_sbindir}/shutdown
 	chmod o-x,u+s ${D}${base_sbindir}/halt ${D}${base_sbindir}/shutdown
-}
-
-python () {
-    if not bb.utils.contains('DISTRO_FEATURES', 'sysvinit', True, False, d):
-        raise bb.parse.SkipPackage("'sysvinit' not in DISTRO_FEATURES")
 }

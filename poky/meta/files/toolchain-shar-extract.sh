@@ -3,6 +3,7 @@
 [ -z "$ENVCLEANED" ] && exec /usr/bin/env -i ENVCLEANED=1 HOME="$HOME" \
 	LC_ALL=en_US.UTF-8 \
 	TERM=$TERM \
+	ICECC_PATH="$ICECC_PATH" \
 	http_proxy="$http_proxy" https_proxy="$https_proxy" ftp_proxy="$ftp_proxy" \
 	no_proxy="$no_proxy" all_proxy="$all_proxy" GIT_PROXY_COMMAND="$GIT_PROXY_COMMAND" "$0" "$@"
 [ -f /etc/environment ] && . /etc/environment
@@ -184,11 +185,11 @@ fi
 
 if [ -e "$target_sdk_dir/environment-setup-@REAL_MULTIMACH_TARGET_SYS@" ]; then
 	echo "The directory \"$target_sdk_dir\" already contains a SDK for this architecture."
-	printf "If you continue, existing files will be overwritten! Proceed[y/N]? "
+	printf "If you continue, existing files will be overwritten! Proceed [y/N]? "
 
 	default_answer="n"
 else
-	printf "You are about to install the SDK to \"$target_sdk_dir\". Proceed[Y/n]? "
+	printf "You are about to install the SDK to \"$target_sdk_dir\". Proceed [Y/n]? "
 
 	default_answer="y"
 fi
@@ -257,6 +258,14 @@ fi
 # if he/she wants another location for the sdk
 if [ $savescripts = 0 ] ; then
 	$SUDO_EXEC rm -f ${env_setup_script%/*}/relocate_sdk.py ${env_setup_script%/*}/relocate_sdk.sh
+fi
+
+# Execute post-relocation script
+post_relocate="$target_sdk_dir/post-relocate-setup.sh"
+if [ -e "$post_relocate" ]; then
+	$SUDO_EXEC sed -e "s:@SDKPATH@:$target_sdk_dir:g" -i $post_relocate
+	$SUDO_EXEC /bin/sh $post_relocate "$target_sdk_dir" "@SDKPATH@"
+	$SUDO_EXEC rm -f $post_relocate
 fi
 
 echo "SDK has been successfully set up and is ready to be used."

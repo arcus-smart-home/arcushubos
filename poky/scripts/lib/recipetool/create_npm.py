@@ -2,20 +2,11 @@
 #
 # Copyright (C) 2016 Intel Corporation
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
+import sys
 import logging
 import subprocess
 import tempfile
@@ -73,7 +64,6 @@ class NpmRecipeHandler(RecipeHandler):
                     license = license.replace(' ', '_')
                     if not license[0] == '(':
                         license = '(' + license + ')'
-                    print('LICENSE: {}'.format(license))
                 else:
                     license = license.replace('AND', '&')
                     if license[0] == '(':
@@ -91,7 +81,7 @@ class NpmRecipeHandler(RecipeHandler):
             runenv = dict(os.environ, PATH=d.getVar('PATH'))
             bb.process.run('npm shrinkwrap', cwd=srctree, stderr=subprocess.STDOUT, env=runenv, shell=True)
         except bb.process.ExecutionError as e:
-            logger.warn('npm shrinkwrap failed:\n%s' % e.stdout)
+            logger.warning('npm shrinkwrap failed:\n%s' % e.stdout)
             return
 
         tmpfile = os.path.join(localfilesdir, 'npm-shrinkwrap.json')
@@ -108,12 +98,12 @@ class NpmRecipeHandler(RecipeHandler):
                            cwd=srctree, stderr=subprocess.STDOUT, env=runenv, shell=True)
         relockbin = os.path.join(NpmRecipeHandler.lockdownpath, 'node_modules', 'lockdown', 'relock.js')
         if not os.path.exists(relockbin):
-            logger.warn('Could not find relock.js within lockdown directory; skipping lockdown')
+            logger.warning('Could not find relock.js within lockdown directory; skipping lockdown')
             return
         try:
             bb.process.run('node %s' % relockbin, cwd=srctree, stderr=subprocess.STDOUT, env=runenv, shell=True)
         except bb.process.ExecutionError as e:
-            logger.warn('lockdown-relock failed:\n%s' % e.stdout)
+            logger.warning('lockdown-relock failed:\n%s' % e.stdout)
             return
 
         tmpfile = os.path.join(localfilesdir, 'lockdown.json')
@@ -321,6 +311,7 @@ class NpmRecipeHandler(RecipeHandler):
                     blacklist = True
                     break
             if (not blacklist and 'linux' not in pkg_os) or '!linux' in pkg_os:
+                pkg = pdata.get('name', 'Unnamed package')
                 logger.debug(2, "Skipping %s since it's incompatible with Linux" % pkg)
                 return False
         return True

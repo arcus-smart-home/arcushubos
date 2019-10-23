@@ -8,8 +8,7 @@ DEPENDS  = " \
     gtk+ \
     gtkmathview \
     wv \
-    libglade \
-    libfribidi \
+    fribidi \
     jpeg \
     libpng \
     librsvg \
@@ -25,10 +24,10 @@ RDEPENDS_${PN}_append_libc-glibc = " \
 "
 RCONFLICTS_${PN} = "${PN}-embedded"
 
-SRC_URI = " \
-    http://www.abisource.com/downloads/${BPN}/${PV}/source/${BP}.tar.gz \
-    file://0001-plugins-aiksaurus-Makefile.am-remove-uncomplete-opti.patch \
-"
+SRC_URI = "http://www.abisource.com/downloads/${BPN}/${PV}/source/${BP}.tar.gz \
+           file://0001-plugins-aiksaurus-Makefile.am-remove-uncomplete-opti.patch \
+           file://0001-Bug-13770-Require-C-11-from-now-on.patch \
+           "
 
 LIC_FILES_CHKSUM = "file://COPYING;md5=c5edcc3ccd864b19004d14e9c1c9a26a"
 
@@ -38,7 +37,9 @@ SRC_URI[sha256sum] = "afbfd458fd02989d8b0c6362ba8a4c14686d89666f54cfdb5501bd2090
 #want 3.x from 3.x.y for the installation directory
 SHRT_VER = "${@d.getVar('PV').split('.')[0]}.${@d.getVar('PV').split('.')[1]}"
 
-inherit autotools-brokensep pkgconfig
+inherit distro_features_check autotools-brokensep pkgconfig
+
+REQUIRED_DISTRO_FEATURES = "x11"
 
 PACKAGECONFIG ??= " \
     collab-backend-xmpp collab-backend-tcp \

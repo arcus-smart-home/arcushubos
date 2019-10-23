@@ -17,6 +17,9 @@ HOST_CC_ARCH = "${BUILD_CC_ARCH}"
 HOST_LD_ARCH = "${BUILD_LD_ARCH}"
 HOST_AS_ARCH = "${BUILD_AS_ARCH}"
 
+# No strip sysroot when DEBUG_BUILD is enabled
+INHIBIT_SYSROOT_STRIP ?= "${@oe.utils.vartrue('DEBUG_BUILD', '1', '', d)}"
+
 export lt_cv_sys_lib_dlsearch_path_spec = "${libdir} ${base_libdir} /lib /lib64 /usr/lib /usr/lib64"
 
 STAGING_DIR_HOST = "${RECIPE_SYSROOT_NATIVE}"
@@ -37,11 +40,8 @@ CPPFLAGS = "${BUILD_CPPFLAGS}"
 CFLAGS = "${BUILD_CFLAGS}"
 CXXFLAGS = "${BUILD_CFLAGS}"
 LDFLAGS = "${BUILD_LDFLAGS}"
-LDFLAGS_build-darwin = "-L${STAGING_LIBDIR_NATIVE}"
 
 TOOLCHAIN_OPTIONS = ""
-
-DEPENDS_GETTEXT = "gettext-native"
 
 # This class encodes staging paths into its scripts data so can only be
 # reused if we manipulate the paths.
@@ -92,3 +92,8 @@ export STRIP = "${BUILD_STRIP}"
 export NM = "${BUILD_NM}"
 
 inherit nopackages
+
+python do_addto_recipe_sysroot () {
+    bb.build.exec_func("extend_recipe_sysroot", d)
+}
+addtask addto_recipe_sysroot after do_populate_sysroot

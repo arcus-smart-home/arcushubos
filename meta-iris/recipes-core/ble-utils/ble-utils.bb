@@ -34,8 +34,8 @@ SRC_URI = "file://ble_prog.c \
            file://wifi_prov.c \
            "
 
-# Consider any warnings errors
-CFLAGS += "-Wall -Werror"
+# Consider any warnings errors (well, not ignored results)
+CFLAGS += "-Wall -Werror -Wno-unused-result"
 
 CFLAGS += "-I${RECIPE_SYSROOT}/usr/lib/dbus-1.0/include/ -I${STAGING_INCDIR}/dbus-1.0/"
 
