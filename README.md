@@ -128,4 +128,8 @@ Once this install completes reboot the hub so the new firmware is used.
 
 # Password
 
-The default root password for hubOS 3.x, regardless of hardare revision or platform is `zm{[*f6gB5X($]R9`.
+The current SSH root password for images built from these sources is `3XSgE27w5VJ3qvxK33dn`.
+
+The default root password for Iris hubOS 3.x releases, regardless of hardare revision or platform is `zm{[*f6gB5X($]R9`.
+
+The earlier 2.x releases used a default password of `kz58!~Eb.RZ?+bqb`.
