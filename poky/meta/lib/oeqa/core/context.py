@@ -1,5 +1,7 @@
-# Copyright (C) 2016 Intel Corporation
-# Released under the MIT license (see COPYING.MIT)
+## Copyright (C) 2016 Intel Corporation
+#
+# SPDX-License-Identifier: MIT
+#
 
 import os
 import sys
@@ -7,6 +9,7 @@ import json
 import time
 import logging
 import collections
+import unittest
 
 from oeqa.core.loader import OETestLoader
 from oeqa.core.runner import OETestRunner
@@ -27,7 +30,6 @@ class OETestContext(object):
         self.logger = logger
         self._registry = {}
         self._registry['cases'] = collections.OrderedDict()
-        self._results = {}
 
     def _read_modules_from_manifest(self, manifest):
         if not os.path.exists(manifest):
@@ -44,10 +46,14 @@ class OETestContext(object):
     def skipTests(self, skips):
         if not skips:
             return
+        def skipfuncgen(skipmsg):
+            def func():
+                raise unittest.SkipTest(skipmsg)
+            return func
         for test in self.suites:
             for skip in skips:
                 if test.id().startswith(skip):
-                    setattr(test, 'setUp', lambda: test.skipTest('Skip by the command line argument "%s"' % skip))
+                    setattr(test, 'setUp', skipfuncgen('Skip by the command line argument "%s"' % skip))
 
     def loadTests(self, module_paths, modules=[], tests=[],
             modules_manifest="", modules_required=[], filters={}):
@@ -58,14 +64,21 @@ class OETestContext(object):
                 modules_required, filters)
         self.suites = self.loader.discover()
 
-    def runTests(self, skips=[]):
+    def runTests(self, processes=None, skips=[]):
         self.runner = self.runnerClass(self, descriptions=False, verbosity=2)
 
         # Dinamically skip those tests specified though arguments
         self.skipTests(skips)
 
         self._run_start_time = time.time()
-        result = self.runner.run(self.suites)
+        if processes:
+            from oeqa.core.utils.concurrencytest import ConcurrentTestSuite
+
+            concurrent_suite = ConcurrentTestSuite(self.suites, processes)
+            result = self.runner.run(concurrent_suite)
+        else:
+            self.runner.buffer = True
+            result = self.runner.run(self.suites)
         self._run_end_time = time.time()
 
         return result

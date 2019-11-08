@@ -1,12 +1,14 @@
+#
+# SPDX-License-Identifier: MIT
+#
+
 import os
 import glob
 from oeqa.utils.commands import bitbake, get_bb_vars
 from oeqa.selftest.case import OESelftestTestCase
-from oeqa.core.decorator.oeid import OETestID
 
 class Archiver(OESelftestTestCase):
 
-    @OETestID(1345)
     def test_archiver_allows_to_filter_on_recipe_name(self):
         """
         Summary:     The archiver should offer the possibility to filter on the recipe. (#6929)
@@ -40,7 +42,6 @@ class Archiver(OESelftestTestCase):
         excluded_present = len(glob.glob(src_path + '/%s-*' % exclude_recipe))
         self.assertFalse(excluded_present, 'Recipe %s was not excluded.' % exclude_recipe)
 
-    @OETestID(1900)
     def test_archiver_filters_by_type(self):
         """
         Summary:     The archiver is documented to filter on the recipe type.
@@ -73,7 +74,6 @@ class Archiver(OESelftestTestCase):
         excluded_present = len(glob.glob(src_path_native + '/%s-*' % native_recipe))
         self.assertFalse(excluded_present, 'Recipe %s was not excluded.' % native_recipe)
 
-    @OETestID(1901)
     def test_archiver_filters_by_type_and_name(self):
         """
         Summary:     Test that the archiver archives by recipe type, taking the
@@ -116,3 +116,16 @@ class Archiver(OESelftestTestCase):
 
         excluded_present = len(glob.glob(src_path_target + '/%s-*' % target_recipes[1]))
         self.assertFalse(excluded_present, 'Recipe %s was not excluded.' % target_recipes[1])
+
+
+
+    def test_archiver_srpm_mode(self):
+        """
+        Test that in srpm mode, the added recipe dependencies at least exist/work [YOCTO #11121]
+        """
+
+        features = 'INHERIT += "archiver"\n'
+        features += 'ARCHIVER_MODE[srpm] = "1"\n'
+        self.write_config(features)
+
+        bitbake('-n core-image-sato')

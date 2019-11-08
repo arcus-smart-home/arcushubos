@@ -278,10 +278,10 @@ int IRIS_copyFile(const char *src, const char *dst)
     int         res;
 
     /* Open files */
-    if ((src == NULL) || ((fdSrc = open(src, O_RDONLY)) == -1)) {
+    if ((src == NULL) || ((fdSrc = open(src, O_RDONLY, 0644)) == -1)) {
         return -1;
     }
-    if ((dst == NULL) || ((fdDst = open(dst, O_RDWR | O_CREAT)) == -1)) {
+    if ((dst == NULL) || ((fdDst = open(dst, O_RDWR | O_CREAT, 0755)) == -1)) {
         close(fdSrc);
         return -1;
     }

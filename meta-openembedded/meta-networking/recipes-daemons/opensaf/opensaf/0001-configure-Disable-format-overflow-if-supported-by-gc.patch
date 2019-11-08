@@ -1,18 +1,19 @@
-From ab00d6f5793b2d850f975bcb6d5d0aa6d7a9eaa4 Mon Sep 17 00:00:00 2001
+From c2668f7f2ea82a61115b7cae56ed081b41ff5153 Mon Sep 17 00:00:00 2001
 From: Khem Raj <raj.khem@gmail.com>
 Date: Sat, 22 Apr 2017 12:34:37 -0700
 Subject: [PATCH] configure: Disable format-overflow if supported by gcc
 
 Signed-off-by: Khem Raj <raj.khem@gmail.com>
+
 ---
- Makefile.am                 |  6 ++--
- configure.ac                |  2 ++
- m4/ax_check_compile_flag.m4 | 74 +++++++++++++++++++++++++++++++++++++++++++++
+ Makefile.am                 |  6 +--
+ configure.ac                |  2 +
+ m4/ax_check_compile_flag.m4 | 74 +++++++++++++++++++++++++++++++++++++
  3 files changed, 79 insertions(+), 3 deletions(-)
  create mode 100644 m4/ax_check_compile_flag.m4
 
 diff --git a/Makefile.am b/Makefile.am
-index d63fbbb..1012a2c 100644
+index b3d6553..5607fc2 100644
 --- a/Makefile.am
 +++ b/Makefile.am
 @@ -52,10 +52,10 @@ AM_CPPFLAGS = \
@@ -26,14 +27,14 @@ index d63fbbb..1012a2c 100644
 -AM_CXXFLAGS = -pipe -std=gnu++11 @OSAF_HARDEN_FLAGS@ -Wall -Wformat=2 -Werror
 +AM_CFLAGS = -pipe -std=gnu11 @OSAF_HARDEN_FLAGS@ -Wall -Wformat=2 -Werror @NOWARNINGS@
 +AM_CXXFLAGS = -pipe -std=gnu++11 @OSAF_HARDEN_FLAGS@ -Wall -Wformat=2 -Werror @NOWARNINGS@
- AM_LDFLAGS = @OSAF_HARDEN_FLAGS@ -Wl,--as-needed -ldl -lrt -pthread -rdynamic
- ACLOCAL_AMFLAGS = -I m4
- OSAF_LIB_FLAGS =
+ 
+ if ENABLE_GCOV
+ AM_CFLAGS += --coverage
 diff --git a/configure.ac b/configure.ac
-index 02771c6..b76b0fe 100644
+index 5b86730..47d1002 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -557,6 +557,8 @@ if test -z "$OSAF_HARDEN_FLAGS"; then
+@@ -600,6 +600,8 @@ if test -z "$OSAF_HARDEN_FLAGS"; then
  fi
  AC_SUBST(OSAF_HARDEN_FLAGS)
  
@@ -122,6 +123,3 @@ index 0000000..dcabb92
 +  [m4_default([$3], :)])
 +AS_VAR_POPDEF([CACHEVAR])dnl
 +])dnl AX_CHECK_COMPILE_FLAGS
--- 
-2.12.2
-

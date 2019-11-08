@@ -2,7 +2,7 @@
 #
 # Released under the MIT license (see COPYING.MIT)
 
-
+inherit metadata_scm
 # testimage.bbclass enables testing of qemu images using python unittests.
 # Most of the tests are commands run on target image over ssh.
 # To use it add testimage to global inherit and call your target image with -c testimage
@@ -10,6 +10,11 @@
 # - first add IMAGE_CLASSES += "testimage" in local.conf
 # - build a qemu core-image-sato
 # - then bitbake core-image-sato -c testimage. That will run a standard suite of tests.
+#
+# The tests can be run automatically each time an image is built if you set
+# TESTIMAGE_AUTO = "1"
+
+TESTIMAGE_AUTO ??= "0"
 
 # You can set (or append to) TEST_SUITES in local.conf to select the tests
 # which you want to run for your target.
@@ -26,6 +31,8 @@
 # TEST_LOG_DIR contains a command ssh log and may contain infromation about what command is running, output and return codes and for qemu a boot log till login.
 # Booting is handled by this class, and it's not a test in itself.
 # TEST_QEMUBOOT_TIMEOUT can be used to set the maximum time in seconds the launch code will wait for the login prompt.
+# TEST_QEMUPARAMS can be used to pass extra parameters to qemu, e.g. "-m 1024" for setting the amount of ram to 1 GB.
+# TEST_RUNQEMUPARAMS can be used to pass extra parameters to runqemu, e.g. "gl" to enable OpenGL acceleration.
 
 TEST_LOG_DIR ?= "${WORKDIR}/testimage"
 
@@ -35,29 +42,18 @@ TEST_NEEDED_PACKAGES_DIR ?= "${WORKDIR}/testimage/packages"
 TEST_EXTRACTED_DIR ?= "${TEST_NEEDED_PACKAGES_DIR}/extracted"
 TEST_PACKAGED_DIR ?= "${TEST_NEEDED_PACKAGES_DIR}/packaged"
 
-RPMTESTSUITE = "${@bb.utils.contains('IMAGE_PKGTYPE', 'rpm', 'dnf rpm', '', d)}"
-SYSTEMDSUITE = "${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)}"
-MINTESTSUITE = "ping"
-NETTESTSUITE = "${MINTESTSUITE} ssh df date scp oe_syslog ${SYSTEMDSUITE}"
-DEVTESTSUITE = "gcc kernelmodule ldd"
+BASICTESTSUITE = "\
+    ping date df ssh scp python perl gi ptest parselogs \
+    logrotate connman systemd oe_syslog pam stap ldd xorg \
+    kernelmodule gcc buildcpio buildlzip buildgalculator \
+    dnf rpm opkg apt"
 
-DEFAULT_TEST_SUITES = "${MINTESTSUITE} auto"
-DEFAULT_TEST_SUITES_pn-core-image-minimal = "${MINTESTSUITE}"
-DEFAULT_TEST_SUITES_pn-core-image-minimal-dev = "${MINTESTSUITE}"
-DEFAULT_TEST_SUITES_pn-core-image-full-cmdline = "${NETTESTSUITE} perl python logrotate"
-DEFAULT_TEST_SUITES_pn-core-image-x11 = "${MINTESTSUITE}"
-DEFAULT_TEST_SUITES_pn-core-image-lsb = "${NETTESTSUITE} pam parselogs ${RPMTESTSUITE}"
-DEFAULT_TEST_SUITES_pn-core-image-sato = "${NETTESTSUITE} connman xorg parselogs ${RPMTESTSUITE} \
-    ${@bb.utils.contains('IMAGE_PKGTYPE', 'rpm', 'python', '', d)}"
-DEFAULT_TEST_SUITES_pn-core-image-sato-sdk = "${NETTESTSUITE} buildcpio buildlzip buildgalculator \
-    connman ${DEVTESTSUITE} logrotate perl parselogs python ${RPMTESTSUITE} xorg"
-DEFAULT_TEST_SUITES_pn-core-image-lsb-dev = "${NETTESTSUITE} pam perl python parselogs ${RPMTESTSUITE}"
-DEFAULT_TEST_SUITES_pn-core-image-lsb-sdk = "${NETTESTSUITE} buildcpio buildlzip buildgalculator \
-    connman ${DEVTESTSUITE} logrotate pam parselogs perl python ${RPMTESTSUITE}"
-DEFAULT_TEST_SUITES_pn-meta-toolchain = "auto"
+DEFAULT_TEST_SUITES = "${BASICTESTSUITE}"
 
 # aarch64 has no graphics
 DEFAULT_TEST_SUITES_remove_aarch64 = "xorg"
+# musl doesn't support systemtap
+DEFAULT_TEST_SUITES_remove_libc-musl = "stap"
 
 # qemumips is quite slow and has reached the timeout limit several times on the YP build cluster,
 # mitigate this by removing build tests for qemumips machines.
@@ -69,21 +65,21 @@ TEST_SUITES ?= "${DEFAULT_TEST_SUITES}"
 
 TEST_QEMUBOOT_TIMEOUT ?= "1000"
 TEST_TARGET ?= "qemu"
+TEST_QEMUPARAMS ?= ""
+TEST_RUNQEMUPARAMS ?= ""
 
 TESTIMAGEDEPENDS = ""
-TESTIMAGEDEPENDS_qemuall = "qemu-native:do_populate_sysroot qemu-helper-native:do_populate_sysroot qemu-helper-native:do_addto_recipe_sysroot"
+TESTIMAGEDEPENDS_append_qemuall = " qemu-native:do_populate_sysroot qemu-helper-native:do_populate_sysroot qemu-helper-native:do_addto_recipe_sysroot"
 TESTIMAGEDEPENDS += "${@bb.utils.contains('IMAGE_PKGTYPE', 'rpm', 'cpio-native:do_populate_sysroot', '', d)}"
-TESTIMAGEDEPENDS_qemuall += "${@bb.utils.contains('IMAGE_PKGTYPE', 'rpm', 'cpio-native:do_populate_sysroot', '', d)}"
-TESTIMAGEDEPENDS_qemuall += "${@bb.utils.contains('IMAGE_PKGTYPE', 'rpm', 'createrepo-c-native:do_populate_sysroot', '', d)}"
 TESTIMAGEDEPENDS += "${@bb.utils.contains('IMAGE_PKGTYPE', 'rpm', 'dnf-native:do_populate_sysroot', '', d)}"
-TESTIMAGEDEPENDS += "${@bb.utils.contains('IMAGE_PKGTYPE', 'ipk', 'opkg-utils-native:do_populate_sysroot', '', d)}"
-TESTIMAGEDEPENDS += "${@bb.utils.contains('IMAGE_PKGTYPE', 'deb', 'apt-native:do_populate_sysroot', '', d)}"
 TESTIMAGEDEPENDS += "${@bb.utils.contains('IMAGE_PKGTYPE', 'rpm', 'createrepo-c-native:do_populate_sysroot', '', d)}"
+TESTIMAGEDEPENDS += "${@bb.utils.contains('IMAGE_PKGTYPE', 'ipk', 'opkg-utils-native:do_populate_sysroot package-index:do_package_index', '', d)}"
+TESTIMAGEDEPENDS += "${@bb.utils.contains('IMAGE_PKGTYPE', 'deb', 'apt-native:do_populate_sysroot  package-index:do_package_index', '', d)}"
 
 TESTIMAGELOCK = "${TMPDIR}/testimage.lock"
 TESTIMAGELOCK_qemuall = ""
 
-TESTIMAGE_DUMP_DIR ?= "/tmp/oe-saved-tests/"
+TESTIMAGE_DUMP_DIR ?= "${LOG_DIR}/runtime-hostdump/"
 
 TESTIMAGE_UPDATE_VARS ?= "DL_DIR WORKDIR DEPLOY_DIR"
 
@@ -115,13 +111,6 @@ testimage_dump_host () {
 }
 
 python do_testimage() {
-
-    testimage_sanity(d)
-
-    if (d.getVar('IMAGE_PKGTYPE') == 'rpm'
-       and 'dnf' in d.getVar('TEST_SUITES')):
-        create_rpm_index(d)
-
     testimage_main(d)
 }
 
@@ -136,6 +125,30 @@ def testimage_sanity(d):
              or not d.getVar('TEST_SERVER_IP'))):
         bb.fatal('When TEST_TARGET is set to "simpleremote" '
                  'TEST_TARGET_IP and TEST_SERVER_IP are needed too.')
+
+def get_testimage_configuration(d, test_type, machine):
+    import platform
+    from oeqa.utils.metadata import get_layers
+    configuration = {'TEST_TYPE': test_type,
+                    'MACHINE': machine,
+                    'DISTRO': d.getVar("DISTRO"),
+                    'IMAGE_BASENAME': d.getVar("IMAGE_BASENAME"),
+                    'IMAGE_PKGTYPE': d.getVar("IMAGE_PKGTYPE"),
+                    'STARTTIME': d.getVar("DATETIME"),
+                    'HOST_DISTRO': oe.lsb.distro_identifier().replace(' ', '-'),
+                    'LAYERS': get_layers(d.getVar("BBLAYERS"))}
+    return configuration
+get_testimage_configuration[vardepsexclude] = "DATETIME"
+
+def get_testimage_json_result_dir(d):
+    json_result_dir = os.path.join(d.getVar("LOG_DIR"), 'oeqa')
+    custom_json_result_dir = d.getVar("OEQA_JSON_RESULT_DIR")
+    if custom_json_result_dir:
+        json_result_dir = custom_json_result_dir
+    return json_result_dir
+
+def get_testimage_result_id(configuration):
+    return '%s_%s_%s_%s' % (configuration['TEST_TYPE'], configuration['IMAGE_BASENAME'], configuration['MACHINE'], configuration['STARTTIME'])
 
 def testimage_main(d):
     import os
@@ -156,6 +169,12 @@ def testimage_main(d):
         Catch SIGTERM from worker in order to stop qemu.
         """
         raise RuntimeError
+
+    testimage_sanity(d)
+
+    if (d.getVar('IMAGE_PKGTYPE') == 'rpm'
+       and ('dnf' in d.getVar('TEST_SUITES') or 'auto' in d.getVar('TEST_SUITES'))):
+        create_rpm_index(d)
 
     logger = make_logger_bitbake_compatible(logging.getLogger("BitBake"))
     pn = d.getVar("PN")
@@ -184,12 +203,13 @@ def testimage_main(d):
     machine = d.getVar("MACHINE")
 
     # Get rootfs
-    fstypes = [fs for fs in d.getVar('IMAGE_FSTYPES').split(' ')
-                  if fs in supported_fstypes]
-    if not fstypes:
-        bb.fatal('Unsupported image type built. Add a comptible image to '
-                 'IMAGE_FSTYPES. Supported types: %s' %
-                 ', '.join(supported_fstypes))
+    fstypes = d.getVar('IMAGE_FSTYPES').split()
+    if d.getVar("TEST_TARGET") == "qemu":
+        fstypes = [fs for fs in fstypes if fs in supported_fstypes]
+        if not fstypes:
+            bb.fatal('Unsupported image type built. Add a comptible image to '
+                     'IMAGE_FSTYPES. Supported types: %s' %
+                     ', '.join(supported_fstypes))
     rootfs = '%s.%s' % (image_name, fstypes[0])
 
     # Get tmpdir (not really used, just for compatibility)
@@ -213,13 +233,11 @@ def testimage_main(d):
     boottime = int(d.getVar("TEST_QEMUBOOT_TIMEOUT"))
 
     # Get use_kvm
-    qemu_use_kvm = d.getVar("QEMU_USE_KVM")
-    if qemu_use_kvm and \
-       (qemu_use_kvm == 'True' and 'x86' in machine or \
-        d.getVar('MACHINE') in qemu_use_kvm.split()):
-        kvm = True
-    else:
-        kvm = False
+    kvm = oe.types.qemu_use_kvm(d.getVar('QEMU_USE_KVM'), d.getVar('TARGET_ARCH'))
+
+    slirp = False
+    if d.getVar("QEMU_USE_SLIRP"):
+        slirp = True
 
     # TODO: We use the current implementatin of qemu runner because of
     # time constrains, qemu runner really needs a refactor too.
@@ -232,6 +250,8 @@ def testimage_main(d):
                       'boottime'    : boottime,
                       'bootlog'     : bootlog,
                       'kvm'         : kvm,
+                      'slirp'       : slirp,
+                      'dump_dir'    : d.getVar("TESTIMAGE_DUMP_DIR"),
                     }
 
     # TODO: Currently BBPATH is needed for custom loading of targets.
@@ -258,24 +278,25 @@ def testimage_main(d):
     # Load tests before starting the target
     test_paths = get_runtime_paths(d)
     test_modules = d.getVar('TEST_SUITES').split()
-    tc.loadTests(test_paths, modules=test_modules)
-
-    if not getSuiteCases(tc.suites):
+    if not test_modules:
         bb.fatal('Empty test suite, please verify TEST_SUITES variable')
 
-    package_extraction(d, tc.suites)
+    tc.loadTests(test_paths, modules=test_modules)
 
-    bootparams = None
-    if d.getVar('VIRTUAL-RUNTIME_init_manager', '') == 'systemd':
-        # Add systemd.log_level=debug to enable systemd debug logging
-        bootparams = 'systemd.log_target=console'
+    suitecases = getSuiteCases(tc.suites)
+    if not suitecases:
+        bb.fatal('Empty test suite, please verify TEST_SUITES variable')
+    else:
+        bb.debug(2, 'test suites:\n\t%s' % '\n\t'.join([str(c) for c in suitecases]))
+
+    package_extraction(d, tc.suites)
 
     results = None
     orig_sigterm_handler = signal.signal(signal.SIGTERM, sigterm_exception)
     try:
         # We need to check if runqemu ends unexpectedly
         # or if the worker send us a SIGTERM
-        tc.target.start(extra_bootparams=bootparams)
+        tc.target.start(params=d.getVar("TEST_QEMUPARAMS"), runqemuparams=d.getVar("TEST_RUNQEMUPARAMS"))
         results = tc.runTests()
     except (RuntimeError, BlockingIOError) as err:
         if isinstance(err, RuntimeError):
@@ -292,7 +313,11 @@ def testimage_main(d):
     # Show results (if we have them)
     if not results:
         bb.fatal('%s - FAILED - tests were interrupted during execution' % pn, forcelog=True)
-    results.logDetails()
+    configuration = get_testimage_configuration(d, 'runtime', machine)
+    results.logDetails(get_testimage_json_result_dir(d),
+                       configuration,
+                       get_testimage_result_id(configuration),
+                       dump_streams=d.getVar('TESTREPORT_FULLLOGS'))
     results.logSummary(pn)
     if not results.wasSuccessful():
         bb.fatal('%s - FAILED - check the task log and the ssh log' % pn, forcelog=True)
@@ -329,6 +354,7 @@ def create_index(arg):
     return None
 
 def create_rpm_index(d):
+    import glob
     # Index RPMs
     rpm_createrepo = bb.utils.which(os.getenv('PATH'), "createrepo_c")
     index_cmds = []
@@ -345,9 +371,13 @@ def create_rpm_index(d):
         lf = bb.utils.lockfile(lockfilename, False)
         oe.path.copyhardlinktree(rpm_dir, idx_path)
         # Full indexes overload a 256MB image so reduce the number of rpms
-        # in the feed. Filter to r* since we use the run-postinst packages and
-        # this leaves some allarch and machine arch packages too.
-        bb.utils.remove(idx_path + "*/[a-qs-z]*.rpm")
+        # in the feed by filtering to specific packages needed by the tests.
+        package_list = glob.glob(idx_path + "*/*.rpm")
+
+        for pkg in package_list:
+            if not os.path.basename(pkg).startswith(("rpm", "run-postinsts", "busybox", "bash", "update-alternatives", "libc6", "curl", "musl")):
+                bb.utils.remove(pkg)
+
         bb.utils.unlockfile(lf)
         cmd = '%s --update -q %s' % (rpm_createrepo, idx_path)
 
@@ -369,5 +399,10 @@ def package_extraction(d, test_suites):
         extract_packages(d, packages)
 
 testimage_main[vardepsexclude] += "BB_ORIGENV DATETIME"
+
+python () {
+    if oe.types.boolean(d.getVar("TESTIMAGE_AUTO") or "False"):
+        bb.build.addtask("testimage", "do_build", "do_image_complete", d)
+}
 
 inherit testsdk

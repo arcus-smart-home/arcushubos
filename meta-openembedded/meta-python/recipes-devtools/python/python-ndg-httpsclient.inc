@@ -3,12 +3,19 @@ HOMEPAGE = "http://python-requests.org"
 LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://MANIFEST.in;md5=ce22c0cd986d2de3f7073cd6b5523ae0"
 
-SRC_URI[md5sum] = "59a2f0a5b3b60e6c520a9cc7be9aff87"
-SRC_URI[sha256sum] = "7bfd8c5cfcbc241a93ca6a4e45f952650f5c7ecf7c49b1dbcf5f4d390240be0b"
+SRC_URI[md5sum] = "b0fc8ea38f87d2c1ab1ed79a95c078f9"
+SRC_URI[sha256sum] = "d72faed0376ab039736c2ba12e30695e2788c4aa569c9c3e3d72131de2592210"
 
 PYPI_PACKAGE = "ndg_httpsclient"
 
 DEPENDS += " \
+    ${PYTHON_PN}-pyopenssl \
+    ${PYTHON_PN}-pyasn1 \
+"
+
+RDEPENDS_${PN} += " \
+    ${PYTHON_PN}-datetime \
+    ${PYTHON_PN}-logging \
     ${PYTHON_PN}-pyopenssl \
     ${PYTHON_PN}-pyasn1 \
 "

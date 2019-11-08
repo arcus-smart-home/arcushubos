@@ -9,18 +9,8 @@ BitBake build tools.
 
 # Copyright (C) 2003, 2004  Chris Larson
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os, sys
 import warnings
@@ -141,6 +131,9 @@ def print_ui_queue():
     logger = logging.getLogger("BitBake")
     if not _uiready:
         from bb.msg import BBLogFormatter
+        # Flush any existing buffered content
+        sys.stdout.flush()
+        sys.stderr.flush()
         stdout = logging.StreamHandler(sys.stdout)
         stderr = logging.StreamHandler(sys.stderr)
         formatter = BBLogFormatter("%(levelname)s: %(message)s")
@@ -395,7 +388,7 @@ class RecipeEvent(Event):
         Event.__init__(self)
 
 class RecipePreFinalise(RecipeEvent):
-    """ Recipe Parsing Complete but not yet finialised"""
+    """ Recipe Parsing Complete but not yet finalised"""
 
 class RecipeTaskPreProcess(RecipeEvent):
     """
@@ -449,12 +442,6 @@ class BuildBase(Event):
     def setName(self, name):
         self._name = name
 
-    def getCfg(self):
-        return self.data
-
-    def setCfg(self, cfg):
-        self.data = cfg
-
     def getFailures(self):
         """
         Return the number of failed packages
@@ -463,9 +450,6 @@ class BuildBase(Event):
 
     pkgs = property(getPkgs, setPkgs, None, "pkgs property")
     name = property(getName, setName, None, "name property")
-    cfg = property(getCfg, setCfg, None, "cfg property")
-
-
 
 class BuildInit(BuildBase):
     """buildFile or buildTargets was invoked"""

@@ -1,44 +1,3 @@
-# For compatibility
-def base_path_join(a, *p):
-    return oe.path.join(a, *p)
-
-def base_path_relative(src, dest):
-    return oe.path.relative(src, dest)
-
-def base_path_out(path, d):
-    return oe.path.format_display(path, d)
-
-def base_read_file(filename):
-    return oe.utils.read_file(filename)
-
-def base_ifelse(condition, iftrue = True, iffalse = False):
-    return oe.utils.ifelse(condition, iftrue, iffalse)
-
-def base_conditional(variable, checkvalue, truevalue, falsevalue, d):
-    return oe.utils.conditional(variable, checkvalue, truevalue, falsevalue, d)
-
-def base_less_or_equal(variable, checkvalue, truevalue, falsevalue, d):
-    return oe.utils.less_or_equal(variable, checkvalue, truevalue, falsevalue, d)
-
-def base_version_less_or_equal(variable, checkvalue, truevalue, falsevalue, d):
-    return oe.utils.version_less_or_equal(variable, checkvalue, truevalue, falsevalue, d)
-
-def base_contains(variable, checkvalues, truevalue, falsevalue, d):
-    bb.note('base_contains is deprecated, please use bb.utils.contains instead.')
-    return bb.utils.contains(variable, checkvalues, truevalue, falsevalue, d)
-
-def base_both_contain(variable1, variable2, checkvalue, d):
-    return oe.utils.both_contain(variable1, variable2, checkvalue, d)
-
-def base_prune_suffix(var, suffixes, d):
-    return oe.utils.prune_suffix(var, suffixes, d)
-
-def oe_filter(f, str, d):
-    return oe.utils.str_filter(f, str, d)
-
-def oe_filter_out(f, str, d):
-    return oe.utils.str_filter_out(f, str, d)
-
 def machine_paths(d):
     """List any existing machine specific filespath directories"""
     machine = d.getVar("MACHINE")
@@ -305,7 +264,7 @@ create_wrapper () {
 realpath=\`readlink -fn \$0\`
 realdir=\`dirname \$realpath\`
 export $exportstring
-exec -a \`dirname \$realpath\`/$cmdname \`dirname \$realpath\`/$cmdname.real "\$@"
+exec -a "\$0" \$realdir/$cmdname.real "\$@"
 END
 	chmod +x $cmd
 }
@@ -364,26 +323,16 @@ def multilib_pkg_extend(d, pkg):
     return pkgs
 
 def get_multilib_datastore(variant, d):
-    localdata = bb.data.createCopy(d)
-    overrides = localdata.getVar("OVERRIDES", False) + ":virtclass-multilib-" + variant
-    localdata.setVar("OVERRIDES", overrides)
-    localdata.setVar("MLPREFIX", variant + "-")
-    return localdata
-get_multilib_datastore[vardepsexclude] = "OVERRIDES"
+    return oe.utils.get_multilib_datastore(variant, d)
 
 def all_multilib_tune_values(d, var, unique = True, need_split = True, delim = ' '):
     """Return a string of all ${var} in all multilib tune configuration"""
     values = []
-    value = d.getVar(var) or ""
-    if value != "":
-        if need_split:
-            for item in value.split(delim):
-                values.append(item)
-        else:
-            values.append(value)
-    variants = d.getVar("MULTILIB_VARIANTS") or ""
-    for item in variants.split():
+    variants = (d.getVar("MULTILIB_VARIANTS") or "").split() + ['']
+    for item in variants:
         localdata = get_multilib_datastore(item, d)
+        # We need WORKDIR to be consistent with the original datastore
+        localdata.setVar("WORKDIR", d.getVar("WORKDIR"))
         value = localdata.getVar(var) or ""
         if value != "":
             if need_split:
@@ -411,23 +360,10 @@ def all_multilib_tune_list(vars, d):
     values = {}
     for v in vars:
         values[v] = []
-
-    localdata = bb.data.createCopy(d)
-    overrides = localdata.getVar("OVERRIDES", False).split(":")
-    newoverrides = []
-    for o in overrides:
-        if not o.startswith("virtclass-multilib-"):
-            newoverrides.append(o)
-    localdata.setVar("OVERRIDES", ":".join(newoverrides))
-    localdata.setVar("MLPREFIX", "")
-    origdefault = localdata.getVar("DEFAULTTUNE_MULTILIB_ORIGINAL")
-    if origdefault:
-        localdata.setVar("DEFAULTTUNE", origdefault)
     values['ml'] = ['']
-    for v in vars:
-        values[v].append(localdata.getVar(v))
-    variants = d.getVar("MULTILIB_VARIANTS") or ""
-    for item in variants.split():
+
+    variants = (d.getVar("MULTILIB_VARIANTS") or "").split() + ['']
+    for item in variants:
         localdata = get_multilib_datastore(item, d)
         values[v].append(localdata.getVar(v))
         values['ml'].append(item)

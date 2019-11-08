@@ -5,7 +5,8 @@ SRC_URI = "file://init-install-efi.sh"
 
 PR = "r1"
 
-RDEPENDS_${PN} = "parted e2fsprogs-mke2fs dosfstools util-linux-blkid"
+RDEPENDS_${PN} = "parted e2fsprogs-mke2fs dosfstools util-linux-blkid ${VIRTUAL-RUNTIME_base-utils}"
+RRECOMMENDS_${PN} = "${VIRTUAL-RUNTIME_base-utils-syslog}"
 
 S = "${WORKDIR}"
 

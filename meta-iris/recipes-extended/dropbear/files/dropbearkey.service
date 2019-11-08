@@ -1,0 +1,12 @@
+[Unit]
+Description=SSH Key Generation
+RequiresMountsFor=/var /var/lib
+ConditionPathExists=|!/data/config/dropbear/dropbear_rsa_host_key
+
+[Service]
+Environment="DROPBEAR_RSAKEY_DIR=/data/config/dropbear"
+EnvironmentFile=-/etc/default/dropbear
+Type=oneshot
+ExecStart=@BASE_BINDIR@/mkdir -p ${DROPBEAR_RSAKEY_DIR}
+ExecStart=@SBINDIR@/dropbearkey -t rsa -f ${DROPBEAR_RSAKEY_DIR}/dropbear_rsa_host_key
+RemainAfterExit=yes

@@ -1,18 +1,5 @@
-# ex:ts=4:sw=4:sts=4:et
-# -*- tab-width: 4; c-basic-offset: 4; indent-tabs-mode: nil -*-
-
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# SPDX-License-Identifier: GPL-2.0-only
 #
 # DESCRIPTION
 # This implements the 'isoimage-isohybrid' source plugin class for 'wic'
@@ -47,7 +34,7 @@ class IsoImagePlugin(SourcePlugin):
 
     Example kickstart file:
     part /boot --source isoimage-isohybrid --sourceparams="loader=grub-efi, \\
-    image_name= IsoImage" --ondisk cd --label LIVECD --fstype=ext2
+    image_name= IsoImage" --ondisk cd --label LIVECD
     bootloader  --timeout=10  --append=" "
 
     In --sourceparams "loader" specifies the bootloader used for booting in EFI
@@ -191,10 +178,9 @@ class IsoImagePlugin(SourcePlugin):
             else:
                 raise WicError("Couldn't find or build initrd, exiting.")
 
-            exec_cmd("cd %s && find . | cpio -o -H newc -R +0:+0 >./initrd.cpio " \
-                    % initrd_dir, as_shell=True)
-            exec_cmd("gzip -f -9 -c %s/initrd.cpio > %s" \
-                    % (cr_workdir, initrd), as_shell=True)
+            exec_cmd("cd %s && find . | cpio -o -H newc -R root:root >%s/initrd.cpio " \
+                     % (initrd_dir, cr_workdir), as_shell=True)
+            exec_cmd("gzip -f -9 %s/initrd.cpio" % cr_workdir, as_shell=True)
             shutil.rmtree(initrd_dir)
 
         return initrd
@@ -253,33 +239,8 @@ class IsoImagePlugin(SourcePlugin):
             raise WicError("Couldn't find IMAGE_ROOTFS, exiting.")
 
         part.rootfs_dir = rootfs_dir
-
-        # Prepare rootfs.img
         deploy_dir = get_bitbake_var("DEPLOY_DIR_IMAGE")
         img_iso_dir = get_bitbake_var("ISODIR")
-        rootfs_img = "%s/rootfs.img" % img_iso_dir
-        if not os.path.isfile(rootfs_img):
-            # check if rootfs.img is in deploydir
-            deploy_dir = get_bitbake_var("DEPLOY_DIR_IMAGE")
-            image_name = get_bitbake_var("IMAGE_LINK_NAME")
-            rootfs_img = "%s/%s.%s" \
-                % (deploy_dir, image_name, part.fstype)
-
-        if not os.path.isfile(rootfs_img):
-            # create image file with type specified by --fstype
-            # which contains rootfs
-            du_cmd = "du -bks %s" % rootfs_dir
-            out = exec_cmd(du_cmd)
-            part.size = int(out.split()[0])
-            part.extra_space = 0
-            part.overhead_factor = 1.2
-            part.prepare_rootfs(cr_workdir, oe_builddir, rootfs_dir, \
-                                native_sysroot)
-            rootfs_img = part.source_file
-
-        install_cmd = "install -m 0644 %s %s/rootfs.img" \
-            % (rootfs_img, isodir)
-        exec_cmd(install_cmd)
 
         # Remove the temporary file created by part.prepare_rootfs()
         if os.path.isfile(part.source_file):
@@ -328,19 +289,21 @@ class IsoImagePlugin(SourcePlugin):
                     raise WicError("Coludn't find target architecture")
 
                 if re.match("x86_64", target_arch):
-                    grub_image = "grub-efi-bootx64.efi"
+                    grub_src_image = "grub-efi-bootx64.efi"
+                    grub_dest_image = "bootx64.efi"
                 elif re.match('i.86', target_arch):
-                    grub_image = "grub-efi-bootia32.efi"
+                    grub_src_image = "grub-efi-bootia32.efi"
+                    grub_dest_image = "bootia32.efi"
                 else:
                     raise WicError("grub-efi is incompatible with target %s" %
                                    target_arch)
 
-                grub_target = os.path.join(target_dir, grub_image)
+                grub_target = os.path.join(target_dir, grub_dest_image)
                 if not os.path.isfile(grub_target):
-                    grub_src = os.path.join(deploy_dir, grub_image)
+                    grub_src = os.path.join(deploy_dir, grub_src_image)
                     if not os.path.exists(grub_src):
                         raise WicError("Grub loader %s is not found in %s. "
-                                       "Please build grub-efi first" % (grub_image, deploy_dir))
+                                       "Please build grub-efi first" % (grub_src_image, deploy_dir))
                     shutil.copy(grub_src, grub_target)
 
                 if not os.path.isfile(os.path.join(target_dir, "boot.cfg")):

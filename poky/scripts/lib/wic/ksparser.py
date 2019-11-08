@@ -1,21 +1,8 @@
 #!/usr/bin/env python -tt
-# ex:ts=4:sw=4:sts=4:et
-# -*- tab-width: 4; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #
 # Copyright (c) 2016 Intel, Inc.
 #
-# This program is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by the Free
-# Software Foundation; version 2 of the License
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-# or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-# for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc., 59
-# Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+# SPDX-License-Identifier: GPL-2.0-only
 #
 # DESCRIPTION
 # This module provides parser for kickstart format
@@ -28,13 +15,29 @@
 import os
 import shlex
 import logging
+import re
 
 from argparse import ArgumentParser, ArgumentError, ArgumentTypeError
 
 from wic.engine import find_canned
 from wic.partition import Partition
+from wic.misc import get_bitbake_var
 
 logger = logging.getLogger('wic')
+
+__expand_var_regexp__ = re.compile(r"\${[^{}@\n\t :]+}")
+
+def expand_line(line):
+    while True:
+        m = __expand_var_regexp__.search(line)
+        if not m:
+            return line
+        key = m.group()[2:-1]
+        val = get_bitbake_var(key)
+        if val is None:
+            logger.warning("cannot expand variable %s" % key)
+            return line
+        line = line[:m.start()] + val + line[m.end():]
 
 class KickStartError(Exception):
     """Custom exception."""
@@ -141,6 +144,7 @@ class KickStart():
                                    'squashfs', 'vfat', 'msdos', 'swap'))
         part.add_argument('--mkfs-extraopts', default='')
         part.add_argument('--label')
+        part.add_argument('--use-label', action='store_true')
         part.add_argument('--no-table', action='store_true')
         part.add_argument('--ondisk', '--ondrive', dest='disk', default='sda')
         part.add_argument("--overhead-factor", type=overheadtype)
@@ -161,6 +165,7 @@ class KickStart():
         part.add_argument('--system-id', type=systemidtype)
         part.add_argument('--use-uuid', action='store_true')
         part.add_argument('--uuid')
+        part.add_argument('--fsuuid')
 
         bootloader = subparsers.add_parser('bootloader')
         bootloader.add_argument('--append')
@@ -188,6 +193,7 @@ class KickStart():
                 line = line.strip()
                 lineno += 1
                 if line and line[0] != '#':
+                    line = expand_line(line)
                     try:
                         line_args = shlex.split(line)
                         parsed = parser.parse_args(line_args)
@@ -195,6 +201,20 @@ class KickStart():
                         raise KickStartError('%s:%d: %s' % \
                                              (confpath, lineno, err))
                     if line.startswith('part'):
+                        # SquashFS does not support filesystem UUID
+                        if parsed.fstype == 'squashfs':
+                            if parsed.fsuuid:
+                                err = "%s:%d: SquashFS does not support UUID" \
+                                       % (confpath, lineno)
+                                raise KickStartError(err)
+                            if parsed.label:
+                                err = "%s:%d: SquashFS does not support LABEL" \
+                                       % (confpath, lineno)
+                                raise KickStartError(err)
+                        if parsed.use_label and not parsed.label:
+                            err = "%s:%d: Must set the label with --label" \
+                                  % (confpath, lineno)
+                            raise KickStartError(err)
                         # using ArgumentParser one cannot easily tell if option
                         # was passed as argument, if said option has a default
                         # value; --overhead-factor/--extra-space cannot be used

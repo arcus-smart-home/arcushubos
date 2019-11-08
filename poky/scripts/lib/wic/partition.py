@@ -1,21 +1,7 @@
-# ex:ts=4:sw=4:sts=4:et
-# -*- tab-width: 4; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #
 # Copyright (c) 2013-2016 Intel Corporation.
-# All rights reserved.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# SPDX-License-Identifier: GPL-2.0-only
 #
 # DESCRIPTION
 # This module provides the OpenEmbedded partition object definitions.
@@ -26,6 +12,7 @@
 
 import logging
 import os
+import uuid
 
 from wic import WicError
 from wic.misc import exec_cmd, exec_native_cmd, get_bitbake_var
@@ -46,6 +33,7 @@ class Partition():
         self.fsopts = args.fsopts
         self.fstype = args.fstype
         self.label = args.label
+        self.use_label = args.use_label
         self.mkfs_extraopts = args.mkfs_extraopts
         self.mountpoint = args.mountpoint
         self.no_table = args.no_table
@@ -61,10 +49,10 @@ class Partition():
         self.system_id = args.system_id
         self.use_uuid = args.use_uuid
         self.uuid = args.uuid
+        self.fsuuid = args.fsuuid
 
         self.lineno = lineno
         self.source_file = ""
-        self.sourceparams_dict = {}
 
     def get_extra_block_count(self, current_blocks):
         """
@@ -171,7 +159,7 @@ class Partition():
             # Split sourceparams string of the form key1=val1[,key2=val2,...]
             # into a dict.  Also accepts valueless keys i.e. without =
             splitted = self.sourceparams.split(',')
-            srcparams_dict = dict(par.split('=') for par in splitted if par)
+            srcparams_dict = dict(par.split('=', 1) for par in splitted if par)
 
         plugin = PluginMgr.get_plugins('source')[self.source]
         plugin.do_configure_partition(self, srcparams_dict, creator,
@@ -181,6 +169,9 @@ class Partition():
                                   cr_workdir, oe_builddir, bootimg_dir,
                                   kernel_dir, native_sysroot)
         plugin.do_prepare_partition(self, srcparams_dict, creator,
+                                    cr_workdir, oe_builddir, bootimg_dir,
+                                    kernel_dir, rootfs_dir, native_sysroot)
+        plugin.do_post_partition(self, srcparams_dict, creator,
                                     cr_workdir, oe_builddir, bootimg_dir,
                                     kernel_dir, rootfs_dir, native_sysroot)
 
@@ -197,16 +188,16 @@ class Partition():
                            (self.mountpoint, self.size, self.fixed_size))
 
     def prepare_rootfs(self, cr_workdir, oe_builddir, rootfs_dir,
-                       native_sysroot):
+                       native_sysroot, real_rootfs = True):
         """
         Prepare content for a rootfs partition i.e. create a partition
         and fill it from a /rootfs dir.
 
-        Currently handles ext2/3/4, btrfs and vfat.
+        Currently handles ext2/3/4, btrfs, vfat and squashfs.
         """
         p_prefix = os.environ.get("PSEUDO_PREFIX", "%s/usr" % native_sysroot)
         p_localstatedir = os.environ.get("PSEUDO_LOCALSTATEDIR",
-                                         "%s/../pseudo" %  get_bitbake_var("IMAGE_ROOTFS"))
+                                         "%s/../pseudo" %  rootfs_dir)
         p_passwd = os.environ.get("PSEUDO_PASSWD", rootfs_dir)
         p_nosymlinkexp = os.environ.get("PSEUDO_NOSYMLINKEXP", "1")
         pseudo = "export PSEUDO_PREFIX=%s;" % p_prefix
@@ -221,7 +212,7 @@ class Partition():
             os.remove(rootfs)
 
         # Get rootfs size from bitbake variable if it's not set in .ks file
-        if not self.size:
+        if not self.size and real_rootfs:
             # Bitbake variable ROOTFS_SIZE is calculated in
             # Image._get_rootfs_size method from meta/lib/oe/image.py
             # using IMAGE_ROOTFS_SIZE, IMAGE_ROOTFS_ALIGNMENT,
@@ -264,8 +255,8 @@ class Partition():
         if self.label:
             label_str = "-L %s" % self.label
 
-        mkfs_cmd = "mkfs.%s %s %s %s -d %s" % \
-            (self.fstype, extraopts, rootfs, label_str, rootfs_dir)
+        mkfs_cmd = "mkfs.%s %s %s %s -U %s -d %s" % \
+            (self.fstype, extraopts, rootfs, label_str, self.fsuuid, rootfs_dir)
         exec_native_cmd(mkfs_cmd, native_sysroot, pseudo=pseudo)
 
         mkfs_cmd = "fsck.%s -pvfD %s" % (self.fstype, rootfs)
@@ -275,8 +266,6 @@ class Partition():
                              native_sysroot, pseudo):
         """
         Prepare content for a btrfs rootfs partition.
-
-        Currently handles ext2/3/4 and btrfs.
         """
         du_cmd = "du -ks %s" % rootfs_dir
         out = exec_cmd(du_cmd)
@@ -291,9 +280,9 @@ class Partition():
         if self.label:
             label_str = "-L %s" % self.label
 
-        mkfs_cmd = "mkfs.%s -b %d -r %s %s %s %s" % \
+        mkfs_cmd = "mkfs.%s -b %d -r %s %s %s -U %s %s" % \
             (self.fstype, rootfs_size * 1024, rootfs_dir, label_str,
-             self.mkfs_extraopts, rootfs)
+             self.mkfs_extraopts, self.fsuuid, rootfs)
         exec_native_cmd(mkfs_cmd, native_sysroot, pseudo=pseudo)
 
     def prepare_rootfs_msdos(self, rootfs, oe_builddir, rootfs_dir,
@@ -317,8 +306,9 @@ class Partition():
 
         extraopts = self.mkfs_extraopts or '-S 512'
 
-        dosfs_cmd = "mkdosfs %s %s %s -C %s %d" % \
-                    (label_str, size_str, extraopts, rootfs, rootfs_size)
+        dosfs_cmd = "mkdosfs %s -i %s %s %s -C %s %d" % \
+                    (label_str, self.fsuuid, size_str, extraopts, rootfs,
+                     max(8250, rootfs_size))
         exec_native_cmd(dosfs_cmd, native_sysroot)
 
         mcopy_cmd = "mcopy -i %s -s %s/* ::/" % (rootfs, rootfs_dir)
@@ -354,8 +344,8 @@ class Partition():
         if self.label:
             label_str = "-L %s" % self.label
 
-        mkfs_cmd = "mkfs.%s -F %s %s %s" % \
-            (self.fstype, extraopts, label_str, rootfs)
+        mkfs_cmd = "mkfs.%s -F %s %s -U %s %s" % \
+            (self.fstype, extraopts, label_str, self.fsuuid, rootfs)
         exec_native_cmd(mkfs_cmd, native_sysroot)
 
     def prepare_empty_partition_btrfs(self, rootfs, oe_builddir,
@@ -371,8 +361,8 @@ class Partition():
         if self.label:
             label_str = "-L %s" % self.label
 
-        mkfs_cmd = "mkfs.%s -b %d %s %s %s" % \
-                   (self.fstype, self.size * 1024, label_str,
+        mkfs_cmd = "mkfs.%s -b %d %s -U %s %s %s" % \
+                   (self.fstype, self.size * 1024, label_str, self.fsuuid,
                     self.mkfs_extraopts, rootfs)
         exec_native_cmd(mkfs_cmd, native_sysroot)
 
@@ -393,8 +383,9 @@ class Partition():
 
         extraopts = self.mkfs_extraopts or '-S 512'
 
-        dosfs_cmd = "mkdosfs %s %s %s -C %s %d" % \
-                    (label_str, extraopts, size_str, rootfs, blocks)
+        dosfs_cmd = "mkdosfs %s -i %s %s %s -C %s %d" % \
+                    (label_str, self.fsuuid, extraopts, size_str, rootfs,
+                     blocks)
 
         exec_native_cmd(dosfs_cmd, native_sysroot)
 
@@ -412,9 +403,9 @@ class Partition():
         with open(path, 'w') as sparse:
             os.ftruncate(sparse.fileno(), self.size * 1024)
 
-        import uuid
         label_str = ""
         if self.label:
             label_str = "-L %s" % self.label
-        mkswap_cmd = "mkswap %s -U %s %s" % (label_str, str(uuid.uuid1()), path)
+
+        mkswap_cmd = "mkswap %s -U %s %s" % (label_str, self.fsuuid, path)
         exec_native_cmd(mkswap_cmd, native_sysroot)

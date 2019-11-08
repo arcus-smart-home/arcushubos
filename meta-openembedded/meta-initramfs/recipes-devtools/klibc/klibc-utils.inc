@@ -1,16 +1,16 @@
 do_install() {
     install -d ${D}${base_bindir}
     install -d ${D}${base_sbindir}
-    # debian packages kinit + kinit.shared but only sh.shared
     if [ "${KLIBC_UTILS_VARIANT}" = "shared" ]; then
-        install -m 755 usr/kinit/kinit ${D}${base_bindir}/kinit
-        install -m 755 usr/kinit/kinit.shared ${D}${base_bindir}/kinit.shared
-        install -m 755 usr/dash/sh.shared ${D}${base_bindir}/sh.shared
+        install -m 755 usr/kinit/shared/kinit ${D}${base_bindir}/kinit.shared
+        install -m 755 usr/dash/shared/sh ${D}${base_bindir}/sh.shared
     else
-        install -m 755 usr/dash/sh ${D}${base_bindir}/sh
-        install -m 755 usr/kinit/kinit ${D}${base_bindir}/kinit
+        install -m 755 usr/dash/static/sh ${D}${base_bindir}/sh
+        install -m 755 usr/kinit/static/kinit ${D}${base_bindir}/kinit
+        install -m 755 usr/gzip/gzip ${D}${base_bindir}
+        ln -s gzip ${D}${base_bindir}/gunzip
+        ln -s gzip ${D}${base_bindir}/zcat
     fi
-    install -m 755 usr/gzip/gzip ${D}${base_bindir}
     install -m 755 usr/kinit/fstype/${KLIBC_UTILS_VARIANT}/fstype ${D}${base_bindir}
     install -m 755 usr/kinit/ipconfig/${KLIBC_UTILS_VARIANT}/ipconfig ${D}${base_bindir}
     install -m 755 usr/kinit/nfsmount/${KLIBC_UTILS_VARIANT}/nfsmount ${D}${base_bindir}
@@ -44,11 +44,9 @@ do_install() {
     install -m 755 usr/utils/${KLIBC_UTILS_VARIANT}/true ${D}${base_bindir}
     install -m 755 usr/utils/${KLIBC_UTILS_VARIANT}/umount ${D}${base_bindir}
     install -m 755 usr/utils/${KLIBC_UTILS_VARIANT}/uname ${D}${base_bindir}
-    ln -s gzip ${D}${base_bindir}/gunzip
-    ln -s gzip ${D}${base_bindir}/zcat
 }
 
-EXTRA_KLIBC_DEPS = "${@base_conditional('KLIBC_UTILS_VARIANT', 'shared', '${THIS_LIBKLIBC}', '', d)}"
+EXTRA_KLIBC_DEPS = "${@oe.utils.conditional('KLIBC_UTILS_VARIANT', 'shared', '${THIS_LIBKLIBC}', '', d)}"
 
 PACKAGES_DYNAMIC += "^${KLIBC_UTILS_PKGNAME}-.*"
 

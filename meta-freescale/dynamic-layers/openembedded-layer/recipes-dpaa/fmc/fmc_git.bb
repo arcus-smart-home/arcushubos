@@ -7,7 +7,7 @@ PR = "r2"
 DEPENDS = "libxml2 fmlib tclap"
 
 SRC_URI = "git://source.codeaurora.org/external/qoriq/qoriq-components/fmc;nobranch=1"
-SRCREV = "8c9f127138dc803bf58bef75e9fc092dc60f9c53"
+SRCREV = "c7576ab7fb6fb09b68ebc40531e5452fc89e5cd5"
 
 S = "${WORKDIR}/git"
 
@@ -22,6 +22,13 @@ EXTRA_OEMAKE_PLATFORM ?= ""
 EXTRA_OEMAKE_PLATFORM_ls1043a = "ls1043"
 EXTRA_OEMAKE_PLATFORM_ls1046a = "ls1046"
 EXTRA_OEMAKE_PLATFORM_ls1088a = "ls1088"
+EXTRA_OEMAKE_PLATFORM_p1020 = "p4080ds"
+EXTRA_OEMAKE_PLATFORM_p2020 = "p4080ds"
+EXTRA_OEMAKE_PLATFORM_p2041 = "p4080ds"
+EXTRA_OEMAKE_PLATFORM_p3041 = "p4080ds"
+EXTRA_OEMAKE_PLATFORM_p4080 = "p4080ds"
+EXTRA_OEMAKE_PLATFORM_p5040 = "p4080ds"
+
 
 do_compile () {
     oe_runmake MACHINE=${EXTRA_OEMAKE_PLATFORM} -C source
@@ -45,3 +52,4 @@ PARALLEL_MAKE = ""
 
 PACKAGE_ARCH = "${MACHINE_SOCARCH}"
 
+COMPATIBLE_MACHINE = "(qoriq)"

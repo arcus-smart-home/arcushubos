@@ -4,18 +4,8 @@
 #
 # Copyright (C) 2014 Intel Corporation
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 """Devtool plugins module"""
 
 import os
@@ -205,6 +195,7 @@ def setup_git_repo(repodir, version, devbranch, basetag='devtool-base', d=None):
     import oe.patch
     if not os.path.exists(os.path.join(repodir, '.git')):
         bb.process.run('git init', cwd=repodir)
+        bb.process.run('git config --local gc.autodetach 0', cwd=repodir)
         bb.process.run('git add .', cwd=repodir)
         commit_cmd = ['git']
         oe.patch.GitApplyTree.gitCommandUserOptions(commit_cmd, d=d)
@@ -219,6 +210,20 @@ def setup_git_repo(repodir, version, devbranch, basetag='devtool-base', d=None):
             commitmsg = "Initial commit from upstream"
         commit_cmd += ['-m', commitmsg]
         bb.process.run(commit_cmd, cwd=repodir)
+
+    # Ensure singletask.lock (as used by externalsrc.bbclass) is ignored by git
+    excludes = []
+    excludefile = os.path.join(repodir, '.git', 'info', 'exclude')
+    try:
+        with open(excludefile, 'r') as f:
+            excludes = f.readlines()
+    except FileNotFoundError:
+        pass
+    if 'singletask.lock\n' not in excludes:
+        excludes.append('singletask.lock\n')
+    with open(excludefile, 'w') as f:
+        for line in excludes:
+            f.write(line)
 
     bb.process.run('git checkout -b %s' % devbranch, cwd=repodir)
     bb.process.run('git tag -f %s' % basetag, cwd=repodir)
@@ -337,3 +342,33 @@ def update_unlockedsigs(basepath, workspace, fixed_setup, extra=None):
             for pn in newunlocked:
                 f.write('    ' + pn)
             f.write('"')
+
+def check_prerelease_version(ver, operation):
+    if 'pre' in ver or 'rc' in ver:
+        logger.warning('Version "%s" looks like a pre-release version. '
+                       'If that is the case, in order to ensure that the '
+                       'version doesn\'t appear to go backwards when you '
+                       'later upgrade to the final release version, it is '
+                       'recommmended that instead you use '
+                       '<current version>+<pre-release version> e.g. if '
+                       'upgrading from 1.9 to 2.0-rc2 use "1.9+2.0-rc2". '
+                       'If you prefer not to reset and re-try, you can change '
+                       'the version after %s succeeds using "devtool rename" '
+                       'with -V/--version.' % (ver, operation))
+
+def check_git_repo_dirty(repodir):
+    """Check if a git repository is clean or not"""
+    stdout, _ = bb.process.run('git status --porcelain', cwd=repodir)
+    return stdout
+
+def check_git_repo_op(srctree, ignoredirs=None):
+    """Check if a git repository is in the middle of a rebase"""
+    stdout, _ = bb.process.run('git rev-parse --show-toplevel', cwd=srctree)
+    topleveldir = stdout.strip()
+    if ignoredirs and topleveldir in ignoredirs:
+        return
+    gitdir = os.path.join(topleveldir, '.git')
+    if os.path.exists(os.path.join(gitdir, 'rebase-merge')):
+        raise DevtoolError("Source tree %s appears to be in the middle of a rebase - please resolve this first" % srctree)
+    if os.path.exists(os.path.join(gitdir, 'rebase-apply')):
+        raise DevtoolError("Source tree %s appears to be in the middle of 'git am' or 'git apply' - please resolve this first" % srctree)

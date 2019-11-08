@@ -1,14 +1,16 @@
+#
+# SPDX-License-Identifier: MIT
+#
+
 import os
 
 from oeqa.selftest.case import OESelftestTestCase
 from oeqa.utils.commands import bitbake
-from oeqa.core.decorator.oeid import OETestID
 
 class ImageTypeDepTests(OESelftestTestCase):
 
     # Verify that when specifying a IMAGE_TYPEDEP_ of the form "foo.bar" that
     # the conversion type bar gets added as a dep as well
-    @OETestID(1633)
     def test_conversion_typedep_added(self):
 
         self.write_recipeinc('emptytest', """
@@ -29,10 +31,13 @@ inherit image
         # like CONVERSION_DEPENDS_bz2="somedep"
         result = bitbake('-e emptytest')
 
+        dep = None
         for line in result.output.split('\n'):
             if line.startswith('CONVERSION_DEPENDS_bz2'):
                 dep = line.split('=')[1].strip('"')
                 break
+
+        self.assertIsNotNone(dep, "CONVERSION_DEPENDS_bz2 dependency not found in bitbake -e output")
 
         # Now get the dependency task list and check for the expected task
         # dependency

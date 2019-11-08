@@ -2,18 +2,8 @@
 #
 # Copyright (C) 2014-2017 Intel Corporation
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import sys
 import os
@@ -98,7 +88,7 @@ class RecipeHandler(object):
                             break
             except IOError as ioe:
                 if ioe.errno == 2:
-                    logger.warn('unable to find a pkgdata file for package %s' % pkg)
+                    logger.warning('unable to find a pkgdata file for package %s' % pkg)
                 else:
                     raise
 
@@ -383,8 +373,10 @@ def reformat_git_uri(uri):
         # which causes decodeurl to fail getting the right host and path
         if len(host.split(':')) > 1:
             splitslash = host.split(':')
-            host = splitslash[0]
-            path = '/' + splitslash[1] + path
+            # Port number should not be split from host
+            if not re.match('^[0-9]+$', splitslash[1]):
+                host = splitslash[0]
+                path = '/' + splitslash[1] + path
         #Algorithm:
         # if user is defined, append protocol=ssh or if a protocol is defined, then honor the user-defined protocol
         # if no user & password is defined, check for scheme type and append the protocol with the scheme type
@@ -433,6 +425,9 @@ def create_recipe(args):
         source = 'file://%s' % os.path.abspath(source)
 
     if scriptutils.is_src_url(source):
+        # Warn about github archive URLs
+        if re.match('https?://github.com/[^/]+/[^/]+/archive/.+(\.tar\..*|\.zip)$', source):
+            logger.warning('github archive files are not guaranteed to be stable and may be re-generated over time. If the latter occurs, the checksums will likely change and the recipe will fail at do_fetch. It is recommended that you point to an actual commit or tag in the repository instead (using the repository URL in conjunction with the -S/--srcrev option).')
         # Fetch a URL
         fetchuri = reformat_git_uri(urldefrag(source)[0])
         if args.binary:
@@ -699,7 +694,7 @@ def create_recipe(args):
         if not args.autorev and srcrev == '${AUTOREV}':
             if os.path.exists(os.path.join(srctree, '.git')):
                 (stdout, _) = bb.process.run('git rev-parse HEAD', cwd=srctree)
-            srcrev = stdout.rstrip()
+                srcrev = stdout.rstrip()
         lines_before.append('SRCREV = "%s"' % srcrev)
     if args.provides:
         lines_before.append('PROVIDES = "%s"' % args.provides)

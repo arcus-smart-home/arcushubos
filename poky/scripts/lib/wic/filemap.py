@@ -1,13 +1,8 @@
+#
 # Copyright (c) 2012 Intel, Inc.
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License, version 2,
-# as published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-# General Public License for more details.
 
 """
 This module implements python implements a way to get file block. Two methods
@@ -22,6 +17,7 @@ and returns an instance of the class.
 #   * Too many instance attributes (R0902)
 # pylint: disable=R0902
 
+import errno
 import os
 import struct
 import array
@@ -37,7 +33,15 @@ def get_block_size(file_obj):
     # Get the block size of the host file-system for the image file by calling
     # the FIGETBSZ ioctl (number 2).
     binary_data = fcntl.ioctl(file_obj, 2, struct.pack('I', 0))
-    return struct.unpack('I', binary_data)[0]
+    bsize = struct.unpack('I', binary_data)[0]
+    if not bsize:
+        import os
+        stat = os.fstat(file_obj.fileno())
+        if hasattr(stat, 'st_blksize'):
+            bsize = stat.st_blksize
+        else:
+            raise IOError("Unable to determine block size")
+    return bsize
 
 class ErrorNotSupp(Exception):
     """
@@ -181,9 +185,9 @@ def _lseek(file_obj, offset, whence):
     except OSError as err:
         # The 'lseek' system call returns the ENXIO if there is no data or
         # hole starting from the specified offset.
-        if err.errno == os.errno.ENXIO:
+        if err.errno == errno.ENXIO:
             return -1
-        elif err.errno == os.errno.EINVAL:
+        elif err.errno == errno.EINVAL:
             raise ErrorNotSupp("the kernel or file-system does not support "
                                "\"SEEK_HOLE\" and \"SEEK_DATA\"")
         else:
@@ -386,12 +390,12 @@ class FilemapFiemap(_FilemapBase):
         except IOError as err:
             # Note, the FIEMAP ioctl is supported by the Linux kernel starting
             # from version 2.6.28 (year 2008).
-            if err.errno == os.errno.EOPNOTSUPP:
+            if err.errno == errno.EOPNOTSUPP:
                 errstr = "FilemapFiemap: the FIEMAP ioctl is not supported " \
                          "by the file-system"
                 self._log.debug(errstr)
                 raise ErrorNotSupp(errstr)
-            if err.errno == os.errno.ENOTTY:
+            if err.errno == errno.ENOTTY:
                 errstr = "FilemapFiemap: the FIEMAP ioctl is not supported " \
                          "by the kernel"
                 self._log.debug(errstr)

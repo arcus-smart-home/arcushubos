@@ -1,9 +1,12 @@
+#
+# SPDX-License-Identifier: MIT
+#
+
 import re
 import time
 
 from oeqa.runtime.case import OERuntimeTestCase
 from oeqa.core.decorator.depends import OETestDepends
-from oeqa.core.decorator.oeid import OETestID
 from oeqa.core.decorator.data import skipIfDataVar, skipIfNotDataVar
 from oeqa.runtime.decorator.package import OEHasPackage
 from oeqa.core.decorator.data import skipIfNotFeature
@@ -11,11 +14,11 @@ from oeqa.core.decorator.data import skipIfNotFeature
 class SystemdTest(OERuntimeTestCase):
 
     def systemctl(self, action='', target='', expected=0, verbose=False):
-        command = 'systemctl %s %s' % (action, target)
+        command = 'SYSTEMD_BUS_TIMEOUT=240s systemctl %s %s' % (action, target)
         status, output = self.target.run(command)
         message = '\n'.join([command, output])
         if status != expected and verbose:
-            cmd = 'systemctl status --full %s' % target
+            cmd = 'SYSTEMD_BUS_TIMEOUT=240s systemctl status --full %s' % target
             message += self.target.run(cmd)[1]
         self.assertEqual(status, expected, message)
         return output
@@ -63,7 +66,7 @@ class SystemdBasicTests(SystemdTest):
         """
         endtime = time.time() + (60 * 2)
         while True:
-            status, output = self.target.run('systemctl --state=activating')
+            status, output = self.target.run('SYSTEMD_BUS_TIMEOUT=240s systemctl --state=activating')
             if "0 loaded units listed" in output:
                 return (True, '')
             if time.time() >= endtime:
@@ -78,12 +81,10 @@ class SystemdBasicTests(SystemdTest):
     def test_systemd_basic(self):
         self.systemctl('--version')
 
-    @OETestID(551)
     @OETestDepends(['systemd.SystemdBasicTests.test_systemd_basic'])
     def test_systemd_list(self):
         self.systemctl('list-unit-files')
 
-    @OETestID(550)
     @OETestDepends(['systemd.SystemdBasicTests.test_systemd_basic'])
     def test_systemd_failed(self):
         settled, output = self.settle()
@@ -104,7 +105,6 @@ class SystemdServiceTests(SystemdTest):
     def test_systemd_status(self):
         self.systemctl('status --full', 'avahi-daemon.service')
 
-    @OETestID(695)
     @OETestDepends(['systemd.SystemdServiceTests.test_systemd_status'])
     def test_systemd_stop_start(self):
         self.systemctl('stop', 'avahi-daemon.service')
@@ -113,7 +113,6 @@ class SystemdServiceTests(SystemdTest):
         self.systemctl('start','avahi-daemon.service')
         self.systemctl('is-active', 'avahi-daemon.service', verbose=True)
 
-    @OETestID(696)
     @OETestDepends(['systemd.SystemdServiceTests.test_systemd_status'])
     def test_systemd_disable_enable(self):
         self.systemctl('disable', 'avahi-daemon.service')

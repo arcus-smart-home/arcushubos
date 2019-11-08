@@ -7,10 +7,10 @@ can be abused and you should not try to solve every problem with a \
 decorator, just because you can."
 
 LICENSE = "BSD"
-LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=893f896413826096ce5270c700a498fd"
+LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=be2fd2007972bf96c08af3293d728b22"
 
-SRC_URI[md5sum] = "a0f7f4fe00ae2dde93494d90c192cf8c"
-SRC_URI[sha256sum] = "7cb64d38cb8002971710c8899fbdfb859a23a364b7c99dab19d1f719c2ba16b5"
+SRC_URI[md5sum] = "a565a98581c0d110bc247323e89df9b1"
+SRC_URI[sha256sum] = "86156361c50488b84a3f148056ea716ca587df2f0de1d34750d35c21312725de"
 
 inherit pypi
 

@@ -36,8 +36,8 @@ SRC_URI = "file://irisversion.h \
            file://at_parser.h \
            "
 
-# Consider any warnings errors
-CFLAGS += "-Wall -Werror"
+# Consider any warnings errors (well, not ignored results)
+CFLAGS += "-Wall -Werror -Wno-unused-result"
 
 # Make sure we build position independent code
 CFLAGS += "-fPIC"

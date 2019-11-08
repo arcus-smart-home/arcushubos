@@ -9,18 +9,8 @@ Message handling infrastructure for bitbake
 
 # Copyright (C) 2006        Richard Purdie
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import sys
 import copy
@@ -40,6 +30,7 @@ class BBLogFormatter(logging.Formatter):
     VERBOSE = logging.INFO - 1
     NOTE = logging.INFO
     PLAIN = logging.INFO + 1
+    VERBNOTE = logging.INFO + 2
     ERROR = logging.ERROR
     WARNING = logging.WARNING
     CRITICAL = logging.CRITICAL
@@ -51,6 +42,7 @@ class BBLogFormatter(logging.Formatter):
         VERBOSE: 'NOTE',
         NOTE    : 'NOTE',
         PLAIN  : '',
+        VERBNOTE: 'NOTE',
         WARNING : 'WARNING',
         ERROR   : 'ERROR',
         CRITICAL: 'ERROR',
@@ -66,6 +58,7 @@ class BBLogFormatter(logging.Formatter):
         VERBOSE : BASECOLOR,
         NOTE    : BASECOLOR,
         PLAIN   : BASECOLOR,
+        VERBNOTE: BASECOLOR,
         WARNING : YELLOW,
         ERROR   : RED,
         CRITICAL: RED,

@@ -11,9 +11,9 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=8ca43cbc842c2336e835926c2166c28b \
                     file://klogd.c;beginline=2;endline=19;md5=7e87ed0ae6142de079bce738c10c899d \
                    "
 
-inherit update-rc.d systemd
+inherit update-rc.d update-alternatives systemd
 
-SRC_URI = "http://www.infodrom.org/projects/sysklogd/download/sysklogd-${PV}.tar.gz \
+SRC_URI = "git://github.com/troglobit/sysklogd.git;nobranch=1 \
            file://no-strip-install.patch \
            file://0001-Fix-build-with-musl.patch \
            file://0001-fix-problems-that-causes-a-segmentation-fault-under-.patch \
@@ -24,6 +24,7 @@ SRC_URI = "http://www.infodrom.org/projects/sysklogd/download/sysklogd-${PV}.tar
            file://klogd.service \
            file://tmpfiles.sysklogd.conf \
            "
+S = "${WORKDIR}/git"
 
 SRC_URI_append_e500v2 = " file://no-vectorization.patch"
 
@@ -33,7 +34,7 @@ SYSTEMD_AUTO_ENABLE = "enable"
 
 INITSCRIPT_NAME = "syslog"
 CONFFILES_${PN} = "${sysconfdir}/syslog.conf"
-RCONFLICTS_${PN}-syslog = "rsyslog busybox-syslog syslog-ng"
+RCONFLICTS_${PN} = "rsyslog busybox-syslog syslog-ng"
 
 CFLAGS += "-DSYSV -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE"
 
@@ -57,6 +58,11 @@ do_install () {
 }
 
 FILES_${PN} += "${@bb.utils.contains('DISTRO_FEATURES','systemd','${exec_prefix}/lib/tmpfiles.d/sysklogd.conf', '', d)}"
+
+ALTERNATIVE_PRIORITY = "100"
+
+ALTERNATIVE_${PN}-doc = "syslogd.8"
+ALTERNATIVE_LINK_NAME[syslogd.8] = "${mandir}/man8/syslogd.8"
 
 pkg_prerm_${PN} () {
 	if test "x$D" = "x"; then

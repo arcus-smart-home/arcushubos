@@ -23,9 +23,6 @@
 #    COPYLEFT_RECIPE_TYPES = 'target'
 #
 
-# Don't filter the license by default
-COPYLEFT_LICENSE_INCLUDE ?= ''
-COPYLEFT_LICENSE_EXCLUDE ?= ''
 # Create archive for all the recipe types
 COPYLEFT_RECIPE_TYPES ?= 'target native nativesdk cross crosssdk cross-canadian'
 inherit copyleft_filter
@@ -40,13 +37,15 @@ ARCHIVER_MODE[recipe] ?= "0"
 DEPLOY_DIR_SRC ?= "${DEPLOY_DIR}/sources"
 ARCHIVER_TOPDIR ?= "${WORKDIR}/deploy-sources"
 ARCHIVER_OUTDIR = "${ARCHIVER_TOPDIR}/${TARGET_SYS}/${PF}/"
+ARCHIVER_RPMTOPDIR ?= "${WORKDIR}/deploy-sources-rpm"
+ARCHIVER_RPMOUTDIR = "${ARCHIVER_RPMTOPDIR}/${TARGET_SYS}/${PF}/"
 ARCHIVER_WORKDIR = "${WORKDIR}/archiver-work/"
+
 
 do_dumpdata[dirs] = "${ARCHIVER_OUTDIR}"
 do_ar_recipe[dirs] = "${ARCHIVER_OUTDIR}"
 do_ar_original[dirs] = "${ARCHIVER_OUTDIR} ${ARCHIVER_WORKDIR}"
 do_deploy_archives[dirs] = "${WORKDIR}"
-do_deploy_all_archives[dirs] = "${WORKDIR}"
 
 # This is a convenience for the shell script to use it
 
@@ -99,9 +98,12 @@ python () {
 
         # There is a corner case with "gcc-source-${PV}" recipes, they don't have
         # the "do_configure" task, so we need to use "do_preconfigure"
-        if pn.startswith("gcc-source-"):
+        def hasTask(task):
+            return bool(d.getVarFlag(task, "task", False)) and not bool(d.getVarFlag(task, "noexec", False))
+
+        if hasTask("do_preconfigure"):
             d.appendVarFlag('do_ar_configured', 'depends', ' %s:do_preconfigure' % pn)
-        else:
+        elif hasTask("do_configure"):
             d.appendVarFlag('do_ar_configured', 'depends', ' %s:do_configure' % pn)
         d.appendVarFlag('do_deploy_archives', 'depends', ' %s:do_ar_configured' % pn)
 
@@ -114,11 +116,13 @@ python () {
     if ar_recipe == "1":
         d.appendVarFlag('do_deploy_archives', 'depends', ' %s:do_ar_recipe' % pn)
 
-    # Output the srpm package
-    ar_srpm = d.getVarFlag('ARCHIVER_MODE', 'srpm')
-    if ar_srpm == "1":
-        if d.getVar('PACKAGES') != '' and d.getVar('IMAGE_PKGTYPE') == 'rpm':
+    # Output the SRPM package
+    if d.getVarFlag('ARCHIVER_MODE', 'srpm') == "1" and d.getVar('PACKAGES'):
+        if "package_rpm" in d.getVar('PACKAGE_CLASSES'):
             d.appendVarFlag('do_deploy_archives', 'depends', ' %s:do_package_write_rpm' % pn)
+            d.appendVarFlag('do_package_write_rpm', 'dirs', ' ${ARCHIVER_RPMTOPDIR}')
+            d.appendVarFlag('do_package_write_rpm', 'sstate-inputdirs', ' ${ARCHIVER_RPMTOPDIR}')
+            d.appendVarFlag('do_package_write_rpm', 'sstate-outputdirs', ' ${DEPLOY_DIR_SRC}')
             if ar_dumpdata == "1":
                 d.appendVarFlag('do_package_write_rpm', 'depends', ' %s:do_dumpdata' % pn)
             if ar_recipe == "1":
@@ -129,6 +133,8 @@ python () {
                 d.appendVarFlag('do_package_write_rpm', 'depends', ' %s:do_ar_patched' % pn)
             elif ar_src == "configured":
                 d.appendVarFlag('do_package_write_rpm', 'depends', ' %s:do_ar_configured' % pn)
+        else:
+            bb.fatal("ARCHIVER_MODE[srpm] needs package_rpm in PACKAGE_CLASSES")
 }
 
 # Take all the sources for a recipe and puts them in WORKDIR/archiver-work/.
@@ -243,21 +249,26 @@ python do_ar_configured() {
         # do_configure, we archive the already configured ${S} to
         # instead of.
         elif pn != 'libtool-native':
+            def runTask(task):
+                prefuncs = d.getVarFlag(task, 'prefuncs') or ''
+                for func in prefuncs.split():
+                    if func != "sysroot_cleansstate":
+                        bb.build.exec_func(func, d)
+                bb.build.exec_func(task, d)
+                postfuncs = d.getVarFlag(task, 'postfuncs') or ''
+                for func in postfuncs.split():
+                    if func != 'do_qa_configure':
+                        bb.build.exec_func(func, d)
+
             # Change the WORKDIR to make do_configure run in another dir.
             d.setVar('WORKDIR', d.getVar('ARCHIVER_WORKDIR'))
-            if bb.data.inherits_class('kernel-yocto', d):
-                bb.build.exec_func('do_kernel_configme', d)
-            if bb.data.inherits_class('cmake', d):
-                bb.build.exec_func('do_generate_toolchain_file', d)
-            prefuncs = d.getVarFlag('do_configure', 'prefuncs')
-            for func in (prefuncs or '').split():
-                if func != "sysroot_cleansstate":
-                    bb.build.exec_func(func, d)
-            bb.build.exec_func('do_configure', d)
-            postfuncs = d.getVarFlag('do_configure', 'postfuncs')
-            for func in (postfuncs or '').split():
-                if func != "do_qa_configure":
-                    bb.build.exec_func(func, d)
+
+            preceeds = bb.build.preceedtask('do_configure', False, d)
+            for task in preceeds:
+                if task != 'do_patch' and task != 'do_prepare_recipe_sysroot':
+                    runTask(task)
+            runTask('do_configure')
+
         srcdir = d.getVar('S')
         builddir = d.getVar('B')
         if srcdir != builddir:
@@ -266,6 +277,14 @@ python do_ar_configured() {
                     'build.%s.ar_configured' % d.getVar('PF')))
         create_tarball(d, srcdir, 'configured', ar_outdir)
 }
+
+def exclude_useless_paths(tarinfo):
+    if tarinfo.isdir():
+        if tarinfo.name.endswith('/temp') or tarinfo.name.endswith('/patches') or tarinfo.name.endswith('/.pc'):
+            return None
+        elif tarinfo.name == 'temp' or tarinfo.name == 'patches' or tarinfo.name == '.pc':
+            return None
+    return tarinfo
 
 def create_tarball(d, srcdir, suffix, ar_outdir):
     """
@@ -277,6 +296,11 @@ def create_tarball(d, srcdir, suffix, ar_outdir):
     if (d.getVar('SRC_URI') == ""):
         return
 
+    # For the kernel archive, srcdir may just be a link to the
+    # work-shared location. Use os.path.realpath to make sure
+    # that we archive the actual directory and not just the link.
+    srcdir = os.path.realpath(srcdir)
+
     bb.utils.mkdirhier(ar_outdir)
     if suffix:
         filename = '%s-%s.tar.gz' % (d.getVar('PF'), suffix)
@@ -286,7 +310,7 @@ def create_tarball(d, srcdir, suffix, ar_outdir):
 
     bb.note('Creating %s' % tarname)
     tar = tarfile.open(tarname, 'w:gz')
-    tar.add(srcdir, arcname=os.path.basename(srcdir))
+    tar.add(srcdir, arcname=os.path.basename(srcdir), filter=exclude_useless_paths)
     tar.close()
 
 # creating .diff.gz between source.orig and source
@@ -319,6 +343,10 @@ def create_diff_gz(d, src_orig, src, ar_outdir):
     finally:
         os.chdir(cwd)
 
+def is_work_shared(d):
+    pn = d.getVar('PN')
+    return bb.data.inherits_class('kernel', d) or pn.startswith('gcc-source')
+
 # Run do_unpack and do_patch
 python do_unpack_and_patch() {
     if d.getVarFlag('ARCHIVER_MODE', 'src') not in \
@@ -331,7 +359,7 @@ python do_unpack_and_patch() {
     pn = d.getVar('PN')
 
     # The kernel class functions require it to be on work-shared, so we dont change WORKDIR
-    if not (bb.data.inherits_class('kernel-yocto', d) or pn.startswith('gcc-source')):
+    if not is_work_shared(d):
         # Change the WORKDIR to make do_unpack do_patch run in another dir.
         d.setVar('WORKDIR', ar_workdir)
         # Restore the original path to recipe's native sysroot (it's relative to WORKDIR).
@@ -351,7 +379,7 @@ python do_unpack_and_patch() {
         oe.path.copytree(src, src_orig)
 
     # Make sure gcc and kernel sources are patched only once
-    if not (d.getVar('SRC_URI') == "" or (bb.data.inherits_class('kernel-yocto', d) or pn.startswith('gcc-source'))):
+    if not (d.getVar('SRC_URI') == "" or is_work_shared(d)):
         bb.build.exec_func('do_patch', d)
 
     # Create the patches
@@ -454,13 +482,6 @@ addtask do_ar_configured after do_unpack_and_patch
 addtask do_dumpdata
 addtask do_ar_recipe
 addtask do_deploy_archives before do_build
-
-addtask do_deploy_all_archives after do_deploy_archives
-do_deploy_all_archives[recrdeptask] = "do_deploy_archives"
-do_deploy_all_archives[recideptask] = "do_${BB_DEFAULT_TASK}"
-do_deploy_all_archives() {
-        :
-}
 
 python () {
     # Add tasks in the correct order, specifically for linux-yocto to avoid race condition.

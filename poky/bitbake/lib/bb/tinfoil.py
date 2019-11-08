@@ -4,18 +4,8 @@
 # Copyright (C) 2011 Mentor Graphics Corporation
 # Copyright (C) 2006-2012 Richard Purdie
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import logging
 import os
@@ -604,13 +594,16 @@ class Tinfoil:
         recipecache = self.cooker.recipecaches[mc]
         prov = self.find_best_provider(pn)
         fn = prov[3]
-        actual_pn = recipecache.pkg_fn[fn]
-        recipe = TinfoilRecipeInfo(recipecache,
-                                    self.config_data,
-                                    pn=actual_pn,
-                                    fn=fn,
-                                    fns=recipecache.pkg_pn[actual_pn])
-        return recipe
+        if fn:
+            actual_pn = recipecache.pkg_fn[fn]
+            recipe = TinfoilRecipeInfo(recipecache,
+                                        self.config_data,
+                                        pn=actual_pn,
+                                        fn=fn,
+                                        fns=recipecache.pkg_pn[actual_pn])
+            return recipe
+        else:
+            return None
 
     def parse_recipe(self, pn):
         """

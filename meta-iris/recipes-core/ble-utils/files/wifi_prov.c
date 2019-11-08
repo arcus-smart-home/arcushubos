@@ -526,7 +526,7 @@ void updateConfig()
             // Write configuration
             snprintf(data, sizeof(data), "ssid: %s\nsecurity: %s\nkey: %s\n",
                      wifiSSID, wifiAuthType, wifiPasswd);
-            fprintf(f, data);
+            fprintf(f, "%s", data);
             fclose(f);
             syslog(LOG_INFO, "Updated Wifi config file...");
 

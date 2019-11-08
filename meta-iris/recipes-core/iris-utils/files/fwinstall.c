@@ -41,7 +41,7 @@
 #define DEV_ROOTFS2           "/dev/fs2"
 
 // Platform specific defines
-#ifdef beaglebone
+#ifdef beaglebone_yocto
 #define BOOT_DEV              "/dev/mmcblk0p1"
 #define KERNEL_FSTYPE         "ext2"
 #define BOOT_FSTYPE           "vfat"
@@ -129,7 +129,7 @@ static void stopHubAgent(void)
     sleep(10);
 }
 
-#ifndef beaglebone
+#ifndef beaglebone_yocto
 /* Compare file to flash data */
 static int cmpFlashToFile(char *partition, int offset, int bs, char *filename)
 {
@@ -326,7 +326,7 @@ int main(int argc, char** argv)
         fprintf(stdout, "Installing u-boot files...\n");
         pokeWatchdog();
 
-#ifdef beaglebone
+#ifdef beaglebone_yocto
         mkdir(TMP_BOOT_DIR, 0777);
         if (mount(BOOT_DEV, TMP_BOOT_DIR, BOOT_FSTYPE,
                   MS_SYNCHRONOUS, NULL)) {

@@ -19,6 +19,8 @@ SRC_URI[sha256sum] = "66cb355ba4ef47c10ca738bd35999723644386ac853abbeb5132841f5e
 
 S = "${WORKDIR}/XML-SAX-Base-${PV}"
 
-inherit cpan
+inherit cpan ptest-perl
 
-BBCLASSEXTEND = "native"
+RDEPENDS_${PN}-ptest += "perl-module-test perl-module-test-more"
+
+BBCLASSEXTEND = "native nativesdk"

@@ -1,7 +1,7 @@
 inherit allarch
 
 SUMMARY = "Operating system identification"
-DESCRIPTION = "The /etc/os-release file contains operating system identification data."
+DESCRIPTION = "The /usr/lib/os-release file contains operating system identification data."
 LICENSE = "MIT"
 INHIBIT_DEFAULT_DEPS = "1"
 
@@ -30,7 +30,6 @@ def sanitise_version(ver):
     return ret.lower()
 
 python do_compile () {
-    import shutil
     with open(d.expand('${B}/os-release'), 'w') as f:
         for field in d.getVar('OS_RELEASE_FIELDS').split():
             value = d.getVar(field)
@@ -42,6 +41,9 @@ python do_compile () {
 do_compile[vardeps] += "${OS_RELEASE_FIELDS}"
 
 do_install () {
-    install -d ${D}${sysconfdir}
-    install -m 0644 os-release ${D}${sysconfdir}/
+    install -d ${D}${nonarch_libdir} ${D}${sysconfdir}
+    install -m 0644 os-release ${D}${nonarch_libdir}/
+    lnr ${D}${nonarch_libdir}/os-release ${D}${sysconfdir}/os-release
 }
+
+FILES_${PN} += "${nonarch_libdir}/os-release"

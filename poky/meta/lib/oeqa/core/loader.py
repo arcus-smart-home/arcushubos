@@ -1,5 +1,8 @@
+#
 # Copyright (C) 2016 Intel Corporation
-# Released under the MIT license (see COPYING.MIT)
+#
+# SPDX-License-Identifier: MIT
+#
 
 import os
 import re
@@ -24,7 +27,7 @@ from oeqa.core.decorator import decoratorClasses, OETestDecorator, \
 # Generate the function definition because this differ across python versions
 # Python >= 3.4.4 uses tree parameters instead four but for example Python 3.5.3
 # ueses four parameters so isn't incremental.
-_failed_test_args = inspect.getargspec(unittest.loader._make_failed_test).args
+_failed_test_args = inspect.getfullargspec(unittest.loader._make_failed_test).args
 exec("""def _make_failed_test(%s): raise exception""" % ', '.join(_failed_test_args))
 unittest.loader._make_failed_test = _make_failed_test
 
@@ -43,7 +46,9 @@ def _built_modules_dict(modules):
     for module in modules:
         # Assumption: package and module names do not contain upper case
         # characters, whereas class names do
-        m = re.match(r'^([^A-Z]+)(?:\.([A-Z][^.]*)(?:\.([^.]+))?)?$', module)
+        m = re.match(r'^(\w+)(?:\.(\w[^.]*)(?:\.([^.]+))?)?$', module, flags=re.ASCII)
+        if not m:
+            continue
 
         module_name, class_name, test_name = m.groups()
 
@@ -155,7 +160,16 @@ class OETestLoader(unittest.TestLoader):
         class_name = case.__class__.__name__
         test_name = case._testMethodName
 
-        if self.modules:
+        # 'auto' is a reserved key word to run test cases automatically
+        # warn users if their test case belong to a module named 'auto'
+        if module_name_small == "auto":
+            bb.warn("'auto' is a reserved key word for TEST_SUITES. "
+                    "But test case '%s' is detected to belong to auto module. "
+                    "Please condier using a new name for your module." % str(case))
+
+        # check if case belongs to any specified module
+        # if 'auto' is specified, such check is skipped
+        if self.modules and not 'auto' in self.modules:
             module = None
             try:
                 module = self.modules[module_name_small]
@@ -245,7 +259,7 @@ class OETestLoader(unittest.TestLoader):
         for tcName in testCaseNames:
             case = self._getTestCase(testCaseClass, tcName)
             # Filer by case id
-            if not (self.tests and not 'all' in self.tests
+            if not (self.tests and not 'auto' in self.tests
                     and not getCaseID(case) in self.tests):
                 self._handleTestCaseDecorators(case)
 
@@ -309,14 +323,14 @@ class OETestLoader(unittest.TestLoader):
         module_name = module.__name__
 
         # Normal test modules are loaded if no modules were specified,
-        # if module is in the specified module list or if 'all' is in
+        # if module is in the specified module list or if 'auto' is in
         # module list.
         # Underscore modules are loaded only if specified in module list.
         load_module = True if not module_name.startswith('_') \
                               and (not self.modules \
                                    or module_name in self.modules \
                                    or module_name_small in self.modules \
-                                   or 'all' in self.modules) \
+                                   or 'auto' in self.modules) \
                            else False
 
         load_underscore = True if module_name.startswith('_') \

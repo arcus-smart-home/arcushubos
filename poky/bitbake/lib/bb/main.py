@@ -9,18 +9,8 @@
 # Copyright (C) 2005        ROAD GmbH
 # Copyright (C) 2006        Richard Purdie
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import os
 import sys
@@ -292,8 +282,12 @@ class BitBakeConfigParameters(cookerdata.ConfigParameters):
                           help="Writes the event log of the build to a bitbake event json file. "
                                "Use '' (empty string) to assign the name automatically.")
 
-        parser.add_option("", "--runall", action="store", dest="runall",
-                          help="Run the specified task for all build targets and their dependencies.")
+        parser.add_option("", "--runall", action="append", dest="runall",
+                          help="Run the specified task for any recipe in the taskgraph of the specified target (even if it wouldn't otherwise have run).")
+
+        parser.add_option("", "--runonly", action="append", dest="runonly",
+                          help="Run only the specified task within the taskgraph of the specified targets (and any task dependencies those tasks may have).")
+
 
         options, targets = parser.parse_args(argv)
 
@@ -401,9 +395,6 @@ def setup_bitbake(configParams, configuration, extrafeatures=None):
         # In status only mode there are no logs and no UI
         logger.addHandler(handler)
 
-    # Clear away any spurious environment variables while we stoke up the cooker
-    cleanedvars = bb.utils.clean_environment()
-
     if configParams.server_only:
         featureset = []
         ui_module = None
@@ -418,6 +409,10 @@ def setup_bitbake(configParams, configuration, extrafeatures=None):
                 featureset.append(feature)
 
     server_connection = None
+
+    # Clear away any spurious environment variables while we stoke up the cooker
+    # (done after import_extension_module() above since for example import gi triggers env var usage)
+    cleanedvars = bb.utils.clean_environment()
 
     if configParams.remote_server:
         # Connect to a remote XMLRPC server
@@ -443,7 +438,7 @@ def setup_bitbake(configParams, configuration, extrafeatures=None):
                 else:
                     logger.info("Reconnecting to bitbake server...")
                     if not os.path.exists(sockname):
-                        print("Previous bitbake instance shutting down?, waiting to retry...")
+                        logger.info("Previous bitbake instance shutting down?, waiting to retry...")
                         i = 0
                         lock = None
                         # Wait for 5s or until we can get the lock
@@ -470,10 +465,11 @@ def setup_bitbake(configParams, configuration, extrafeatures=None):
                 if not retries:
                     raise
                 retries -= 1
+                tryno = 8 - retries
                 if isinstance(e, (bb.server.process.ProcessTimeout, BrokenPipeError)):
-                    logger.info("Retrying server connection...")
+                    logger.info("Retrying server connection (#%d)..." % tryno)
                 else:
-                    logger.info("Retrying server connection... (%s)" % traceback.format_exc())
+                    logger.info("Retrying server connection (#%d)... (%s)" % (tryno, traceback.format_exc()))
             if not retries:
                 bb.fatal("Unable to connect to bitbake server, or start one")
             if retries < 5:

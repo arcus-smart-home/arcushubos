@@ -1,9 +1,16 @@
+#
+# SPDX-License-Identifier: MIT
+#
+
 import os
 import shutil
 import unittest
 
 from oeqa.core.utils.path import remove_safe
 from oeqa.sdk.case import OESDKTestCase
+
+from oeqa.utils.subprocesstweak import errors_have_output
+errors_have_output()
 
 class GccCompileTest(OESDKTestCase):
     td_vars = ['MACHINE']
@@ -18,8 +25,8 @@ class GccCompileTest(OESDKTestCase):
 
     def setUp(self):
         machine = self.td.get("MACHINE")
-        if not (self.tc.hasTargetPackage("packagegroup-cross-canadian-%s" % machine) or
-                self.tc.hasTargetPackage("gcc")):
+        if not (self.tc.hasHostPackage("packagegroup-cross-canadian-%s" % machine) or
+                self.tc.hasHostPackage("^gcc-", regex=True)):
             raise unittest.SkipTest("GccCompileTest class: SDK doesn't contain a cross-canadian toolchain")
 
     def test_gcc_compile(self):

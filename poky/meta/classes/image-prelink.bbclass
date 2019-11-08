@@ -33,10 +33,10 @@ prelink_image () {
 	fi
 	cat ${STAGING_DIR_TARGET}${sysconfdir}/ld.so.conf >> $ldsoconf
 
-	dynamic_loader=$(linuxloader)
+	dynamic_loader=${@get_linuxloader(d)}
 
 	# prelink!
-	if [ "$BUILD_REPRODUCIBLE_BINARIES" = "1" ]; then
+	if [ "${BUILD_REPRODUCIBLE_BINARIES}" = "1" ]; then
 		bbnote " prelink: BUILD_REPRODUCIBLE_BINARIES..."
 		if [ "$REPRODUCIBLE_TIMESTAMP_ROOTFS" = "" ]; then
 			export PRELINK_TIMESTAMP=`git log -1 --pretty=%ct `

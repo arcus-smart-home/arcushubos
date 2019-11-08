@@ -1,13 +1,6 @@
 # Copyright (c) 2016, Intel Corporation.
 #
-# This program is free software; you can redistribute it and/or modify it
-# under the terms and conditions of the GNU General Public License,
-# version 2, as published by the Free Software Foundation.
-#
-# This program is distributed in the hope it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-# more details.
+# SPDX-License-Identifier: GPL-2.0-only
 #
 """Build performance test base classes and functionality"""
 import json
@@ -282,7 +275,7 @@ class BuildPerfTestCase(unittest.TestCase):
         if not os.path.isdir(self.tmp_dir):
             os.mkdir(self.tmp_dir)
         if self.build_target:
-            self.run_cmd(['bitbake', self.build_target, '-c', 'fetchall'])
+            self.run_cmd(['bitbake', self.build_target, '--runall=fetch'])
 
     def tearDown(self):
         """Tear-down fixture for each test"""

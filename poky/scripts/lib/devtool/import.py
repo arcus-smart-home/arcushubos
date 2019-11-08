@@ -2,18 +2,8 @@
 #
 # Copyright (C) 2014-2017 Intel Corporation
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 """Devtool import plugin"""
 
 import os
@@ -81,7 +71,7 @@ def devimport(args, config, basepath, workspace):
                     break
             else:
                 non_importables.append(fn)
-                logger.warn('No recipe to append %s.bbapppend, skipping' % fn)
+                logger.warning('No recipe to append %s.bbapppend, skipping' % fn)
 
         # Extract
         imported = []
@@ -104,9 +94,9 @@ def devimport(args, config, basepath, workspace):
                         try:
                             tar.extract(member, path=config.workspace_path)
                         except PermissionError as pe:
-                            logger.warn(pe)
+                            logger.warning(pe)
                     else:
-                        logger.warn('File already present. Use --overwrite/-o to overwrite it: %s' % member.name)
+                        logger.warning('File already present. Use --overwrite/-o to overwrite it: %s' % member.name)
                         continue
                 else:
                     tar.extract(member, path=config.workspace_path)
@@ -129,7 +119,7 @@ def devimport(args, config, basepath, workspace):
     if imported:
         logger.info('Imported recipes into workspace %s: %s' % (config.workspace_path, ', '.join(imported)))
     else:
-        logger.warn('No recipes imported into the workspace')
+        logger.warning('No recipes imported into the workspace')
 
     return 0
 

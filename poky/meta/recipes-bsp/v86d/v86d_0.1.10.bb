@@ -9,10 +9,10 @@ DEPENDS = "virtual/kernel"
 RRECOMMENDS_${PN} = "kernel-module-uvesafb"
 PR = "r2"
 
-SRC_URI = "${DEBIAN_MIRROR}/main/v/${BPN}/${BPN}_${PV}.orig.tar.gz \
+SRC_URI = "http://snapshot.debian.org/archive/debian/20110427T035506Z/pool/main/v/${BPN}/${BPN}_${PV}.orig.tar.gz \
            file://Update-x86emu-from-X.org.patch \
            file://ar-from-env.patch \
-           file://aarch64-host.patch \
+           file://Support-for-cross-compilation.patch \
 "
 
 SRC_URI[md5sum] = "889686ec8424468fe0d205742e77a4c2"
@@ -22,7 +22,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 COMPATIBLE_HOST = '(i.86|x86_64).*-linux'
 
 do_configure () {
-	./configure --with-x86emu
+	TARGET_ARCH="${TARGET_ARCH}" ./configure --with-x86emu
 }
 
 do_compile () {

@@ -7,13 +7,16 @@ LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=eb48c6ee2cb9f5b8b9fe75e6f817bdfc \
 SRCNAME = "paho-mqtt"
 
 inherit pypi
-SRC_URI[md5sum] = "b9338236e2836e8579ef140956189cc4"
-SRC_URI[sha256sum] = "2c9ef5494cfc1e41a9fff6544c5a2cd59ea5d401d9119a06ecf7fad6a2ffeb93"
+
+SRC_URI[md5sum] = "e3ac29cd5dc247a01083a2a8f3fddd08"
+SRC_URI[sha256sum] = "e440a052b46d222e184be3be38676378722072fcd4dfd2c8f509fb861a7b0b79"
 
 DEPENDS += "${PYTHON_PN}-pytest-runner-native"
 
 RDEPENDS_${PN} = "\
-               ${PYTHON_PN}-math \
-               ${PYTHON_PN}-io \
-               ${PYTHON_PN}-threading \
+    ${PYTHON_PN}-io \
+    ${PYTHON_PN}-logging \
+    ${PYTHON_PN}-math \
+    ${PYTHON_PN}-netclient \
+    ${PYTHON_PN}-threading \
 "

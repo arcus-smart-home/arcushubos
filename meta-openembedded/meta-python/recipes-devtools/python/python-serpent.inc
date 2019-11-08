@@ -1,9 +1,9 @@
 SUMMARY = "Serialization based on ast.literal_eval"
 LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://PKG-INFO;md5=9f611d4c9e2816d387bab64c40d93294"
+LIC_FILES_CHKSUM = "file://PKG-INFO;md5=5a8193ba89f1083617f32d522f6485e9"
 
-SRC_URI[md5sum] = "d9d6afa51f2560cf5933dcdfd947011d"
-SRC_URI[sha256sum] = "8480ce3d8864b8974d9fe396998c6a7dae96edb68edf905bfd32ea9a11853ba5"
+SRC_URI[md5sum] = "0f9684622125a527fa4fbe2587738973"
+SRC_URI[sha256sum] = "264a028e059c1b557701ae7c567cdab330dbd228ff924489343efcb39bd828a0"
 
 inherit pypi
 

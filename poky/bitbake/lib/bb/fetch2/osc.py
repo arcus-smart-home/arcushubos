@@ -1,3 +1,6 @@
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
 # ex:ts=4:sw=4:sts=4:et
 # -*- tab-width: 4; c-basic-offset: 4; indent-tabs-mode: nil -*-
 """
@@ -32,8 +35,9 @@ class Osc(FetchMethod):
         ud.module = ud.parm["module"]
 
         # Create paths to osc checkouts
+        oscdir = d.getVar("OSCDIR") or (d.getVar("DL_DIR") + "/osc")
         relpath = self._strip_leading_slashes(ud.path)
-        ud.pkgdir = os.path.join(d.getVar('OSCDIR'), ud.host)
+        ud.pkgdir = os.path.join(oscdir, ud.host)
         ud.moddir = os.path.join(ud.pkgdir, relpath, ud.module)
 
         if 'rev' in ud.parm:
@@ -54,7 +58,7 @@ class Osc(FetchMethod):
         command is "fetch", "update", "info"
         """
 
-        basecmd = d.expand('${FETCHCMD_osc}')
+        basecmd = d.getVar("FETCHCMD_osc") or "/usr/bin/env osc"
 
         proto = ud.parm.get('protocol', 'ocs')
 

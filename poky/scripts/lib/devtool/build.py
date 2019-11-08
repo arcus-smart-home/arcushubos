@@ -2,18 +2,8 @@
 #
 # Copyright (C) 2014-2015 Intel Corporation
 #
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2 as
-# published by the Free Software Foundation.
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 """Devtool build plugin"""
 
 import os
@@ -54,7 +44,11 @@ def build(args, config, basepath, workspace):
     """Entry point for the devtool 'build' subcommand"""
     workspacepn = check_workspace_recipe(workspace, args.recipename, bbclassextend=True)
 
-    build_tasks = _get_build_tasks(config)
+    if args.clean:
+        # use clean instead of cleansstate to avoid messing things up in eSDK
+        build_tasks = ['do_clean']
+    else:
+        build_tasks = _get_build_tasks(config)
 
     bbappend = workspace[workspacepn]['bbappend']
     if args.disable_parallel_make:
@@ -83,4 +77,5 @@ def register_commands(subparsers, context):
                                          group='working', order=50)
     parser_build.add_argument('recipename', help='Recipe to build')
     parser_build.add_argument('-s', '--disable-parallel-make', action="store_true", help='Disable make parallelism')
+    parser_build.add_argument('-c', '--clean', action='store_true', help='clean up recipe building results')
     parser_build.set_defaults(func=build)

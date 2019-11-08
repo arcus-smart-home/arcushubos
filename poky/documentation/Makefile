@@ -4,24 +4,17 @@
 # in any manuals must be .PNG files and live in the individual book's figures
 # directory as well as in the figures directory for the mega-manual.
 #
-# Some manuals are available as linked help through the Eclipse development
-# system.  These manuals also include an "eclipse" sub-directory as part of
-# the make process.
-#
 # Note that the figures for the Yocto Project Development Tasks Manual
 # differ depending on the BRANCH being built.
 #
 # The Makefile has these targets:
 #    all:       If you leave off the target then "all" is implied.
-#               You will generate HTML, eclipse help (if applicable),
-#               and a tarball of files.
+#               You will generate HTML and a tarball of files.
 #
 #    pdf:	generates a PDF version of a manual.  Not valid for the
 #		Quick Start or the mega-manual (single, large HTML file
 #		comprised of all Yocto Project manuals).
 #    html:	generates an HTML version of a manual.
-#    eclipse:	generates an HTML version of a manual that can be used as
-#		eclipse help (including necessary metadata files).
 #    tarball:	creates a tarball for the doc files.
 #    validate:	validates
 #    publish:	pushes generated files to the Yocto Project website
@@ -48,18 +41,18 @@
 # Examples:
 #
 #     make DOC=bsp-guide
-#     make html DOC=yocto-project-qs
+#     make html DOC=brief-yoctoprojectqs
 #     make pdf DOC=ref-manual
 #     make DOC=dev-manual BRANCH=edison
 #     make DOC=mega-manual BRANCH=denzil
 #
-# The first example generates the HTML and Eclipse help versions of the BSP Guide.
+# The first example generates the HTML version of the BSP Guide.
 # The second example generates the HTML version only of the Quick Start.  Note
 # that the Quick Start only has an HTML version available.  So, the
-# 'make DOC=yocto-project-qs' command would be equivalent. The third example
+# 'make DOC=brief-yoctoprojectqs' command would be equivalent. The third example
 # generates just the PDF version of the Yocto Project Reference Manual.
-# The fourth example generates the HTML 'edison' version and (if available)
-# the Eclipse help version of the YP Development Tasks Manual.  The last example
+# The fourth example generates the HTML 'edison' version of the YP Development
+# Tasks Manual.  The last example
 # generates the HTML version of the mega-manual and uses the 'denzil'
 # branch when choosing figures for the tarball of figures.  Any example that does
 # not use the BRANCH argument builds the current version of the manual set.
@@ -67,7 +60,7 @@
 # The publish target pushes the generated manuals to the Yocto Project
 # website.  Unless you are a developer on the YP team, you will not succeed in
 # pushing manuals to this server.  All files needed for the manual's HTML form are
-# pushed as well as applicable Eclipse versions.
+# pushed.
 #
 # Examples:
 #
@@ -84,13 +77,45 @@
 # for the 'denzil' branch.
 #
 
+ifeq ($(DOC),brief-yoctoprojectqs)
+XSLTOPTS = --stringparam html.stylesheet brief-yoctoprojectqs-style.css \
+           --stringparam  chapter.autolabel 0 \
+           --stringparam  section.autolabel 0 \
+           --stringparam  section.label.includes.component.label 0 \
+           --xinclude
+ALLPREQ = html tarball
+TARFILES = brief-yoctoprojectqs-style.css brief-yoctoprojectqs.html figures/bypqs-title.png \
+           figures/yocto-project-transp.png
+MANUALS = $(DOC)/$(DOC).html
+FIGURES = figures
+STYLESHEET = $(DOC)/*.css
+
+endif
+
+ifeq ($(DOC),overview-manual)
+XSLTOPTS = --xinclude
+ALLPREQ = html tarball
+TARFILES = overview-manual-style.css overview-manual.html figures/overview-manual-title.png \
+           figures/git-workflow.png figures/source-repos.png figures/index-downloads.png \
+           figures/yp-download.png figures/YP-flow-diagram.png figures/key-dev-elements.png \
+           figures/poky-reference-distribution.png figures/cross-development-toolchains.png \
+           figures/user-configuration.png figures/layer-input.png figures/source-input.png \
+           figures/package-feeds.png figures/patching.png figures/source-fetching.png \
+           figures/configuration-compile-autoreconf.png figures/analysis-for-package-splitting.png \
+           figures/image-generation.png figures/sdk-generation.png figures/images.png \
+           figures/sdk.png
+MANUALS = $(DOC)/$(DOC).html
+FIGURES = figures
+STYLESHEET = $(DOC)/*.css
+
+endif
+
 ifeq ($(DOC),bsp-guide)
 XSLTOPTS = --xinclude
-ALLPREQ = html eclipse tarball
+ALLPREQ = html tarball
 TARFILES = bsp-style.css bsp-guide.html figures/bsp-title.png \
-           figures/bsp-dev-flow.png \
-           eclipse
-MANUALS = $(DOC)/$(DOC).html $(DOC)/eclipse
+           figures/bsp-dev-flow.png
+MANUALS = $(DOC)/$(DOC).html
 FIGURES = figures
 STYLESHEET = $(DOC)/*.css
 
@@ -98,7 +123,7 @@ endif
 
 ifeq ($(DOC),dev-manual)
 XSLTOPTS = --xinclude
-ALLPREQ = html eclipse tarball
+ALLPREQ = html tarball
 #
 # Note that the tarfile might produce the "Cannot stat: No such file or
 # directory" error message for .PNG files that are not present when building
@@ -128,27 +153,16 @@ TARFILES = dev-style.css dev-manual.html \
            figures/source-repos.png figures/yp-download.png \
            figures/wip.png
         else
-TARFILES = dev-style.css dev-manual.html \
-           figures/dev-title.png \
+TARFILES = dev-style.css dev-manual.html figures/buildhistory-web.png \
+           figures/dev-title.png figures/buildhistory.png \
            figures/recipe-workflow.png figures/bitbake-build-flow.png \
-           eclipse
+           figures/multiconfig_files.png figures/cute-files-npm-example.png
 	endif
 
-MANUALS = $(DOC)/$(DOC).html $(DOC)/eclipse
+MANUALS = $(DOC)/$(DOC).html
 FIGURES = figures
 STYLESHEET = $(DOC)/*.css
 
-endif
-
-ifeq ($(DOC),yocto-project-qs)
-XSLTOPTS = --xinclude
-ALLPREQ = html eclipse tarball
-TARFILES = yocto-project-qs.html qs-style.css \
-           figures/yocto-project-transp.png \
-           eclipse
-MANUALS = $(DOC)/$(DOC).html $(DOC)/eclipse
-FIGURES = figures
-STYLESHEET = $(DOC)/*.css
 endif
 
 ifeq ($(DOC),mega-manual)
@@ -191,7 +205,7 @@ TARFILES = mega-manual.html mega-style.css figures/yocto-environment.png \
 	figures/wip.png
         else
 TARFILES = mega-manual.html mega-style.css \
-        figures/building-an-image.png figures/YP-flow-diagram.png \
+        figures/YP-flow-diagram.png \
 	figures/using-a-pre-built-image.png \
 	figures/poky-title.png figures/buildhistory.png \
         figures/buildhistory-web.png \
@@ -206,7 +220,7 @@ TARFILES = mega-manual.html mega-style.css \
         figures/profile-title.png figures/kernelshark-all.png \
         figures/kernelshark-choose-events.png \
         figures/kernelshark-i915-display.png \
-        figures/kernelshark-output-display.png figures/lttngmain0.png \
+        figures/kernelshark-output-display.png \
         figures/oprofileui-busybox.png figures/oprofileui-copy-to-user.png \
         figures/oprofileui-downloading.png figures/oprofileui-processes.png \
         figures/perf-probe-do_fork-profile.png \
@@ -229,22 +243,24 @@ TARFILES = mega-manual.html mega-style.css \
         figures/sched-wakeup-profile.png figures/sysprof-callers.png \
         figures/sysprof-copy-from-user.png figures/sysprof-copy-to-user.png \
         figures/cross-development-toolchains.png \
-	figures/yocto-environment-ref.png figures/user-configuration.png \
+	figures/user-configuration.png \
         figures/source-input.png figures/package-feeds.png \
         figures/layer-input.png figures/images.png figures/sdk.png \
 	figures/source-fetching.png figures/patching.png \
         figures/configuration-compile-autoreconf.png \
 	figures/analysis-for-package-splitting.png \
-        figures/image-generation.png \
+        figures/image-generation.png figures/key-dev-elements.png\
 	figures/sdk-generation.png figures/recipe-workflow.png \
 	figures/build-workspace-directory.png figures/mega-title.png \
-	figures/toaster-title.png figures/hosted-service.png \
-	figures/simple-configuration.png \
+	figures/toaster-title.png figures/hosted-service.png figures/multiconfig_files.png \
+	figures/simple-configuration.png figures/poky-reference-distribution.png \
 	figures/compatible-layers.png figures/import-layer.png figures/new-project.png \
 	figures/sdk-environment.png figures/sdk-installed-standard-sdk-directory.png \
 	figures/sdk-devtool-add-flow.png figures/sdk-installed-extensible-sdk-directory.png \
-	figures/sdk-devtool-modify-flow.png figures/sdk-eclipse-dev-flow.png \
-	figures/sdk-devtool-upgrade-flow.png figures/bitbake-build-flow.png
+	figures/sdk-devtool-modify-flow.png \
+	figures/sdk-devtool-upgrade-flow.png figures/bitbake-build-flow.png figures/bypqs-title.png \
+	figures/overview-manual-title.png figures/sdk-autotools-flow.png figures/sdk-makefile-flow.png \
+	figures/bb_multiconfig_files.png figures/bitbake-title.png figures/cute-files-npm-example.png
 	endif
 
 MANUALS = $(DOC)/$(DOC).html
@@ -255,45 +271,35 @@ endif
 
 ifeq ($(DOC),ref-manual)
 XSLTOPTS = --xinclude
-ALLPREQ = html eclipse tarball
-TARFILES = ref-manual.html ref-style.css figures/poky-title.png figures/YP-flow-diagram.png \
-	figures/buildhistory.png figures/buildhistory-web.png eclipse \
-        figures/cross-development-toolchains.png figures/layer-input.png \
-	figures/package-feeds.png figures/source-input.png \
-	figures/user-configuration.png figures/yocto-environment-ref.png \
-	figures/images.png figures/sdk.png figures/source-fetching.png \
-	figures/patching.png figures/configuration-compile-autoreconf.png \
-	figures/analysis-for-package-splitting.png figures/image-generation.png \
-	figures/sdk-generation.png figures/building-an-image.png \
-	figures/build-workspace-directory.png figures/source-repos.png \
-	figures/index-downloads.png figures/yp-download.png figures/git-workflow.png
-MANUALS = $(DOC)/$(DOC).html $(DOC)/eclipse
+ALLPREQ = html tarball
+TARFILES = ref-manual.html ref-style.css figures/poky-title.png \
+	figures/build-workspace-directory.png
+MANUALS = $(DOC)/$(DOC).html
 FIGURES = figures
 STYLESHEET = $(DOC)/*.css
 endif
 
 ifeq ($(DOC),sdk-manual)
 XSLTOPTS = --xinclude
-ALLPREQ = html eclipse tarball
+ALLPREQ = html tarball
 TARFILES = sdk-manual.html sdk-style.css figures/sdk-title.png \
            figures/sdk-environment.png figures/sdk-installed-standard-sdk-directory.png \
 	   figures/sdk-installed-extensible-sdk-directory.png figures/sdk-devtool-add-flow.png \
-	   figures/sdk-devtool-modify-flow.png figures/sdk-eclipse-dev-flow.png \
-	   figures/sdk-devtool-upgrade-flow.png \
-           eclipse
-MANUALS = $(DOC)/$(DOC).html $(DOC)/eclipse
+	   figures/sdk-devtool-modify-flow.png \
+	   figures/sdk-devtool-upgrade-flow.png figures/sdk-autotools-flow.png figures/sdk-makefile-flow.png
+MANUALS = $(DOC)/$(DOC).html
 FIGURES = figures
 STYLESHEET = $(DOC)/*.css
 endif
 
 ifeq ($(DOC),profile-manual)
 XSLTOPTS = --xinclude
-ALLPREQ = html eclipse tarball
+ALLPREQ = html tarball
 TARFILES = profile-manual.html profile-manual-style.css \
            figures/profile-title.png figures/kernelshark-all.png \
            figures/kernelshark-choose-events.png \
            figures/kernelshark-i915-display.png \
-           figures/kernelshark-output-display.png figures/lttngmain0.png \
+           figures/kernelshark-output-display.png \
            figures/oprofileui-busybox.png figures/oprofileui-copy-to-user.png \
            figures/oprofileui-downloading.png figures/oprofileui-processes.png \
            figures/perf-probe-do_fork-profile.png \
@@ -314,21 +320,19 @@ TARFILES = profile-manual.html profile-manual-style.css \
            figures/pychart-linux-yocto-rpm.png \
            figures/pychart-linux-yocto-rpm-nostrip.png \
            figures/sched-wakeup-profile.png figures/sysprof-callers.png \
-           figures/sysprof-copy-from-user.png figures/sysprof-copy-to-user.png \
-           eclipse
-MANUALS = $(DOC)/$(DOC).html $(DOC)/eclipse
+           figures/sysprof-copy-from-user.png figures/sysprof-copy-to-user.png
+MANUALS = $(DOC)/$(DOC).html
 FIGURES = figures
 STYLESHEET = $(DOC)/*.css
 endif
 
 ifeq ($(DOC),kernel-dev)
 XSLTOPTS = --xinclude
-ALLPREQ = html eclipse tarball
+ALLPREQ = html tarball
 TARFILES = kernel-dev.html kernel-dev-style.css \
            figures/kernel-dev-title.png figures/kernel-overview-2-generic.png \
-           figures/kernel-architecture-overview.png figures/kernel-dev-flow.png \
-           eclipse
-MANUALS = $(DOC)/$(DOC).html $(DOC)/eclipse
+           figures/kernel-architecture-overview.png figures/kernel-dev-flow.png
+MANUALS = $(DOC)/$(DOC).html
 FIGURES = figures
 STYLESHEET = $(DOC)/*.css
 endif
@@ -355,9 +359,9 @@ XSL_XHTML_URI = $(XSL_BASE_URI)/xhtml/docbook.xsl
 all: $(ALLPREQ)
 
 pdf:
-ifeq ($(DOC),yocto-project-qs)
+ifeq ($(DOC),brief-yoctoprojectqs)
 	@echo " "
-	@echo "ERROR: You cannot generate a yocto-project-qs PDF file."
+	@echo "ERROR: You cannot generate a PDF file for brief-yoctoprojectqs."
 	@echo " "
 
 else ifeq ($(DOC),mega-manual)
@@ -393,49 +397,6 @@ else
 	cd $(DOC); xsltproc $(XSLTOPTS) -o $(DOC).html $(DOC)-customization.xsl $(DOC).xml; cd ..
 endif
 
-
-eclipse: BASE_DIR = html/$(DOC)/
-
-eclipse: eclipse-generate eclipse-resolve-links
-
-.PHONY : eclipse-generate eclipse-resolve-links
-
-eclipse-generate:
-ifeq ($(filter $(DOC), sdk-manual bsp-guide dev-manual kernel-dev profile-manual ref-manual yocto-project-qs),)
-	@echo " "
-	@echo "ERROR: You can only create eclipse documentation"
-	@echo "       of the following documentation parts:"
-	@echo "       - sdk-manual"
-	@echo "       - bsp-guide"
-	@echo "       - dev-manual"
-	@echo "       - kernel-dev"
-	@echo "       - profile-manual"
-	@echo "       - ref-manual"
-	@echo "       - yocto-project-qs"
-	@echo " "
-else
-	@echo " "
-	@echo "******** Building eclipse help of "$(DOC)
-	@echo " "
-	cd $(DOC) && \
-		xsltproc $(XSLTOPTS) \
-				--stringparam base.dir '$(BASE_DIR)' \
-				-o eclipse/$(DOC).html \
-				$(DOC)-eclipse-customization.xsl $(DOC).xml && \
-		mv eclipse/toc.xml eclipse/$(DOC)-toc.xml && \
-		cp -rf $(FIGURES) eclipse/$(BASE_DIR) && \
-		cd ..;
-
-	$(call modify-eclipse)
-endif
-
-eclipse-resolve-links:
-	@echo " "
-	@echo "******** Using eclipse-help.sed to process external links"
-	@echo " "
-	$(foreach FILE, \
-		$(wildcard $(DOC)/eclipse/html/$(DOC)/*.html), \
-		$(shell sed -i -f tools/eclipse-help.sed $(FILE)))
 
 tarball: html
 	@echo " "

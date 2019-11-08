@@ -1,6 +1,6 @@
 # Copyright (C) 2016 Intel Corporation
 #
-# Released under the MIT license (see COPYING.MIT)
+# SPDX-License-Identifier: MIT
 #
 # Functions to get metadata from the testing host used
 # for analytics of test results.
@@ -58,9 +58,25 @@ def metadata_from_data_store(d):
 
 def git_rev_info(path):
     """Get git revision information as a dict"""
-    from git import Repo, InvalidGitRepositoryError, NoSuchPathError
-
     info = OrderedDict()
+
+    try:
+        from git import Repo, InvalidGitRepositoryError, NoSuchPathError
+    except ImportError:
+        import subprocess
+        try:
+            info['branch'] = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=path).decode('utf-8').strip()
+        except subprocess.CalledProcessError:
+            pass
+        try:
+            info['commit'] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=path).decode('utf-8').strip()
+        except subprocess.CalledProcessError:
+            pass
+        try:
+            info['commit_count'] = int(subprocess.check_output(["git", "rev-list", "--count", "HEAD"], cwd=path).decode('utf-8').strip())
+        except subprocess.CalledProcessError:
+            pass
+        return info
     try:
         repo = Repo(path, search_parent_directories=True)
     except (InvalidGitRepositoryError, NoSuchPathError):

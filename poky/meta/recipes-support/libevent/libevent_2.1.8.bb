@@ -9,6 +9,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=17f20574c0b154d12236d5fbe964f549"
 SRC_URI = " \
     https://github.com/libevent/libevent/releases/download/release-${PV}-stable/${BP}-stable.tar.gz \
     file://Makefile-missing-test-dir.patch \
+    file://0001-test-fix-32bit-linux-regress.patch \
     file://run-ptest \
 "
 
@@ -27,11 +28,15 @@ inherit autotools
 # Needed for Debian packaging
 LEAD_SONAME = "libevent-2.1.so"
 
-inherit ptest
+inherit ptest multilib_header
 
 DEPENDS = "zlib"
 
 BBCLASSEXTEND = "native nativesdk"
+
+do_install_append() {
+        oe_multilib_header event2/event-config.h
+}
 
 do_install_ptest() {
 	install -d ${D}${PTEST_PATH}/test

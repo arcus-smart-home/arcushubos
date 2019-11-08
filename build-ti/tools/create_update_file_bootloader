@@ -20,17 +20,17 @@ PREFIX='hubBL'
 BUILD_IMAGE="../tmp/sysroots-components/x86_64/iris-utils-native/usr/bin/build_image"
 
 # Remove existing update directory
-cd tmp/deploy/images/beaglebone
+cd tmp/deploy/images/beaglebone-yocto
 rm -rf update
 
 mkdir update
 
 # Copy in files
-cp MLO-beaglebone update/
-cp u-boot-beaglebone.img update/
-cp uImage-beaglebone.bin update/
-cp uImage-am335x-boneblack.dtb update/
-cp $1-beaglebone.squashfs update/core-image-minimal-iris-beaglebone.squashfs
+cp MLO-beaglebone-yocto update/MLO-beaglebone
+cp u-boot-beaglebone-yocto.img update/u-boot-beaglebone.img
+cp uImage-beaglebone-yocto.bin update/uImage-beaglebone.bin
+cp am335x-boneblack.dtb update/uImage-am335x-boneblack.dtb
+cp $1-beaglebone-yocto.squashfs update/core-image-minimal-iris-beaglebone.squashfs
 
 # Add in latest Zwave firmware
 ZWAVE_FIRMWARE=../../../../../radios/zwave/SDK/ProductPlus/Bin/SerialAPI_Controller_Static/serialapi_controller_static_ZM5304_US.hex
@@ -58,10 +58,10 @@ tar cvfz i2hubos_update_bootloader.bin update/
 
 # Create image file
 cd ../../../../tools
-$BUILD_IMAGE -p $PREFIX -c ALL ../tmp/deploy/images/beaglebone/i2hubos_update_bootloader.bin
+$BUILD_IMAGE -p $PREFIX -c ALL ../tmp/deploy/images/beaglebone-yocto/i2hubos_update_bootloader.bin
 
 echo "Update file with bootloader created." 1>&2
 
-cp ../tmp/deploy/images/beaglebone/i2hubos_update_bootloader.bin /tftpboot
+cp ../tmp/deploy/images/beaglebone-yocto/i2hubos_update_bootloader.bin /tftpboot
 cp -u $PREFIX* /tftpboot
 

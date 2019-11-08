@@ -21,13 +21,13 @@ RDEPENDS_localedef += "glibc"
 # to decrease initial boot time and avoid localedef being killed by the OOM
 # killer which used to effectively break i18n on machines with < 128MB RAM.
 
-# default to disabled 
+# default to disabled
 ENABLE_BINARY_LOCALE_GENERATION ?= "0"
 ENABLE_BINARY_LOCALE_GENERATION_pn-nativesdk-glibc-locale = "1"
 
 #enable locale generation on these arches
 # BINARY_LOCALE_ARCHES is a space separated list of regular expressions
-BINARY_LOCALE_ARCHES ?= "arm.* aarch64 i[3-6]86 x86_64 powerpc mips mips64"
+BINARY_LOCALE_ARCHES ?= "arc arm.* aarch64 i[3-6]86 x86_64 powerpc mips mips64 riscv32 riscv64"
 
 # set "1" to use cross-localedef for locale generation
 # set "0" for qemu emulation of native localedef for locale generation
@@ -71,26 +71,27 @@ FILES_localedef = "${bindir}/localedef"
 
 LOCALETREESRC = "${COMPONENTS_DIR}/${PACKAGE_ARCH}/glibc-stash-locale"
 
-do_install () {
-	mkdir -p ${D}${bindir} ${D}${datadir} ${D}${libdir}
-	if [ -n "$(ls ${LOCALETREESRC}/${bindir})" ]; then
-		cp -fpPR ${LOCALETREESRC}/${bindir}/* ${D}${bindir}
+copy_locale_files() {
+	local dir=$1 mode=$2
+
+	[ -e "${LOCALETREESRC}$dir" ] || return 0
+
+	for d in . $(find "${LOCALETREESRC}$dir" -type d -printf '%P '); do
+		install -d ${D}$dir/$d
+		find "${LOCALETREESRC}$dir/$d" -maxdepth 1 -type f \
+			-exec install -m $mode -t "${D}$dir/$d" {} \;
+	done
+}
+
+do_install() {
+	copy_locale_files ${bindir} 0755
+	copy_locale_files ${localedir} 0644
+	if [ ${PACKAGE_NO_GCONV} -eq 0 ]; then
+		copy_locale_files ${libdir}/gconv 0755
+		copy_locale_files ${datadir}/i18n 0644
 	fi
-	if [ -n "$(ls ${LOCALETREESRC}/${localedir})" ]; then
-		mkdir -p ${D}${localedir}
-		cp -fpPR ${LOCALETREESRC}/${localedir}/* ${D}${localedir}
-	fi
-	if [ -e ${LOCALETREESRC}/${libdir}/gconv ]; then
-		cp -fpPR ${LOCALETREESRC}/${libdir}/gconv ${D}${libdir}
-	fi
-	if [ -e ${LOCALETREESRC}/${datadir}/i18n ]; then
-		cp -fpPR ${LOCALETREESRC}/${datadir}/i18n ${D}${datadir}
-	fi
-	if [ -e ${LOCALETREESRC}/${datadir}/locale ]; then
-		cp -fpPR ${LOCALETREESRC}/${datadir}/locale ${D}${datadir}
-	fi
-	chown root:root -R ${D}
-	cp -fpPR ${LOCALETREESRC}/SUPPORTED ${WORKDIR}
+	copy_locale_files ${datadir}/locale 0644
+	install -m 0644 ${LOCALETREESRC}/SUPPORTED ${WORKDIR}/SUPPORTED
 }
 
 inherit libc-package

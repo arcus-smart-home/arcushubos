@@ -90,14 +90,14 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=44ac4678311254db62edf8fd39cb8124"
 
 UPSTREAM_CHECK_GITTAGREGEX = "(?P<pver>\d+\.\d+(\.\d+)*)"
 
-SRC_URI = "git://github.com/mmeeks/bootchart.git \
+SRC_URI = "git://github.com/xrmx/bootchart.git \
            file://bootchartd_stop.sh \
-           file://0001-Fixed-Missing-default-value-for-BOOTLOG_DEST.patch \
            file://0001-collector-Allocate-space-on-heap-for-chunks.patch \
           "
 
 S = "${WORKDIR}/git"
-SRCREV = "48e0071048564c6af75ab969e842d6dec808da09"
+SRCREV = "331ada031f1d65f6d934d918f896e1c708c64bf7"
+PV .= "+git${SRCPV}"
 
 inherit systemd update-rc.d python3native update-alternatives
 
@@ -139,7 +139,7 @@ do_install () {
 
 PACKAGES =+ "pybootchartgui"
 FILES_pybootchartgui += "${PYTHON_SITEPACKAGES_DIR}/pybootchartgui ${bindir}/pybootchartgui"
-RDEPENDS_pybootchartgui = "python3-pycairo python3-compression python3-image python3-textutils python3-shell python3-compression python3-codecs"
+RDEPENDS_pybootchartgui = "python3-pycairo python3-compression python3-image python3-shell python3-compression python3-codecs"
 RDEPENDS_${PN}_class-target += "${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'sysvinit-pidof', 'procps', d)}"
 RDEPENDS_${PN}_class-target += "lsb"
 DEPENDS_append_class-native = " python3-pycairo-native"

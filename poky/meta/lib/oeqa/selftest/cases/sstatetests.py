@@ -1,16 +1,55 @@
+#
+# SPDX-License-Identifier: MIT
+#
+
 import os
 import shutil
 import glob
 import subprocess
+import tempfile
 
 from oeqa.selftest.case import OESelftestTestCase
-from oeqa.utils.commands import runCmd, bitbake, get_bb_var, get_test_layer
+from oeqa.utils.commands import runCmd, bitbake, get_bb_var, get_test_layer, create_temp_layer
 from oeqa.selftest.cases.sstate import SStateBase
-from oeqa.core.decorator.oeid import OETestID
 
 import bb.siggen
 
 class SStateTests(SStateBase):
+    def test_autorev_sstate_works(self):
+        # Test that a git repository which changes is correctly handled by SRCREV = ${AUTOREV}
+        # when PV does not contain SRCPV
+
+        tempdir = tempfile.mkdtemp(prefix='oeqa')
+        self.track_for_cleanup(tempdir)
+        create_temp_layer(tempdir, 'selftestrecipetool')
+        self.add_command_to_tearDown('bitbake-layers remove-layer %s' % tempdir)
+        runCmd('bitbake-layers add-layer %s' % tempdir)
+
+        # Use dbus-wait as a local git repo we can add a commit between two builds in
+        pn = 'dbus-wait'
+        srcrev = '6cc6077a36fe2648a5f993fe7c16c9632f946517'
+        url = 'git://git.yoctoproject.org/dbus-wait'
+        result = runCmd('git clone %s noname' % url, cwd=tempdir)
+        srcdir = os.path.join(tempdir, 'noname')
+        result = runCmd('git reset --hard %s' % srcrev, cwd=srcdir)
+        self.assertTrue(os.path.isfile(os.path.join(srcdir, 'configure.ac')), 'Unable to find configure script in source directory')
+
+        recipefile = os.path.join(tempdir, "recipes-test", "dbus-wait-test", 'dbus-wait-test_git.bb')
+        os.makedirs(os.path.dirname(recipefile))
+        srcuri = 'git://' + srcdir + ';protocol=file'
+        result = runCmd(['recipetool', 'create', '-o', recipefile, srcuri])
+        self.assertTrue(os.path.isfile(recipefile), 'recipetool did not create recipe file; output:\n%s' % result.output)
+
+        with open(recipefile, 'a') as f:
+            f.write('SRCREV = "${AUTOREV}"\n')
+            f.write('PV = "1.0"\n')
+
+        bitbake("dbus-wait-test -c fetch")
+        with open(os.path.join(srcdir, "bar.txt"), "w") as f:
+            f.write("foo")
+        result = runCmd('git add bar.txt; git commit -asm "add bar"', cwd=srcdir)
+        bitbake("dbus-wait-test -c unpack")
+
 
     # Test sstate files creation and their location
     def run_test_sstate_creation(self, targets, distro_specific=True, distro_nonspecific=True, temp_sstate_location=True, should_pass=True):
@@ -37,19 +76,15 @@ class SStateTests(SStateBase):
         else:
             self.assertTrue(not file_tracker , msg="Found sstate files in the wrong place for: %s (found %s)" % (', '.join(map(str, targets)), str(file_tracker)))
 
-    @OETestID(975)
     def test_sstate_creation_distro_specific_pass(self):
         self.run_test_sstate_creation(['binutils-cross-'+ self.tune_arch, 'binutils-native'], distro_specific=True, distro_nonspecific=False, temp_sstate_location=True)
 
-    @OETestID(1374)
     def test_sstate_creation_distro_specific_fail(self):
         self.run_test_sstate_creation(['binutils-cross-'+ self.tune_arch, 'binutils-native'], distro_specific=False, distro_nonspecific=True, temp_sstate_location=True, should_pass=False)
 
-    @OETestID(976)
     def test_sstate_creation_distro_nonspecific_pass(self):
         self.run_test_sstate_creation(['linux-libc-headers'], distro_specific=False, distro_nonspecific=True, temp_sstate_location=True)
 
-    @OETestID(1375)
     def test_sstate_creation_distro_nonspecific_fail(self):
         self.run_test_sstate_creation(['linux-libc-headers'], distro_specific=True, distro_nonspecific=False, temp_sstate_location=True, should_pass=False)
 
@@ -60,27 +95,24 @@ class SStateTests(SStateBase):
         bitbake(['-ccleansstate'] + targets)
 
         bitbake(targets)
-        tgz_created = self.search_sstate('|'.join(map(str, [s + '.*?\.tgz$' for s in targets])), distro_specific, distro_nonspecific)
+        tgz_created = self.search_sstate('|'.join(map(str, [s + r'.*?\.tgz$' for s in targets])), distro_specific, distro_nonspecific)
         self.assertTrue(tgz_created, msg="Could not find sstate .tgz files for: %s (%s)" % (', '.join(map(str, targets)), str(tgz_created)))
 
-        siginfo_created = self.search_sstate('|'.join(map(str, [s + '.*?\.siginfo$' for s in targets])), distro_specific, distro_nonspecific)
+        siginfo_created = self.search_sstate('|'.join(map(str, [s + r'.*?\.siginfo$' for s in targets])), distro_specific, distro_nonspecific)
         self.assertTrue(siginfo_created, msg="Could not find sstate .siginfo files for: %s (%s)" % (', '.join(map(str, targets)), str(siginfo_created)))
 
         bitbake(['-ccleansstate'] + targets)
-        tgz_removed = self.search_sstate('|'.join(map(str, [s + '.*?\.tgz$' for s in targets])), distro_specific, distro_nonspecific)
+        tgz_removed = self.search_sstate('|'.join(map(str, [s + r'.*?\.tgz$' for s in targets])), distro_specific, distro_nonspecific)
         self.assertTrue(not tgz_removed, msg="do_cleansstate didn't remove .tgz sstate files for: %s (%s)" % (', '.join(map(str, targets)), str(tgz_removed)))
 
-    @OETestID(977)
     def test_cleansstate_task_distro_specific_nonspecific(self):
         targets = ['binutils-cross-'+ self.tune_arch, 'binutils-native']
         targets.append('linux-libc-headers')
         self.run_test_cleansstate_task(targets, distro_specific=True, distro_nonspecific=True, temp_sstate_location=True)
 
-    @OETestID(1376)
     def test_cleansstate_task_distro_nonspecific(self):
         self.run_test_cleansstate_task(['linux-libc-headers'], distro_specific=False, distro_nonspecific=True, temp_sstate_location=True)
 
-    @OETestID(1377)
     def test_cleansstate_task_distro_specific(self):
         targets = ['binutils-cross-'+ self.tune_arch, 'binutils-native']
         targets.append('linux-libc-headers')
@@ -94,14 +126,14 @@ class SStateTests(SStateBase):
         bitbake(['-ccleansstate'] + targets)
 
         bitbake(targets)
-        results = self.search_sstate('|'.join(map(str, [s + '.*?\.tgz$' for s in targets])), distro_specific=False, distro_nonspecific=True)
+        results = self.search_sstate('|'.join(map(str, [s + r'.*?\.tgz$' for s in targets])), distro_specific=False, distro_nonspecific=True)
         filtered_results = []
         for r in results:
             if r.endswith(("_populate_lic.tgz", "_populate_lic.tgz.siginfo")):
                 continue
             filtered_results.append(r)
         self.assertTrue(filtered_results == [], msg="Found distro non-specific sstate for: %s (%s)" % (', '.join(map(str, targets)), str(filtered_results)))
-        file_tracker_1 = self.search_sstate('|'.join(map(str, [s + '.*?\.tgz$' for s in targets])), distro_specific=True, distro_nonspecific=False)
+        file_tracker_1 = self.search_sstate('|'.join(map(str, [s + r'.*?\.tgz$' for s in targets])), distro_specific=True, distro_nonspecific=False)
         self.assertTrue(len(file_tracker_1) >= len(targets), msg = "Not all sstate files ware created for: %s" % ', '.join(map(str, targets)))
 
         self.track_for_cleanup(self.distro_specific_sstate + "_old")
@@ -110,7 +142,7 @@ class SStateTests(SStateBase):
 
         bitbake(['-cclean'] + targets)
         bitbake(targets)
-        file_tracker_2 = self.search_sstate('|'.join(map(str, [s + '.*?\.tgz$' for s in targets])), distro_specific=True, distro_nonspecific=False)
+        file_tracker_2 = self.search_sstate('|'.join(map(str, [s + r'.*?\.tgz$' for s in targets])), distro_specific=True, distro_nonspecific=False)
         self.assertTrue(len(file_tracker_2) >= len(targets), msg = "Not all sstate files ware created for: %s" % ', '.join(map(str, targets)))
 
         not_recreated = [x for x in file_tracker_1 if x not in file_tracker_2]
@@ -119,15 +151,12 @@ class SStateTests(SStateBase):
         created_once = [x for x in file_tracker_2 if x not in file_tracker_1]
         self.assertTrue(created_once == [], msg="The following sstate files ware created only in the second run: %s" % ', '.join(map(str, created_once)))
 
-    @OETestID(175)
     def test_rebuild_distro_specific_sstate_cross_native_targets(self):
         self.run_test_rebuild_distro_specific_sstate(['binutils-cross-' + self.tune_arch, 'binutils-native'], temp_sstate_location=True)
 
-    @OETestID(1372)
     def test_rebuild_distro_specific_sstate_cross_target(self):
         self.run_test_rebuild_distro_specific_sstate(['binutils-cross-' + self.tune_arch], temp_sstate_location=True)
 
-    @OETestID(1373)
     def test_rebuild_distro_specific_sstate_native_target(self):
         self.run_test_rebuild_distro_specific_sstate(['binutils-native'], temp_sstate_location=True)
 
@@ -156,25 +185,24 @@ class SStateTests(SStateBase):
             if not sstate_arch in sstate_archs_list:
                 sstate_archs_list.append(sstate_arch)
             if target_config[idx] == target_config[-1]:
-                target_sstate_before_build = self.search_sstate(target + '.*?\.tgz$')
+                target_sstate_before_build = self.search_sstate(target + r'.*?\.tgz$')
             bitbake("-cclean %s" % target)
             result = bitbake(target, ignore_status=True)
             if target_config[idx] == target_config[-1]:
-                target_sstate_after_build = self.search_sstate(target + '.*?\.tgz$')
+                target_sstate_after_build = self.search_sstate(target + r'.*?\.tgz$')
                 expected_remaining_sstate += [x for x in target_sstate_after_build if x not in target_sstate_before_build if not any(pattern in x for pattern in ignore_patterns)]
             self.remove_config(global_config[idx])
             self.remove_recipeinc(target, target_config[idx])
             self.assertEqual(result.status, 0, msg = "build of %s failed with %s" % (target, result.output))
 
         runCmd("sstate-cache-management.sh -y --cache-dir=%s --remove-duplicated --extra-archs=%s" % (self.sstate_path, ','.join(map(str, sstate_archs_list))))
-        actual_remaining_sstate = [x for x in self.search_sstate(target + '.*?\.tgz$') if not any(pattern in x for pattern in ignore_patterns)]
+        actual_remaining_sstate = [x for x in self.search_sstate(target + r'.*?\.tgz$') if not any(pattern in x for pattern in ignore_patterns)]
 
         actual_not_expected = [x for x in actual_remaining_sstate if x not in expected_remaining_sstate]
         self.assertFalse(actual_not_expected, msg="Files should have been removed but ware not: %s" % ', '.join(map(str, actual_not_expected)))
         expected_not_actual = [x for x in expected_remaining_sstate if x not in actual_remaining_sstate]
         self.assertFalse(expected_not_actual, msg="Extra files ware removed: %s" ', '.join(map(str, expected_not_actual)))
 
-    @OETestID(973)
     def test_sstate_cache_management_script_using_pr_1(self):
         global_config = []
         target_config = []
@@ -182,7 +210,6 @@ class SStateTests(SStateBase):
         target_config.append('PR = "0"')
         self.run_test_sstate_cache_management_script('m4', global_config,  target_config, ignore_patterns=['populate_lic'])
 
-    @OETestID(978)
     def test_sstate_cache_management_script_using_pr_2(self):
         global_config = []
         target_config = []
@@ -192,7 +219,6 @@ class SStateTests(SStateBase):
         target_config.append('PR = "1"')
         self.run_test_sstate_cache_management_script('m4', global_config,  target_config, ignore_patterns=['populate_lic'])
 
-    @OETestID(979)
     def test_sstate_cache_management_script_using_pr_3(self):
         global_config = []
         target_config = []
@@ -204,7 +230,6 @@ class SStateTests(SStateBase):
         target_config.append('PR = "1"')
         self.run_test_sstate_cache_management_script('m4', global_config,  target_config, ignore_patterns=['populate_lic'])
 
-    @OETestID(974)
     def test_sstate_cache_management_script_using_machine(self):
         global_config = []
         target_config = []
@@ -214,7 +239,6 @@ class SStateTests(SStateBase):
         target_config.append('')
         self.run_test_sstate_cache_management_script('m4', global_config,  target_config, ignore_patterns=['populate_lic'])
 
-    @OETestID(1270)
     def test_sstate_32_64_same_hash(self):
         """
         The sstate checksums for both native and target should not vary whether
@@ -226,6 +250,7 @@ class SStateTests(SStateBase):
         self.write_config("""
 MACHINE = "qemux86"
 TMPDIR = "${TOPDIR}/tmp-sstatesamehash"
+TCLIBCAPPEND = ""
 BUILD_ARCH = "x86_64"
 BUILD_OS = "linux"
 SDKMACHINE = "x86_64"
@@ -236,6 +261,7 @@ PACKAGE_CLASSES = "package_rpm package_ipk package_deb"
         self.write_config("""
 MACHINE = "qemux86"
 TMPDIR = "${TOPDIR}/tmp-sstatesamehash2"
+TCLIBCAPPEND = ""
 BUILD_ARCH = "i686"
 BUILD_OS = "linux"
 SDKMACHINE = "i686"
@@ -261,7 +287,6 @@ PACKAGE_CLASSES = "package_rpm package_ipk package_deb"
         self.assertCountEqual(files1, files2)
 
 
-    @OETestID(1271)
     def test_sstate_nativelsbstring_same_hash(self):
         """
         The sstate checksums should be independent of whichever NATIVELSBSTRING is
@@ -271,12 +296,14 @@ PACKAGE_CLASSES = "package_rpm package_ipk package_deb"
 
         self.write_config("""
 TMPDIR = \"${TOPDIR}/tmp-sstatesamehash\"
+TCLIBCAPPEND = \"\"
 NATIVELSBSTRING = \"DistroA\"
 """)
         self.track_for_cleanup(self.topdir + "/tmp-sstatesamehash")
         bitbake("core-image-sato -S none")
         self.write_config("""
 TMPDIR = \"${TOPDIR}/tmp-sstatesamehash2\"
+TCLIBCAPPEND = \"\"
 NATIVELSBSTRING = \"DistroB\"
 """)
         self.track_for_cleanup(self.topdir + "/tmp-sstatesamehash2")
@@ -293,7 +320,6 @@ NATIVELSBSTRING = \"DistroB\"
         self.maxDiff = None
         self.assertCountEqual(files1, files2)
 
-    @OETestID(1368)
     def test_sstate_allarch_samesigs(self):
         """
         The sstate checksums of allarch packages should be independent of whichever
@@ -304,25 +330,24 @@ NATIVELSBSTRING = \"DistroB\"
 
         configA = """
 TMPDIR = \"${TOPDIR}/tmp-sstatesamehash\"
+TCLIBCAPPEND = \"\"
 MACHINE = \"qemux86-64\"
 """
         configB = """
 TMPDIR = \"${TOPDIR}/tmp-sstatesamehash2\"
+TCLIBCAPPEND = \"\"
 MACHINE = \"qemuarm\"
 """
         self.sstate_allarch_samesigs(configA, configB)
 
-    @OETestID(1645)
-    def test_sstate_allarch_samesigs_multilib(self):
+    def test_sstate_nativesdk_samesigs_multilib(self):
         """
-        The sstate checksums of allarch multilib packages should be independent of whichever
-        MACHINE is set. Check this using bitbake -S.
-        Also, rather than duplicate the test, check nativesdk stamps are the same between
-        the two MACHINE values.
+        check nativesdk stamps are the same between the two MACHINE values.
         """
 
         configA = """
 TMPDIR = \"${TOPDIR}/tmp-sstatesamehash\"
+TCLIBCAPPEND = \"\"
 MACHINE = \"qemux86-64\"
 require conf/multilib.conf
 MULTILIBS = \"multilib:lib32\"
@@ -330,6 +355,7 @@ DEFAULTTUNE_virtclass-multilib-lib32 = \"x86\"
 """
         configB = """
 TMPDIR = \"${TOPDIR}/tmp-sstatesamehash2\"
+TCLIBCAPPEND = \"\"
 MACHINE = \"qemuarm\"
 require conf/multilib.conf
 MULTILIBS = \"\"
@@ -356,10 +382,6 @@ MULTILIBS = \"\"
                         (_, task, _, shash) = name.rsplit(".", 3)
                         f[os.path.join(os.path.basename(root), task)] = shash
             return f
-        files1 = get_files(self.topdir + "/tmp-sstatesamehash/stamps/all" + self.target_vendor + "-" + self.target_os)
-        files2 = get_files(self.topdir + "/tmp-sstatesamehash2/stamps/all" + self.target_vendor + "-" + self.target_os)
-        self.maxDiff = None
-        self.assertEqual(files1, files2)
 
         nativesdkdir = os.path.basename(glob.glob(self.topdir + "/tmp-sstatesamehash/stamps/*-nativesdk*-linux")[0])
 
@@ -368,7 +390,6 @@ MULTILIBS = \"\"
         self.maxDiff = None
         self.assertEqual(files1, files2)
 
-    @OETestID(1369)
     def test_sstate_sametune_samesigs(self):
         """
         The sstate checksums of two identical machines (using the same tune) should be the
@@ -378,6 +399,7 @@ MULTILIBS = \"\"
 
         self.write_config("""
 TMPDIR = \"${TOPDIR}/tmp-sstatesamehash\"
+TCLIBCAPPEND = \"\"
 MACHINE = \"qemux86\"
 require conf/multilib.conf
 MULTILIBS = "multilib:lib32"
@@ -387,6 +409,7 @@ DEFAULTTUNE_virtclass-multilib-lib32 = "x86"
         bitbake("world meta-toolchain -S none")
         self.write_config("""
 TMPDIR = \"${TOPDIR}/tmp-sstatesamehash2\"
+TCLIBCAPPEND = \"\"
 MACHINE = \"qemux86copy\"
 require conf/multilib.conf
 MULTILIBS = "multilib:lib32"
@@ -413,7 +436,6 @@ DEFAULTTUNE_virtclass-multilib-lib32 = "x86"
         self.assertCountEqual(files1, files2)
 
 
-    @OETestID(1498)
     def test_sstate_noop_samesigs(self):
         """
         The sstate checksums of two builds with these variables changed or
@@ -422,6 +444,7 @@ DEFAULTTUNE_virtclass-multilib-lib32 = "x86"
 
         self.write_config("""
 TMPDIR = "${TOPDIR}/tmp-sstatesamehash"
+TCLIBCAPPEND = ""
 BB_NUMBER_THREADS = "${@oe.utils.cpu_count()}"
 PARALLEL_MAKE = "-j 1"
 DL_DIR = "${TOPDIR}/download1"
@@ -435,6 +458,7 @@ http_proxy = ""
         bitbake("world meta-toolchain -S none")
         self.write_config("""
 TMPDIR = "${TOPDIR}/tmp-sstatesamehash2"
+TCLIBCAPPEND = ""
 BB_NUMBER_THREADS = "${@oe.utils.cpu_count()+1}"
 PARALLEL_MAKE = "-j 2"
 DL_DIR = "${TOPDIR}/download2"
@@ -490,7 +514,7 @@ http_proxy = "http://example.com/"
         # this is an expensive computation, thus just compare the first 'max_sigfiles_to_compare' k files
         max_sigfiles_to_compare = 20
         first, rest = files[:max_sigfiles_to_compare], files[max_sigfiles_to_compare:]
-        compare_sigfiles(first, files1.keys(), files2.keys(), compare=True)
-        compare_sigfiles(rest, files1.keys(), files2.keys(), compare=False)
+        compare_sigfiles(first, files1, files2, compare=True)
+        compare_sigfiles(rest, files1, files2, compare=False)
 
         self.fail("sstate hashes not identical.")

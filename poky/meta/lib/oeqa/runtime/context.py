@@ -1,5 +1,8 @@
+#
 # Copyright (C) 2016 Intel Corporation
-# Released under the MIT license (see COPYING.MIT)
+#
+# SPDX-License-Identifier: MIT
+#
 
 import os
 
@@ -49,7 +52,6 @@ class OERuntimeTestContextExecutor(OETestContextExecutor):
     default_manifest = 'data/manifest'
     default_server_ip = '192.168.7.1'
     default_target_ip = '192.168.7.2'
-    default_host_dumper_dir = '/tmp/oe-saved-tests'
     default_extract_dir = 'packages/extracted'
 
     def register_commands(self, logger, subparsers):
@@ -71,9 +73,7 @@ class OERuntimeTestContextExecutor(OETestContextExecutor):
                 % self.default_server_ip)
 
         runtime_group.add_argument('--host-dumper-dir', action='store',
-                default=self.default_host_dumper_dir,
-                help="Directory where host status is dumped, if tests fails, default: %s" \
-                % self.default_host_dumper_dir)
+                help="Directory where host status is dumped, if tests fails")
 
         runtime_group.add_argument('--packages-manifest', action='store',
                 default=self.default_manifest,
@@ -101,7 +101,7 @@ class OERuntimeTestContextExecutor(OETestContextExecutor):
         if target_type == 'simpleremote':
             target = OESSHTarget(logger, target_ip, server_ip, **kwargs)
         elif target_type == 'qemu':
-            target = OEQemuTarget(logger, target_ip, server_ip, **kwargs)
+            target = OEQemuTarget(logger, server_ip, **kwargs)
         else:
             # XXX: This code uses the old naming convention for controllers and
             # targets, the idea it is to leave just targets as the controller
@@ -112,12 +112,9 @@ class OERuntimeTestContextExecutor(OETestContextExecutor):
             # XXX: Don't base your targets on this code it will be refactored
             # in the near future.
             # Custom target module loading
-            try:
-                target_modules_path = kwargs.get('target_modules_path', '')
-                controller = OERuntimeTestContextExecutor.getControllerModule(target_type, target_modules_path)
-                target = controller(logger, target_ip, server_ip, **kwargs)
-            except ImportError as e:
-                raise TypeError("Failed to import %s from available controller modules" % target_type)
+            target_modules_path = kwargs.get('target_modules_path', '')
+            controller = OERuntimeTestContextExecutor.getControllerModule(target_type, target_modules_path)
+            target = controller(logger, target_ip, server_ip, **kwargs)
 
         return target
 
@@ -173,10 +170,7 @@ class OERuntimeTestContextExecutor(OETestContextExecutor):
     def _loadControllerFromModule(target, modulename):
         obj = None
         # import module, allowing it to raise import exception
-        try:
-            module = __import__(modulename, globals(), locals(), [target])
-        except Exception as e:
-            return obj
+        module = __import__(modulename, globals(), locals(), [target])
         # look for target class in the module, catching any exceptions as it
         # is valid that a module may not have the target class.
         try:

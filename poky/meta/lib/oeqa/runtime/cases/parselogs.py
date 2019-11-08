@@ -1,10 +1,13 @@
+#
+# SPDX-License-Identifier: MIT
+#
+
 import os
 
 from subprocess import check_output
 from shutil import rmtree
 from oeqa.runtime.case import OERuntimeTestCase
 from oeqa.core.decorator.depends import OETestDepends
-from oeqa.core.decorator.oeid import OETestID
 from oeqa.core.decorator.data import skipIfDataVar
 from oeqa.runtime.decorator.package import OEHasPackage
 
@@ -49,6 +52,10 @@ common_errors = [
     "error: couldn\'t mount because of unsupported optional features",
     "GPT: Use GNU Parted to correct GPT errors",
     "Cannot set xattr user.Librepo.DownloadInProgress",
+    "Failed to read /var/lib/nfs/statd/state: Success",
+    "error retry time-out =",
+    "logind: cannot setup systemd-logind helper (-61), using legacy fallback",
+    "Error changing net interface name 'eth0' to "
     ]
 
 video_related = [
@@ -65,6 +72,8 @@ x86_common = [
     'amd_nb: Cannot enumerate AMD northbridges',
     'failed to retrieve link info, disabling eDP',
     'Direct firmware load for iwlwifi',
+    'Direct firmware load for regulatory.db',
+    'failed to load regulatory.db',
 ] + common_errors
 
 qemux86_common = [
@@ -109,6 +118,7 @@ ignore_errors = {
         'OF: amba_device_add() failed (-19) for /amba/sctl@101e0000',
         'OF: amba_device_add() failed (-19) for /amba/watchdog@101e1000',
         'OF: amba_device_add() failed (-19) for /amba/sci@101f0000',
+        'OF: amba_device_add() failed (-19) for /amba/spi@101f4000',
         'OF: amba_device_add() failed (-19) for /amba/ssp@101f4000',
         'OF: amba_device_add() failed (-19) for /amba/fpga/sci@a000',
         'Failed to initialize \'/amba/timer@101e3000\': -22',
@@ -120,15 +130,6 @@ ignore_errors = {
         'dmi: Firmware registration failed.',
         'irq: type mismatch, failed to map hwirq-27 for /intc',
         ] + common_errors,
-    'emenlow' : [
-        '[Firmware Bug]: ACPI: No _BQC method, cannot determine initial brightness',
-        '(EE) Failed to load module "psb"',
-        '(EE) Failed to load module psb',
-        '(EE) Failed to load module "psbdrv"',
-        '(EE) Failed to load module psbdrv',
-        '(EE) open /dev/fb0: No such file or directory',
-        '(EE) AIGLX: reverting to software rendering',
-        ] + x86_common,
     'intel-core2-32' : [
         'ACPI: No _BQC method, cannot determine initial brightness',
         '[Firmware Bug]: ACPI: No _BQC method, cannot determine initial brightness',
@@ -156,7 +157,6 @@ ignore_errors = {
         'Bluetooth: hci0: Failed to send firmware data (-38)',
         'atkbd serio0: Failed to enable keyboard on isa0060/serio0',
         ] + x86_common,
-    'crownbay' : x86_common,
     'genericx86' : x86_common,
     'genericx86-64' : [
         'Direct firmware load for i915',
@@ -167,11 +167,23 @@ ignore_errors = {
         'The driver is built-in, so to load the firmware you need to',
         ] + x86_common,
     'edgerouter' : [
+        'not creating \'/sys/firmware/fdt\'',
+        'Failed to find cpu0 device node',
         'Fatal server error:',
+        'Server terminated with error',
         ] + common_errors,
-    'jasperforest' : [
-        'Activated service \'org.bluez\' failed:',
-        'Unable to find NFC netlink family',
+    'beaglebone-yocto' : [
+        'Direct firmware load for regulatory.db',
+        'failed to load regulatory.db',
+        'l4_wkup_cm',
+        'Failed to load module "glx"',
+        'Failed to make EGL context current',
+        'glamor initialization failed',
+        ] + common_errors,
+    'mpc8315e-rdb' : [
+        'of_irq_parse_pci: failed with',
+        'Fatal server error:',
+        'Server terminated with error',
         ] + common_errors,
 }
 
@@ -323,7 +335,7 @@ class ParseLogsTest(OERuntimeTestCase):
                 pass
 
             if result is not None:
-                results[log.replace('target_logs/','')] = {}
+                results[log] = {}
                 rez = result.splitlines()
 
                 for xrez in rez:
@@ -333,7 +345,7 @@ class ParseLogsTest(OERuntimeTestCase):
                         grep_output = check_output(cmd).decode('utf-8')
                     except:
                         pass
-                    results[log.replace('target_logs/','')][xrez]=grep_output
+                    results[log][xrez]=grep_output
 
         return results
 
@@ -342,7 +354,6 @@ class ParseLogsTest(OERuntimeTestCase):
     def write_dmesg(self):
         (status, dmesg) = self.target.run('dmesg > /tmp/dmesg_output.log')
 
-    @OETestID(1059)
     @OETestDepends(['ssh.SSHTest.test_ssh'])
     def test_parselogs(self):
         self.write_dmesg()
