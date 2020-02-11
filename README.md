@@ -1,7 +1,7 @@
 # IRIS HubOS Build Instructions for OSS Redistribution
 
 The development environment for the IRIS HubOS is currently based on the
-Yocto 2.4.3 "Rocko" release.  The proprietary hardware is similar to that
+Yocto 2.7.2 "Warrior" release.  The proprietary hardware is similar to that
 of the BeagleBone Black for our second generation Hub, and a custom
 NXP imx6DualLite design for the 3rd generation Hub.
 
