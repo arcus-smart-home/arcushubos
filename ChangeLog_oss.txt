@@ -5,6 +5,10 @@
 
 IRIS Changes to poky
 
+Import of Yocto 2.7.2 (poky-warrior-21.0.2) release
+ ...
+ 184 files changed, 8563 insertions(+), 1373 deletions(-)
+
 Import of Yocto 2.7.1 (poky-warrior-21.0.1) release
  ...
  724 files changed, 8119 insertions(+), 10641 deletions(-)
