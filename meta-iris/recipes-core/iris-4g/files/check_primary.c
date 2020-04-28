@@ -22,7 +22,7 @@
 #include <irislib.h>
 #include "backup.h"
 
-#define CHECK_HUB_URL   "http://104.46.102.172/check-hub"
+#define CHECK_HUB_URL   "http://captive.apple.com/hotspot-detect.html"
 #define CHECK_TIMEOUT   5
 #define CURL_CMD        "/usr/bin/curl -m %d --interface %s %s"
 
