@@ -30,7 +30,7 @@ WPACFG=/tmp/wpa_supplicant.conf
 WIFICFG=/tmp/testWifi.cfg
 WPALOG=/tmp/wpa.log
 duration=30
-CHECK_HUB_URL="http://104.46.102.172/check-hub"
+CHECK_HUB_URL="http://captive.apple.com/hotspot-detect.html"
 CHECK_TIMEOUT=5
 
 # Need to have at least the first two arguments
