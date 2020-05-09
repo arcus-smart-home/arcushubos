@@ -4,3 +4,6 @@
 [submodule "meta-openembedded"]
 	path = meta-openembedded
 	url = git://git.openembedded.org/meta-openembedded
+[submodule "meta-freescale"]
+	path = meta-freescale
+	url = git://github.com/Freescale/meta-freescale.git
