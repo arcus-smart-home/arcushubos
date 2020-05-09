@@ -7,3 +7,6 @@
 [submodule "meta-freescale"]
 	path = meta-freescale
 	url = git://github.com/Freescale/meta-freescale.git
+[submodule "meta-freescale-3rdparty"]
+	path = meta-freescale-3rdparty
+	url = git://github.com/Freescale/meta-freescale-3rdparty.git
