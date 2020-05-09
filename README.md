@@ -1,7 +1,7 @@
 # IRIS HubOS Build Instructions for OSS Redistribution
 
 The development environment for the IRIS HubOS is currently based on the
-Yocto 2.7.2 "Warrior" release.  The proprietary hardware is similar to that
+Yocto 2.7.3 "Warrior" release.  The proprietary hardware is similar to that
 of the BeagleBone Black for our second generation Hub, and a custom
 NXP imx6DualLite design for the 3rd generation Hub.
 
@@ -13,7 +13,7 @@ file.
 
 ## Instructions for build environment set up
 
-Please use a Yocto Supported Operating system. For Yocto 2.4.3, this is **CentOS 7**, **Debian 9**, Fedora 26, Fedora 27, OpenSuse 42.3, **Ubuntu 16.04**, and Ubuntu 17.10. Only Debian 9 and Ubuntu 16.04 are known to work at this time.
+Please use a Yocto Supported Operating system. For Yocto 2.7.3, this is **CentOS 7**, **Debian 9**, Fedora 28, Fedora 29, OpenSuse 42.3, **Ubuntu 16.04**, and **Ubuntu 18.04**.
 
 As with any Yocto project, you should be using a fairly capable system (e.g. modern core "i" series processor, 25GB or more of disk space, and ideally an SSD) to achieve reasoanble build times.
 
@@ -48,6 +48,18 @@ the configuration in build/conf/local.conf to comment out this line or change
 to another location:
 
 `SSTATE_DIR ?= "/build/sstate-cache"`
+
+
+## Git submodules initialization
+
+A number of core modules (poky, meta-openembedded, meta-freescale and
+meta-freescale-3rdparty) are used as Git submodules and therefore need
+to be initialized after the clone of the project:
+
+```
+$ cd arcushubos
+$ git submodule update --init
+```
 
 
 ## Makefile Targets
