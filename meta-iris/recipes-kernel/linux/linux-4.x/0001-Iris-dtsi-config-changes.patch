@@ -62,7 +62,7 @@ diff --git a/arch/arm/boot/dts/am335x-boneblack-common.dtsi b/arch/arm/boot/dts/
 index 325daae4..c0cdd25 100644
 --- a/arch/arm/boot/dts/am335x-boneblack-common.dtsi
 +++ b/arch/arm/boot/dts/am335x-boneblack-common.dtsi
-@@ -27,137 +27,67 @@
+@@ -27,142 +27,67 @@
  };
  
  &am33xx_pinmux {
@@ -124,14 +124,14 @@ index 325daae4..c0cdd25 100644
 -
 -&lcdc {
 -	status = "okay";
--
+ 
 -	/* If you want to get 24 bit RGB and 16 BGR mode instead of
 -	 * current 16 bit RGB and 24 BGR modes, set the propety
 -	 * below to "crossed" and uncomment the video-ports -property
 -	 * in tda19988 node.
 -	 */
 -	blue-and-red-wiring = "straight";
- 
+-
 -	port {
 -		lcdc_0: endpoint@0 {
 -			remote-endpoint = <&hdmi_0>;
@@ -144,7 +144,7 @@ index 325daae4..c0cdd25 100644
  };
  
 -&i2c0 {
--	tda19988: tda19988 {
+-	tda19988: tda19988@70 {
 -		compatible = "nxp,tda998x";
 -		reg = <0x70>;
 -
@@ -197,39 +197,44 @@ index 325daae4..c0cdd25 100644
  };
  
 -/ {
+-	memory@80000000 {
+-		device_type = "memory";
+-		reg = <0x80000000 0x20000000>; /* 512 MB */
+-	};
+-
 -	clk_mcasp0_fixed: clk_mcasp0_fixed {
 -		#clock-cells = <0>;
 -		compatible = "fixed-clock";
 -		clock-frequency = <24576000>;
 -	};
--
++&epwmss2 {
++	status = "okay";
++};
+ 
 -	clk_mcasp0: clk_mcasp0 {
 -		#clock-cells = <0>;
 -		compatible = "gpio-gate-clock";
 -		clocks = <&clk_mcasp0_fixed>;
 -		enable-gpios = <&gpio1 27 0>; /* BeagleBone Black Clk enable on GPIO1_27 */
 -	};
--
--	sound {
--		compatible = "simple-audio-card";
--		simple-audio-card,name = "TI BeagleBone Black";
--		simple-audio-card,format = "i2s";
--		simple-audio-card,bitclock-master = <&dailink0_master>;
--		simple-audio-card,frame-master = <&dailink0_master>;
-+&epwmss2 {
-+	status = "okay";
-+};
- 
--		dailink0_master: simple-audio-card,cpu {
--			sound-dai = <&mcasp0>;
--			clocks = <&clk_mcasp0>;
--		};
 +&ehrpwm2 {
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pwm_buzzer_ext1_pins>;
 +	status = "okay";
 +};
  
+-	sound {
+-		compatible = "simple-audio-card";
+-		simple-audio-card,name = "TI BeagleBone Black";
+-		simple-audio-card,format = "i2s";
+-		simple-audio-card,bitclock-master = <&dailink0_master>;
+-		simple-audio-card,frame-master = <&dailink0_master>;
+-
+-		dailink0_master: simple-audio-card,cpu {
+-			sound-dai = <&mcasp0>;
+-			clocks = <&clk_mcasp0>;
+-		};
+-
 -		simple-audio-card,codec {
 -			sound-dai = <&tda19988>;
 -		};
@@ -238,6 +243,7 @@ index 325daae4..c0cdd25 100644
 +	status = "disabled";
 +	ti,hwmods="disabled";
  };
+
 diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
 index 6dc51a7..fd90695 100644
 --- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
