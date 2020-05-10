@@ -5,11 +5,11 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/linux-4.x:"
 KERNEL_EXTRA_FEATURES = ""
 KERNEL_FEATURES_append = ""
 
-# Upgrade to 4.19.78 kernel until Yocto release catches up...
-SRCREV_machine_beaglebone-yocto ?= "a915fbeae8ed987402f69666d90bef15a01c5823"
-LINUX_VERSION_beaglebone-yocto = "4.19.78"
+# Upgrade to 4.19.115 kernel until Yocto release catches up...
+SRCREV_machine_beaglebone-yocto ?= "8e53093ba27fb7a714f62ad52c30031c3e0ae13d"
+LINUX_VERSION_beaglebone-yocto = "4.19.115"
 KERNEL_VERSION_SANITY_SKIP="1"
-LINUX_VERSION = "4.19.78"
+LINUX_VERSION = "4.19.115"
 PV = "${LINUX_VERSION}+git${SRCPV}"
 
 # Create a uImage output file to match what we have done in past
@@ -23,8 +23,8 @@ SRC_URI += " \
 	file://pwm.cfg \
 	file://usb.cfg \
 	file://0001-Iris-dtsi-config-changes.patch \
-	file://0002-Disable-Ethernet-MDIX.patch \
 	file://0004-Go-back-to-old-mmc-numbering-scheme.patch \
+	file://0002-Disable-Ethernet-MDIX.patch \
 	"
 
 # This issue appears to have been fixed in another manner
