@@ -486,7 +486,7 @@ static int file_unpack200_cb(const char *fpath, const struct stat *sb,
     struct passwd *pwd = getpwnam("agent");
     char filename[256], cmd[512], *p;
 
-    strncpy(filename, fpath, sizeof(filename));
+    strncpy(filename, fpath, sizeof(filename)-1);
 
     /* Does file end with .pack.gz? */
     if ((p = strstr(filename, ".pack.gz")) == NULL) {
