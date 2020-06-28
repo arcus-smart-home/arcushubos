@@ -5,6 +5,8 @@
 
 IRIS Changes to poky
 
+Upgrade submodule to Yocto 3.0.3 tag
+
 Upgrade submodule to Yocto 2.7.4 tag
 
 Converted to submodule using Yocto 2.7.3 tag
@@ -120,6 +122,8 @@ Import of Yocto 1.7.0 release (poky-dizzy-12.0.0)
 
 IRIS Changes to meta-openembedded
 
+Update submodule to latest commit circa Yocto 3.0.3 release
+
 Converted to submodule using commit circa Yocto 2.7.3 tag
 
 Latest update to meta-openembedded "warrior" branch, circa 21.0.1 release
@@ -185,6 +189,8 @@ Import of meta-openembedded daisy snapshot
 
 IRIS Changes to meta-freescale
 
+Update submodule to latest commit circa Yocto 3.0.3 release
+
 Update submodule to latest commit circa Yocto 2.7.4 release
 
 Converted to submodule using commit circa Yocto 2.7.3 tag
@@ -208,6 +214,8 @@ Import of latest "Rocko" branch support from FSL Community BSP
 
 
 IRIS Changes to meta-freescale-3rdparty
+
+Update submodule to latest commit circa Yocto 3.0.3 release
 
 Converted to submodule using commit circa Yocto 2.7.3 tag
 

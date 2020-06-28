@@ -1,7 +1,7 @@
 # IRIS HubOS Build Instructions for OSS Redistribution
 
 The development environment for the IRIS HubOS is currently based on the
-Yocto 2.7.4 "Warrior" release.  The proprietary hardware is similar to that
+Yocto 3.0.3 "Zeus" release.  The proprietary hardware is similar to that
 of the BeagleBone Black for our second generation Hub, and a custom
 NXP imx6DualLite design for the 3rd generation Hub.
 
@@ -13,7 +13,7 @@ file.
 
 ## Instructions for build environment set up
 
-Please use a Yocto Supported Operating system. For Yocto 2.7.4, this is **CentOS 7**, **Debian 9**, Fedora 28, Fedora 29, OpenSuse 42.3, **Ubuntu 16.04**, and **Ubuntu 18.04**.
+Please use a Yocto Supported Operating system. For Yocto 3.0.3, this is **CentOS 7**, **Debian 9**, Fedora 28, Fedora 29, OpenSuse 42.3, **Ubuntu 16.04**, and **Ubuntu 18.04**.
 
 As with any Yocto project, you should be using a fairly capable system (e.g. modern core "i" series processor, 25GB or more of disk space, and ideally an SSD) to achieve reasoanble build times.
 
