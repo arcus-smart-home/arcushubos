@@ -148,7 +148,7 @@ int main(int argc, char** argv)
                 ptr = strstr(line, "Address:");
                 if (ptr != NULL) {
                     ptr += strlen("Address: ");
-                    strncpy(bssid, ptr, sizeof(bssid));
+                    strncpy(bssid, ptr, sizeof(bssid)-1);
                 }
 
                 // Next line has channel info
@@ -205,7 +205,7 @@ int main(int argc, char** argv)
                     // Skip quotes
                     ptr += strlen("ESSID:") + 1;
                     len = strlen(ptr) - 2;
-                    strncpy(ssid, ptr, sizeof(ssid));
+                    strncpy(ssid, ptr, sizeof(ssid)-1);
                     ssid[len] = '\0';
                 }
 

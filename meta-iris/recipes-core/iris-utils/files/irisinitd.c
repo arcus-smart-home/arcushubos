@@ -21,6 +21,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <time.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -30,7 +31,6 @@
 #include <sys/inotify.h>
 #include <semaphore.h>
 #include <irislib.h>
-#include <stropts.h>
 #include <linux/watchdog.h>
 
 
@@ -744,7 +744,7 @@ static void *ledThreadHandler(void *ptr)
                         /* Open ledMode file */
                         f = fopen(LED_MODE_FILE, "r");
                         if (f != NULL) {
-                            char data[128];
+                            char data[127];
                             char cmd[128];
 
                             /* Read data from ledMode file */
@@ -795,7 +795,7 @@ static void *ledThreadHandler(void *ptr)
                             } else {
                                 /* Update last mode */
                                 strncpy(last_led_mode, data,
-					sizeof(last_led_mode));
+					sizeof(last_led_mode)-1);
                             }
                         }
                     }
@@ -908,13 +908,13 @@ static int checkConnection(void)
 
                     // First address is the server, second the host
                     if (addr_count == 0) {
-                        strncpy(server, ptr, sizeof(server));
+                        strncpy(server, ptr, sizeof(server)-1);
                     } else {
-                        strncpy(host, ptr, sizeof(host));
+                        strncpy(host, ptr, sizeof(host)-1);
                     }
                     if (++addr_count == 2) {
                         // If server == host, some sort of DNS redirect occurred
-                        if (strncmp(server, host, sizeof(server)) == 0) {
+                        if (strncmp(server, host, sizeof(server)-1) == 0) {
                             break;
                         } else {
                             // Found a result!
@@ -1178,7 +1178,7 @@ static void *provisioningThreadHandler(void *ptr)
                             char *ptr = strstr(line, "ssid: ");
                             if (ptr) {
                                 ptr += strlen("ssid: ");
-                                strncpy(ssid, ptr, sizeof(ssid));
+                                strncpy(ssid, ptr, sizeof(ssid)-1);
                                 ssid[strlen(ptr) - 1] = '\0';
                             }
                         }
