@@ -4,7 +4,7 @@ sphinx==1.6.5
 docutils==0.14
 sphinx_rtd_theme
 junit2html
-PyYAML==3.12
+PyYAML==5.4
 ply==3.10
 hub==2.0
 gitlint
