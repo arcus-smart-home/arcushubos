@@ -1,3 +1,5 @@
+Upstream-Status: Inappropriate [Iris Hub V2 specific]
+
 diff -Naur bluez-5.46-orig/src/bluetooth.conf bluez-5.46/src/bluetooth.conf
 --- bluez-5.46-orig/src/bluetooth.conf	2015-03-11 06:01:57.000000000 -0400
 +++ bluez-5.46/src/bluetooth.conf	2018-03-26 12:10:57.371022837 -0400

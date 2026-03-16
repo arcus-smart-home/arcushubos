@@ -101,6 +101,10 @@ int main(int argc, char** argv)
         } else {
             filename = &urlarg[7];
         }
+        if (access(filename, R_OK) != 0) {
+            fprintf(stderr, "File not found: %s\n", filename);
+            exit(INSTALL_DOWNLOAD_ERR);
+        }
         snprintf(cmd, sizeof(cmd), "ln -s %s %s", filename, TMP_FILE);
     } else {
 #ifdef USE_CURL

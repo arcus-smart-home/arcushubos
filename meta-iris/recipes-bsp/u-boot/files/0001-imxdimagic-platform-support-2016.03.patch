@@ -3481,7 +3481,7 @@ index 0000000..c1de439
 +#define CONFIG_SYS_PROMPT "MX6Q IMAGIC U-Boot > "
 +#define CONFIG_FAT_WRITE
 +
-+#define CONFIG_BOOTDELAY        1
++#define CONFIG_BOOTDELAY        5
 +
 +#define CONFIG_CMD_IMX_DOWNLOAD_MODE
 +

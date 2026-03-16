@@ -41,14 +41,14 @@ LIC_FILES_CHKSUM = "\
 LICENSE_PATH += "${S}"
 
 CLEANBROKEN = "1"
-INSANE_SKIP_${PN} = "installed-vs-shipped "
+INSANE_SKIP:${PN} = "installed-vs-shipped "
 
-FILES_${PN}-license += "/lib/firmware/LICEN*rtl*"
-FILES_${PN}-license += "/lib/firmware/LICENCE.broadcom_bcm43xx"
-FILES_${PN} += "/lib/firmware/rtlwifi/*8192cu*"
-FILES_${PN} += "/lib/firmware/rtlwifi/*8188*"
-FILES_${PN} += "/lib/firmware/brcm/brcmfmac43362-sdio.bin"
-FILES_${PN} += "/lib/firmware/brcm/brcmfmac43362-sdio.txt"
+FILES:${PN}-license += "/lib/firmware/LICEN*rtl*"
+FILES:${PN}-license += "/lib/firmware/LICENCE.broadcom_bcm43xx"
+FILES:${PN} += "/lib/firmware/rtlwifi/*8192cu*"
+FILES:${PN} += "/lib/firmware/rtlwifi/*8188*"
+FILES:${PN} += "/lib/firmware/brcm/brcmfmac43362-sdio.bin"
+FILES:${PN} += "/lib/firmware/brcm/brcmfmac43362-sdio.txt"
 
 do_compile() {
 	:

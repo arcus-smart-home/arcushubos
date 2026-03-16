@@ -33,7 +33,7 @@ SRC_URI = "git://github.com/intel/tinycbor.git;protocol=git;branch=${BRANCH}"
 
 S = "${WORKDIR}/git"
 
-INSANE_SKIP_${PN} = "ldflags"
+INSANE_SKIP:${PN} = "ldflags"
 
 do_install () {
 	install -d ${D}${includedir}

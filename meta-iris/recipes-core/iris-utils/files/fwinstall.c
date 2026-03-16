@@ -224,6 +224,9 @@ int main(int argc, char** argv)
         exit(INSTALL_UNPACK_ERR);
     }
 
+    // Remove archive to free tmpfs now that it's extracted
+    unlink(filearg);
+
     // Files will be in the update directory
     chdir("/tmp/update");
     fprintf(stdout, "Verifying file checksums...\n");

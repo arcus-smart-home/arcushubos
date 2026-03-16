@@ -1,5 +1,5 @@
 #
-# Support for Debian pre-build OpenJDK 8 binary package
+# Support for Adoptium Temurin pre-built OpenJDK 8 binary package
 #
 
 #
@@ -18,63 +18,47 @@
 # limitations under the License.
 #
 
-SUMMARY = "Debian pre-build armhf OpenJDK 8 binaries"
+SUMMARY = "Adoptium Temurin pre-built armhf OpenJDK 8 binaries"
 PR = "r1"
 S = "${WORKDIR}"
 
-DEPENDS = "zip-native"
-
-OPENJDK_VERSION = "8u265-b01-0+deb9u1"
+DEPENDS = "zip-native unzip-native"
 
 libdir_jvm ?= "${libdir}/jvm"
 JDK_HOME = "${libdir_jvm}/java-8-openjdk"
-BIN_DIR = "${S}/openjdk-${OPENJDK_VERSION}"
+BIN_DIR = "${WORKDIR}/jdk"
 
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://${BIN_DIR}/usr/lib/jvm/java-8-openjdk-armhf/ASSEMBLY_EXCEPTION;md5=d94f7c92ff61c5d3f8e9433f76e39f74"
+LIC_FILES_CHKSUM = "file://${BIN_DIR}/ASSEMBLY_EXCEPTION;md5=d94f7c92ff61c5d3f8e9433f76e39f74"
 
-OPENJDK_DEBIAN_URL = "http://security.debian.org/debian-security/pool/updates/main/o/openjdk-8/"
-
-JDK_FILE = "openjdk-8-jdk-headless_${OPENJDK_VERSION}_armhf.deb"
-JDK_URI = "${OPENJDK_DEBIAN_URL}/${JDK_FILE};name=jdk;unpack=false"
-SRC_URI[jdk.md5sum] = "f9cea25fda23732708516be1f8b78946"
-SRC_URI[jdk.sha256sum] = "987cbcebc7b7e202031a9ccf80948243dec197aa6bf2aa8834fad9de89b08b78"
-
-JRE_FILE = "openjdk-8-jre-headless_${OPENJDK_VERSION}_armhf.deb"
-JRE_URI = "${OPENJDK_DEBIAN_URL}/${JRE_FILE};name=jre;unpack=false"
-SRC_URI[jre.md5sum] = "0cfb7e0611002fb312e011daca8acb55"
-SRC_URI[jre.sha256sum] = "5cec879b5fc181a8dbf14a175af7808e393a3f06b0fb02005d7aad1cc5f32748"
-
-# Files we override
 SRC_URI = " \
-	${JDK_URI} \
-	${JRE_URI} \
+	https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u482-b08/OpenJDK8U-jdk_arm_linux_hotspot_8u482b08.tar.gz \
 	file://iris-java.security \
 	"
+SRC_URI[sha256sum] = "1d0d16394e2fe637f9eb8e73e63ea6fe9ceee98337c0527aa058cee777ad638a"
 
-FILES_${PN} += "/usr/lib/jvm/java-8-openjdk"
+FILES:${PN} += "/usr/lib/jvm/java-8-openjdk"
 
-# Ignore warnings
-ALLOW_EMPTY_${PN} = "1"
-INSANE_SKIP_${PN} = "installed-vs-shipped "
+ALLOW_EMPTY:${PN} = "1"
+INSANE_SKIP:${PN} = "installed-vs-shipped already-stripped"
 
-# Avoid "was already stripped, this will prevent future debugging!" errors
-INSANE_SKIP_${PN} = "already-stripped"
+# Pre-built binaries — skip rpmdeps ELF scanning so internal cross-references
+# (e.g. libjawt→libawt, libsplashscreen→libX11) don't become RPM Requires.
+SKIP_FILEDEPS:${PN} = "1"
 
-do_unpack_extract_submodules () {
-    mkdir -p "${BIN_DIR}"
-    cd "${BIN_DIR}"
-    /usr/bin/dpkg-deb -x ${WORKDIR}/${JDK_FILE} .
-    /usr/bin/dpkg-deb -x ${WORKDIR}/${JRE_FILE} .
+# Rename the date-stamped extracted directory to a deterministic name
+do_unpack_fixup () {
+    cd "${WORKDIR}"
+    mv jdk8u482-b08-aarch32-* jdk || true
 }
 
-do_unpack[postfuncs] += "do_unpack_extract_submodules"
+do_unpack[postfuncs] += "do_unpack_fixup"
 
 
 do_install() {
 	bbnote "Installing from ${BIN_DIR} to ${D}${JDK_HOME}"
 	install -d ${D}${libdir_jvm}
-	cp -R ${BIN_DIR}/usr/lib/jvm/java-8-openjdk-armhf/ ${D}${JDK_HOME}
+	cp -R ${BIN_DIR}/ ${D}${JDK_HOME}
 	chmod u+rw -R ${D}${JDK_HOME}
 
 	# Remove top-level items we don't need on the hub
@@ -83,6 +67,15 @@ do_install() {
 	rm -rf ${D}${JDK_HOME}/man
 	rm -rf ${D}${JDK_HOME}/sample
 	rm -rf ${D}${JDK_HOME}/src.zip
+	rm -rf ${D}${JDK_HOME}/ASSEMBLY_EXCEPTION
+	rm -rf ${D}${JDK_HOME}/DISCLAIMER
+	rm -rf ${D}${JDK_HOME}/LICENSE
+	rm -rf ${D}${JDK_HOME}/THIRD_PARTY_README
+	rm -rf ${D}${JDK_HOME}/NOTICE
+	rm -rf ${D}${JDK_HOME}/release
+	rm -rf ${D}${JDK_HOME}/jre/LICENSE
+	rm -rf ${D}${JDK_HOME}/jre/ASSEMBLY_EXCEPTION
+	rm -rf ${D}${JDK_HOME}/jre/THIRD_PARTY_README
 
 	# Remove unneeded top-level binaries
         rm -rf ${D}${JDK_HOME}/bin/extcheck
@@ -121,6 +114,12 @@ do_install() {
         rm -rf ${D}${JDK_HOME}/bin/wsgen
         rm -rf ${D}${JDK_HOME}/bin/wsimport
         rm -rf ${D}${JDK_HOME}/bin/xjc
+        rm -rf ${D}${JDK_HOME}/bin/clhsdb
+        rm -rf ${D}${JDK_HOME}/bin/hsdb
+        rm -rf ${D}${JDK_HOME}/bin/jfr
+        rm -rf ${D}${JDK_HOME}/bin/jinfo
+        rm -rf ${D}${JDK_HOME}/bin/jmap
+        rm -rf ${D}${JDK_HOME}/bin/jstack
 
 	# Remove unneeded top-level libraries
         rm -rf ${D}${JDK_HOME}/lib/ct.sym
@@ -128,7 +127,8 @@ do_install() {
         rm -rf ${D}${JDK_HOME}/lib/ir.idl
         rm -rf ${D}${JDK_HOME}/lib/jexec
         rm -rf ${D}${JDK_HOME}/lib/orb.idl
-        rm -rf ${D}${JDK_HOME}/lib/arm/libjawt.so
+        rm -rf ${D}${JDK_HOME}/lib/aarch32/libjawt.so
+        rm -rf ${D}${JDK_HOME}/lib/jconsole.jar
 
         # Remove unneeded jre binaries
         rm -rf ${D}${JDK_HOME}/jre/bin/jjs
@@ -152,18 +152,25 @@ do_install() {
         rm -rf ${D}${JDK_HOME}/jre/lib/ext/localedata.jar
         rm -rf ${D}${JDK_HOME}/jre/lib/ext/nashorn.jar
         rm -rf ${D}${JDK_HOME}/jre/lib/ext/jaccess.jar
-        rm -rf ${D}${JDK_HOME}/jre/lib/arm/libawt_headless.so
-        rm -rf ${D}${JDK_HOME}/jre/lib/arm/libawt.so
-        rm -rf ${D}${JDK_HOME}/jre/lib/arm/libawt_xawt.so
-        rm -rf ${D}${JDK_HOME}/jre/lib/arm/libfontmanager.so
-        rm -rf ${D}${JDK_HOME}/jre/lib/arm/libhprof.so
-        rm -rf ${D}${JDK_HOME}/jre/lib/arm/libjava_crw_demo.so
-        rm -rf ${D}${JDK_HOME}/jre/lib/arm/libjavajpeg.so
-        rm -rf ${D}${JDK_HOME}/jre/lib/arm/libjavalcms.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libawt_headless.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libawt.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libawt_xawt.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libfontmanager.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libhprof.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libjava_crw_demo.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libjavajpeg.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libjavalcms.so
         # Leave the libjawt.so library, needed for TinyB package
-        # rm -rf ${D}${JDK_HOME}/jre/lib/arm/libjawt.so
-        rm -rf ${D}${JDK_HOME}/jre/lib/arm/libjsound.so
-        rm -rf ${D}${JDK_HOME}/jre/lib/arm/libmlib_image.so
+        # rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libjawt.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libjsound.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libmlib_image.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/libsplashscreen.so
+        rm -rf ${D}${JDK_HOME}/jre/lib/aarch32/liblcms.so
+
+        # Remove GUI binaries not needed on headless hub
+        rm -rf ${D}${JDK_HOME}/bin/appletviewer
+        rm -rf ${D}${JDK_HOME}/bin/policytool
+        rm -rf ${D}${JDK_HOME}/jre/bin/policytool
 
 	# Remove man pages
         rm -rf ${D}${JDK_HOME}/jre/man
@@ -175,7 +182,7 @@ do_install() {
         # Removing unneeded packages from rt.jar saves ~15 MB.
         mkdir ${D}${JDK_HOME}/jre/lib/rt_repackage
         cd ${D}${JDK_HOME}/jre/lib/rt_repackage
-                /usr/bin/jar xf ../rt.jar
+                unzip -q -o ../rt.jar
                 rm -rf  java/applet \
                         java/awt \
                         java/rmi \
@@ -238,7 +245,7 @@ do_install() {
         # Removing unneeded packages from resources.jar saves 564 KB.
         mkdir ${D}${JDK_HOME}/jre/lib/resources_repackage
         cd ${D}${JDK_HOME}/jre/lib/resources_repackage
-                /usr/bin/jar xf ../resources.jar
+                unzip -q -o ../resources.jar
                 rm -rf  sun/print \
                         sun/rmi \
                         com/sun/imageio \
@@ -258,7 +265,7 @@ do_install() {
         # Removing unneeded packages from tools.jar saves over 6M
         mkdir ${D}${JDK_HOME}/lib/resources_repackage
         cd ${D}${JDK_HOME}/lib/resources_repackage
-                /usr/bin/jar xf ../tools.jar
+                unzip -q -o ../tools.jar
                 rm -rf  com/sun/codemodel \
                         com/sun/doclint \
                         com/sun/jarsigner \
@@ -308,7 +315,7 @@ do_install() {
         # Removing unneeded packages from charsets.jar saves 2 MB.
         mkdir ${D}${JDK_HOME}/jre/lib/charsets_repackage
         cd ${D}${JDK_HOME}/jre/lib/charsets_repackage
-                /usr/bin/jar xf ../charsets.jar
+                unzip -q -o ../charsets.jar
             rm -rf sun/awt
         find . -type f |grep -iv iso |grep -iv ascii |grep -iv double |xargs rm -rf
 
@@ -317,10 +324,10 @@ do_install() {
         cd -
         rm -rf ${D}${JDK_HOME}/jre/lib/charsets_repackage
 
-	# Symbolically linking lib/arm/jli/libjli.so to jre saves 20 KB.
-	rm ${D}${JDK_HOME}/lib/arm/jli/libjli.so
-	ln -s ${JDK_HOME}/jre/lib/arm/jli/libjli.so ${D}${JDK_HOME}/lib/arm/jli/libjli.so
-	ln -s ${JDK_HOME}/jre/lib/arm/jli/libjli.so ${D}${JDK_HOME}/jre/lib/arm/libjli.so
+	# Symbolically linking lib/aarch32/jli/libjli.so to jre saves 20 KB.
+	rm -f ${D}${JDK_HOME}/lib/aarch32/jli/libjli.so
+	ln -s ${JDK_HOME}/jre/lib/aarch32/jli/libjli.so ${D}${JDK_HOME}/lib/aarch32/jli/libjli.so
+	ln -s ${JDK_HOME}/jre/lib/aarch32/jli/libjli.so ${D}${JDK_HOME}/jre/lib/aarch32/libjli.so
 
 	# JRE is a subset of JDK. So to save space and resemble what the BIG distros
 	# do we create symlinks from the JDK binaries to their counterparts in the
@@ -338,20 +345,13 @@ do_install() {
 	ln -s ${JDK_HOME}/jre/bin/java ${D}${bindir}/java
 
         # workaround for shared library searching
-	ln -sf ${JDK_HOME}/jre/lib/arm/client/libjvm.so ${D}${JDK_HOME}/jre/lib/arm/
+	ln -sf ${JDK_HOME}/jre/lib/aarch32/client/libjvm.so ${D}${JDK_HOME}/jre/lib/aarch32/
 
-	# Add in etc files
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/jvm-armhf.cfg ${D}${JDK_HOME}/jre/lib/arm/jvm.cfg
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/content-types.properties ${D}${JDK_HOME}/jre/lib/
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/logging.properties ${D}${JDK_HOME}/jre/lib/
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/net.properties ${D}${JDK_HOME}/jre/lib/
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/swing.properties ${D}${JDK_HOME}/jre/lib/
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/management/jmxremote.access ${D}${JDK_HOME}/jre/lib/management/
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/management/jmxremote.password ${D}${JDK_HOME}/jre/lib/management/
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/management/management.properties ${D}${JDK_HOME}/jre/lib/management/
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/management/snmp.acl ${D}${JDK_HOME}/jre/lib/management/
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/security/blacklisted.certs ${D}${JDK_HOME}/jre/lib/security/
-	install -m644 ${BIN_DIR}/etc/java-8-openjdk/security/java.policy ${D}${JDK_HOME}/jre/lib/security/
+	# Rename management templates to their expected names
+	mv -f ${D}${JDK_HOME}/jre/lib/management/jmxremote.password.template \
+	      ${D}${JDK_HOME}/jre/lib/management/jmxremote.password || true
+	mv -f ${D}${JDK_HOME}/jre/lib/management/snmp.acl.template \
+	      ${D}${JDK_HOME}/jre/lib/management/snmp.acl || true
 
 	# Use our own Java security settings in we want to override something
         install -m644 ${WORKDIR}/iris-java.security  ${D}${JDK_HOME}/jre/lib/security/java.security

@@ -1,0 +1,52 @@
+diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+index 9c244226b..57375212a 100644
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -258,6 +258,26 @@ static unsigned char macaddr[ETH_ALEN];
+ module_param_array(macaddr, byte, NULL, 0);
+ MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
+ 
++/* Support fec_mac=AA:BB:CC:DD:EE:FF boot parameter (NXP 3.0.35 compat) */
++static unsigned char fec_mac[ETH_ALEN];
++static int __init parse_fec_mac(char *options)
++{
++	char *tmp, *end;
++	int j;
++
++	if (options == NULL)
++		return 1;
++
++	tmp = options;
++	for (j = 0; j < 6; j++) {
++		fec_mac[j] = tmp ? simple_strtoul(tmp, &end, 16) : 0;
++		if (tmp)
++			tmp = (*end) ? end + 1 : end;
++	}
++	return 1;
++}
++__setup("fec_mac=", parse_fec_mac);
++
+ #if defined(CONFIG_M5272)
+ /*
+  * Some hardware gets it MAC address out of local flash memory.
+@@ -1933,13 +1953,19 @@ static int fec_get_mac(struct net_device *ndev)
+ 	unsigned char *iap, tmpaddr[ETH_ALEN];
+ 	int ret;
+ 
++	/*
++	 * 0) fec_mac= boot parameter (NXP 3.0.35 compatible format)
++	 */
++	iap = fec_mac;
++
+ 	/*
+ 	 * try to get mac address in following order:
+ 	 *
+ 	 * 1) module parameter via kernel command line in form
+ 	 *    fec.macaddr=0x00,0x04,0x9f,0x01,0x30,0xe0
+ 	 */
+-	iap = macaddr;
++	if (!is_valid_ether_addr(iap))
++		iap = macaddr;
+ 
+ 	/*
+ 	 * 2) from device tree data

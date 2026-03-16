@@ -26,6 +26,5 @@ SRC_URI += " \
 	file://0002-mx6imagic-IRIS-multi-partition-2016.03.patch \
 	file://0003-REV-B-DDR-Support.patch \
 	file://0004-Fix-to-Samsung-K4B4G1646E-BYMA-DDR3-1866.patch \
-	file://0005-Lockdown-for-production.patch \
 	file://0006-Update-to-Micron-DDR-settings.patch \
 	"

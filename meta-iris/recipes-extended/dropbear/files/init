@@ -90,6 +90,14 @@ case "$1" in
 	    -p "$DROPBEAR_PORT" $DROPBEAR_EXTRA_ARGS
 	echo "$NAME."
 	;;
+  realstart-keyonly)
+	# IRIS CHANGE - start with key-only auth (no password login)
+	echo -n "Starting $DESC (key-only): "
+	start-stop-daemon -S -p $PIDFILE \
+	  -x "$DAEMON" -- -r $DROPBEAR_RSAKEY \
+	    -s -p "$DROPBEAR_PORT" $DROPBEAR_EXTRA_ARGS
+	echo "$NAME."
+	;;
   stop)
 	echo -n "Stopping $DESC: "
 	start-stop-daemon -K -x "$DAEMON" -p $PIDFILE

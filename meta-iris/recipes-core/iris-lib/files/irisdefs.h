@@ -131,12 +131,12 @@ typedef enum
 
 // Platform specific GPIO related defines
 #if beaglebone_yocto
-// USB Over-current signals
-#define USB0_OC_GPIO_VALUE_FILE "/sys/class/gpio/gpio116/value"
-#define USB1_OC_GPIO_VALUE_FILE "/sys/class/gpio/gpio58/value"
+// USB Over-current signals (symlinks created by irisinit)
+#define USB0_OC_GPIO_VALUE_FILE "/tmp/io/usb0OcValue"
+#define USB1_OC_GPIO_VALUE_FILE "/tmp/io/usb1OcValue"
 
-// Battery hold gpio
-#define BTRY_HOLD_GPIO_VALUE_FILE "/sys/class/gpio/gpio117/value"
+// Battery hold gpio (symlink created by irisinit)
+#define BTRY_HOLD_GPIO_VALUE_FILE "/tmp/io/batteryHold"
 
 // Battery voltage ADC port
 #define BTRY_VOLTAGE_VALUE_FILE "/sys/bus/iio/devices/iio:device0/in_voltage6_raw"
@@ -232,10 +232,10 @@ typedef enum
 #define UDHCPC_TERMINATE        "kill -9 $(cat /var/run/udhcpc.eth0.pid)"
 #define UDHCPC_WIFI_TERMINATE   "kill -9 $(cat /var/run/udhcpc.wlan0.pid)"
 
-// Serial ports we use
-#define ZWAVE_UART              "/dev/ttyO1"
-#define ZIGBEE_UART             "/dev/ttyO2"
-#define BLE_UART                "/dev/ttyO4"
+// Serial ports we use (kernel 5.4+ uses ttyS instead of ttyO)
+#define ZWAVE_UART              "/dev/ttyS1"
+#define ZIGBEE_UART             "/dev/ttyS2"
+#define BLE_UART                "/dev/ttyS4"
 
 // Serial mode
 #define FLOW_CONTROL_NONE       0
@@ -286,6 +286,10 @@ typedef enum
 
 // Dropbear config directory
 #define DROPBEAR_CONFIG_DIR     "/data/config/dropbear"
+
+// If present, persistently enables SSH (key-only auth when authorized_keys exists)
+#define SSH_ENABLE_FILE         "/data/config/dropbear/ssh_enabled"
+#define SSH_AUTH_KEYS_FILE      "/data/config/dropbear/authorized_keys"
 
 // Maximum battery voltage, for tracking of replaceable batteries
 #define MAX_BATTERY_VOLTAGE     "/data/config/max_voltage"

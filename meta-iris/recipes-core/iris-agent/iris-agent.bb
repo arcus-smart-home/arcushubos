@@ -23,7 +23,7 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
 DEPENDS = "iris-lib"
-RDEPENDS_${PN} = "iris-lib iris-utils logrotate cronie"
+RDEPENDS:${PN} = "iris-lib iris-utils logrotate cronie"
 PR = "r0"
 S = "${WORKDIR}"
 
@@ -37,20 +37,19 @@ INITSCRIPT_PARAMS = "start 99 S ."
 inherit autotools update-rc.d
 
 # These need to be updated with each agent version change
-AGENT_VERSION="2.13.26"
-SRC_URI[md5sum] = "cefcf87c43a5fef4795f8119895bf3d9"
-SRC_URI[sha256sum] = "2d16e871d6ba1d4c75ecb30f46e802bec2ec7dd3d9add446ce66b3f30570102d"
+AGENT_VERSION="2.13.26-prod"
+SRC_URI[sha256sum] = "66685ff6998632cd035fcdfc692aad1a732fa13a5847e3c72f530a264bf3b7a7"
 AGENT_FILE="iris-agent-hub-v2-${AGENT_VERSION}.tar.gz"
 
 SRC_URI = "file://irisagent \
            file://irisagentd.c \
            file://0hourly \
-           https://www.dropbox.com/s/4qtphxo52ckt3u3/${AGENT_FILE}?dl=1 \
+           https://tools.arcus.wl-net.net/${AGENT_FILE}?dl=1 \
            "
 # Add to list if using local binary and remove server file https line
 #	   file://iris-agent-hub
 
-FILES_${PN} += "/home/agent \
+FILES:${PN} += "/home/agent \
                /home/root/.ssh \
                "
 
@@ -61,8 +60,19 @@ CFLAGS += "-Wall -Werror -Wno-unused-result"
 TARGET_MACHINE := "${@'${MACHINE}'.replace('-', '_')}"
 CFLAGS += "-D${TARGET_MACHINE}"
 
+# Allow the platform gateway URI to be overridden in local.conf
+# e.g. IRIS_GATEWAY_URI = "wss://bh.arcussmarthome.com/hub/1.0"
+IRIS_GATEWAY_URI ?= ""
+
+do_compile[vardeps] += "IRIS_GATEWAY_URI"
 do_compile () {
-        ${CC} ${CFLAGS} ${LDFLAGS} ${WORKDIR}/irisagentd.c -o irisagentd -liris
+        if [ -n "${IRIS_GATEWAY_URI}" ]; then
+                printf '#define IRIS_GATEWAY_URI "%s"\n' '${IRIS_GATEWAY_URI}' > ${WORKDIR}/gateway_uri.h
+                GATEWAY_FLAG="-include ${WORKDIR}/gateway_uri.h"
+        else
+                GATEWAY_FLAG=""
+        fi
+        ${CC} ${CFLAGS} ${GATEWAY_FLAG} ${LDFLAGS} ${WORKDIR}/irisagentd.c -o irisagentd -liris
 }
 
 do_install () {
@@ -78,12 +88,7 @@ do_install () {
 
         # Install hub agent tar file
         install -d ${D}/home/agent
-        # If a server exists with agent binaries, remove local file
-        # and uncomment this next line (with appropriate login details
-        # earlier in file
         install -m 0444 ${DL_DIR}/${AGENT_FILE}?dl=1 ${D}/home/agent/iris-agent-hub
-        # For local binary, comment above line and uncomment below
-        #install -m 0444 ${WORKDIR}/iris-agent-hub ${D}/home/agent/iris-agent-hub
 
         # Replace /home/root/.ssh/authorized_keys with a link to /var/run/..
         install -d ${D}/home/root/.ssh

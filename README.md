@@ -1,150 +1,154 @@
-# IRIS HubOS Build Instructions for OSS Redistribution
+# Arcus Hub OS
 
-The development environment for the IRIS HubOS is currently based on the
-Yocto 2.7.4 "Warrior" release.  The proprietary hardware is similar to that
-of the BeagleBone Black for our second generation Hub, and a custom
-NXP imx6DualLite design for the 3rd generation Hub.
+Yocto-based Linux distribution for the Arcus smart home hub, supporting two
+hardware platforms:
 
-The changes to the OSS packages used are marked with "IRIS Change" additions
-to the files touched.  A list of changes can be found in the [ChangeLog_oss.txt](ChangeLog_oss.txt)
-file.
+- **Hub V2** — TI AM335x (BeagleBone Black), ARM Cortex-A8, 512 MiB RAM
+- **Hub V3** — NXP i.MX6DualLite, ARM Cortex-A9 dual-core, 1 GiB RAM
 
+Currently built on **Yocto 5.0 "Scarthgap"** (LTS) with kernel 6.6.
 
+## Quick Start
 
-## Instructions for build environment set up
+### Prerequisites
 
-Please use a Yocto Supported Operating system. For Yocto 2.7.4, this is **CentOS 7**, **Debian 9**, Fedora 28, Fedora 29, OpenSuse 42.3, **Ubuntu 16.04**, and **Ubuntu 18.04**.
+Use a Yocto Scarthgap supported host (Ubuntu 22.04+, Debian 12+, Fedora 38+,
+or equivalent). Install the required packages:
 
-As with any Yocto project, you should be using a fairly capable system (e.g. modern core "i" series processor, 25GB or more of disk space, and ideally an SSD) to achieve reasoanble build times.
-
-Follow the Yocto environment set up instructions in "The Packages" section at:
-
-http://www.yoctoproject.org/docs/current/yocto-project-qs/yocto-project-qs.html
-
-For a Ubuntu distribution, the following tools are needed:
-
-`$ sudo apt-get install gawk wget git-core diffstat unzip texinfo gcc-multilib build-essential chrpath socat libsdl1.2-dev xterm python chrpath`
-
-Arcus HubOS has added JDK support to the base Yocto build, so you will also
-need to install the following (assuming Ubuntu/Debian environment):
-
-`$ sudo apt-get install openjdk-8-jdk galternatives srecord`
-
-Run 'galternatives' and make sure 'keytool' and 'jar" are configured to the
-java8-openjdk package which was just installed.
-
-The build outputs are put in /tftpboot to simplify finding the firmware
-images.  Please add this directory - actual tftp server support is not needed,
-though.
-
-```
-$ sudo mkdir /tftpboot
-$ sudo chmod -R 777 /tftpboot
-$ sudo chown -R nobody /tftpboot
+```bash
+sudo apt-get install gawk wget git diffstat unzip texinfo gcc-multilib \
+    build-essential chrpath socat cpio python3 python3-pip python3-pexpect \
+    xz-utils debianutils iputils-ping libsdl1.2-dev xterm lz4 zstd \
+    openjdk-8-jdk srecord
 ```
 
-Before running the build, either create a top-level /build directory, or modify
-the configuration in build/conf/local.conf to comment out this line or change
-to another location:
+Create the output directory (build scripts copy firmware images here):
 
-`SSTATE_DIR ?= "/build/sstate-cache"`
-
-
-## Git submodules initialization
-
-A number of core modules (poky, meta-openembedded, meta-freescale and
-meta-freescale-3rdparty) are used as Git submodules and therefore need
-to be initialized after the clone of the project:
-
-```
-$ cd arcushubos
-$ git submodule update --init
+```bash
+sudo mkdir -p /tftpboot
+sudo chmod 777 /tftpboot
 ```
 
+Optionally, create a shared sstate-cache to speed up rebuilds:
 
-## Makefile Targets
-
-The following targets are valid:
-
-* hubv3           - builds release image for v3 hub
-* hubv3-dev       - builds development image with added tools, etc. for v3 hub
-* hubv3-clean     - cleans up v3 build outputs. Would need to remove
-                  /build/sstate-cache to truely force a complete rebuild
-* hubv3-distclean - Removes all v3 files from "clean" as well as downloaded files
-                  to mimic starting from scratch
-
-* hubv2           - builds release image for v2 hub
-* hubv2-dev       - builds development image with added tools, etc. for v2 hub
-* hubv2-clean     - cleans up v2 build outputs. Would need to remove
-                  /build/sstate-cache to truely force a complete rebuild
-* hubv2-distclean - Removes all v2 files from "clean" as well as downloaded files
-                  to mimic starting from scratch
-
-
-These builds will take a hour or so (depending on your machine) to complete
-as it has to build all the cross-compiler toolchains as well as all packages
-in the build.
-
-When complete, the outputs will be in `build-ti/tmp/deploy/images` for v2
-hub builds, and `build-fsl/tmp/deploy/images` for v3 hub builds.
-
-
-## Build Output Files
-
-* i2hubos_update.bin - v2 image without the build header (which includes
-                     checksum, signature, etc)
-* i2hubos_update_bootloader.bin - Above, but with v2 boot loader files as well
-* hubOS_X.Y.Z.xxx.bin - v2 Release image with Java support with release boot
-                      loader
-* hubBL_X.Y.Z.xxx.bin - v2 Release image with Java support, plus development
-                      boot loader files
-
-* i2hubosv3_update.bin - v3 image without the build header (which includes
-                       checksum, signature, etc)
-* i2hubosv3_update_bootloader.bin - Above, but with v3 boot loader files as well
-* hubOSv3_X.Y.Z.xxx.bin - v3 Release image with Java support with release boot
-                        loader
-* hubBLv3_X.Y.Z.xxx.bin - v3 Release image with Java support, plus development
-                        boot loader files
-
-# Release Testing
-
-```
-$ scp /tftpboot/hubOS_X.Y.Z.xxx.bin root@your_v2_hub:/tmp
-$ ssh root@your_hub_ip
-$ install -f file:///tmp/hubOS_X.Y.Z.xxx.bin
-```
-# Common Tasks
-
-## Updating Firmware Version
-
-Bump the version number in [meta-iris/recipes-core/iris-lib/files/irisversion.h](meta-iris/recipes-core/iris-lib/files/irisversion.h)
-
-## Updating the Agent
-
-Bump the version number in [meta-iris/recipes-core/iris-agent/iris-agent.bb#L40](meta-iris/recipes-core/iris-agent/iris-agent.bb#L40) and change the hashes of the target tar.gz file:
-
-# Development
-
-For development, it is not necessary to use the complete images as the
-validation takes additional time.  Also, since the boot loader files will
-seldom change, using the i2hubos_update.bin (or i2hubosv3_update.bin for v3
-hub) is all that is necessary in most cases.   To install this file, do the
-following:
-
-
-```
-$ scp /tftpboot/i2hubos_update.bin root@your_hub_ip:/tmp
-$ ssh root@your_hub_ip
-$ fwinstall /tmp/i2hubos_update.bin
+```bash
+sudo mkdir -p /build/sstate-cache
+sudo chmod 777 /build/sstate-cache
 ```
 
-Once this install completes reboot the hub so the new firmware is used.
+### Clone and Initialize
 
-# Password
+```bash
+git clone <repo-url> arcushubos
+cd arcushubos
+git submodule update --init --recursive
+```
+
+### Build
+
+```bash
+make hubv2       # Release image for Hub V2
+make hubv2-dev   # Dev image for Hub V2 (includes gcc, python3, etc.)
+make hubv3       # Release image for Hub V3
+make hubv3-dev   # Dev image for Hub V3
+```
+
+First builds take an hour or more (cross-compiler toolchains + all packages).
+Subsequent builds with sstate-cache are much faster.
+
+### Build Outputs
+
+| File | Description |
+|------|-------------|
+| `i2hubos_update.bin` | V2 unsigned dev archive |
+| `hubOS_X.Y.Z.NNN.bin` | V2 signed release image |
+| `hubBL_X.Y.Z.NNN.bin` | V2 signed image with bootloader |
+| `i2hubosv3_update.bin` | V3 unsigned dev archive |
+| `hubOSv3_X.Y.Z.NNN.bin` | V3 signed release image |
+| `hubBLv3_X.Y.Z.NNN.bin` | V3 signed image with bootloader |
+
+Outputs are in `build-ti/tmp/deploy/images/` (V2), `build-fsl/tmp/deploy/images/`
+(V3), and copied to `/tftpboot/`.
+
+## Installing Firmware
+
+### Dev workflow (unsigned, faster)
+
+```bash
+scp build-ti/tmp/deploy/images/beaglebone-yocto/i2hubos_update.bin root@<hub-ip>:/tmp/
+ssh root@<hub-ip> "fwinstall -k /tmp/i2hubos_update.bin"
+```
+
+### Release workflow (signed, validated)
+
+```bash
+scp build-ti/tools/hubOS_3.0.1.034.bin root@<hub-ip>:/tmp/
+ssh root@<hub-ip> "update -kf file:///tmp/hubOS_3.0.1.034.bin"
+```
+
+Reboot the hub after install to boot into the new firmware.
+
+## Common Tasks
+
+### Bumping the firmware version
+
+Edit `VERSION_BUILD` in
+[meta-iris/recipes-core/iris-lib/files/irisversion.h](meta-iris/recipes-core/iris-lib/files/irisversion.h).
+
+### Updating the agent
+
+Change `AGENT_VERSION` and `SRC_URI[sha256sum]` in
+[meta-iris/recipes-core/iris-agent/iris-agent.bb](meta-iris/recipes-core/iris-agent/iris-agent.bb).
+
+### Clean builds
+
+```bash
+make hubv2-clean      # Remove build-ti/tmp, cache, sstate-cache
+make hubv2-distclean  # Above + remove downloads
+```
+
+## SSH Access
+
+Dev images have SSH (dropbear) always enabled. Release images require either a
+debug dongle or persistent key-only SSH — see [docs/RELEASE.md](docs/RELEASE.md)
+for setup instructions.
+
+## Documentation
+
+Detailed documentation is in the [docs/](docs/) directory:
+
+- [**RELEASE.md**](docs/RELEASE.md) — Release process: version bumping, building, signing, installing, testing
+- [**HARDWARE.md**](docs/HARDWARE.md) — Hardware reference for both platforms: SoC, radios, GPIOs, peripherals, power management
+- [**UBOOT.md**](docs/UBOOT.md) — U-Boot bootloader: A/B boot selection, environment, patches, installation
+- [**SYSTEM.md**](docs/SYSTEM.md) — System daemons, utilities, radio flash tools, key source files
+- [**OTA-UPDATES.md**](docs/OTA-UPDATES.md) — OTA update flow: download, validation, A/B installation, rollback
+- [**DATA-PARTITION.md**](docs/DATA-PARTITION.md) — /data partition layout, persistence behavior, factory default
+- [**FIRMWARE-FORMAT.md**](docs/FIRMWARE-FORMAT.md) — Firmware file format, signing/encryption pipeline, validation flow
+- [**UPGRADE.md**](docs/UPGRADE.md) — Yocto Scarthgap migration notes
+
+## Repository Structure
+
+```
+arcushubos/
+├── meta-iris/          # Arcus-specific Yocto layer (recipes, patches, configs)
+├── poky/               # Yocto core (submodule)
+├── meta-openembedded/  # OE community layers (submodule)
+├── meta-freescale/     # NXP/Freescale BSP layer (submodule)
+├── build-ti/           # Hub V2 build directory
+├── build-fsl/          # Hub V3 build directory
+├── radios/             # Radio firmware binaries (Z-Wave, Zigbee, BLE)
+├── docs/               # Project documentation
+└── Makefile            # Top-level build targets
+```
+
+## Default Passwords
 
 The current SSH root password for images built from these sources is `3XSgE27w5VJ3qvxK33dn`.
 
-The default root password for Iris hubOS 3.x releases, regardless of hardare revision or platform is `zm{[*f6gB5X($]R9`.
+The default root password for Iris hubOS 3.x releases, regardless of hardware revision or platform is `zm{[*f6gB5X($]R9`.
 
 The earlier 2.x releases used a default password of `kz58!~Eb.RZ?+bqb`.
+
+## License
+
+Licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.

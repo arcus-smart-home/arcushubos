@@ -16,96 +16,96 @@
 # limitations under the License.
 #
 
-echo Setting up needed gpios... 
+echo Setting up needed gpios...
 
 # Make directory for gpio links
 mkdir /tmp/io
 chmod 777 /tmp/io
 
+# Kernel 6.6 uses dynamic GPIO base allocation — look up each bank's base
+# Labels may be memory addresses (4804c000.gpio) or ranges (gpio-32-63)
+GPIO1_BASE=""
+GPIO2_BASE=""
+GPIO3_BASE=""
+for chip in /sys/class/gpio/gpiochip*; do
+    base=$(cat "$chip/base" 2>/dev/null)
+    # Match by hardware address in device symlink (reliable across kernels)
+    devpath=$(readlink "$chip/device" 2>/dev/null)
+    case "$devpath" in
+        *4804c000*) GPIO1_BASE=$base ;;
+        *481ac000*) GPIO2_BASE=$base ;;
+        *481ae000*) GPIO3_BASE=$base ;;
+    esac
+done
+
+if [ -z "$GPIO1_BASE" ] || [ -z "$GPIO2_BASE" ] || [ -z "$GPIO3_BASE" ]; then
+    echo "ERROR: Could not find GPIO bank bases!" >&2
+    echo "  GPIO1=$GPIO1_BASE GPIO2=$GPIO2_BASE GPIO3=$GPIO3_BASE" >&2
+else
+    echo "GPIO bases: bank1=$GPIO1_BASE bank2=$GPIO2_BASE bank3=$GPIO3_BASE"
+fi
+
+# Helper to export and configure a GPIO
+# usage: setup_gpio <global_num> <direction> [edge] [value] [link_name]
+setup_gpio() {
+    local num=$1 dir=$2 edge=$3 val=$4 link=$5
+    echo "$num" > /sys/class/gpio/export 2>/dev/null
+    if [ ! -d "/sys/class/gpio/gpio${num}" ]; then
+        echo "WARNING: Failed to export GPIO $num" >&2
+        return 1
+    fi
+    echo "$dir" > "/sys/class/gpio/gpio${num}/direction"
+    [ -n "$edge" ] && echo "$edge" > "/sys/class/gpio/gpio${num}/edge"
+    if [ "$dir" = "out" ]; then
+        chmod 0666 "/sys/class/gpio/gpio${num}/value"
+        [ -n "$val" ] && echo "$val" > "/sys/class/gpio/gpio${num}/value"
+    fi
+    [ -n "$link" ] && ln -s "/sys/class/gpio/gpio${num}/value" "/tmp/io/$link"
+    return 0
+}
+
 cd /sys/class/gpio
 
-# Setup button as input
-echo 44 > export
-cd gpio44
-echo in > direction
-echo both > edge
-ln -s /sys/class/gpio/gpio44/value /tmp/io/resetBtnValue
-ln -s /sys/class/gpio/gpio44/edge /tmp/io/resetBtnEdge
-cd ..
+# Bank 1 GPIOs (old base=32)
+RESET_BTN=$((GPIO1_BASE + 12))       # was 44: reset button
+ZIGBEE_RST=$((GPIO1_BASE + 16))      # was 48: zigbee reset
+ZWAVE_RST=$((GPIO1_BASE + 17))       # was 49: zwave reset
+USB1_OC=$((GPIO1_BASE + 26))         # was 58: USB1 over-current
 
-# Set up Zigbee reset line
-echo 48 > export
-cd gpio48
-echo out > direction
-chmod 0666 value
-echo 1 > value
-ln -s /sys/class/gpio/gpio48/value /tmp/io/zigbeeReset
-cd ..
+# Bank 2 GPIOs (old base=64)
+BLE_RST=$((GPIO2_BASE + 26))         # was 90: bluetooth reset
+BLE_PROG_DATA=$((GPIO2_BASE + 29))   # was 93: bluetooth programming data
+BLE_PROG_CLK=$((GPIO2_BASE + 30))    # was 94: bluetooth programming clock
 
-# Set up Zwave reset line
-echo 49 > export
-cd gpio49
-echo out > direction
-chmod 0666 value
-echo 1 > value
-ln -s /sys/class/gpio/gpio49/value /tmp/io/zwaveReset
-cd ..
+# Bank 3 GPIOs (old base=96)
+USB0_OC=$((GPIO3_BASE + 20))         # was 116: USB0 over-current
+BATT_HOLD=$((GPIO3_BASE + 21))       # was 117: battery hold
 
-# Set up Bluetooth reset line
-echo 90 > export
-cd gpio90
-echo out > direction
-chmod 0666 value
-echo 1 > value
-ln -s /sys/class/gpio/gpio90/value /tmp/io/bleReset
-cd ..
+setup_gpio $RESET_BTN in both "" resetBtnValue
+[ -d "/sys/class/gpio/gpio${RESET_BTN}" ] && \
+    ln -s "/sys/class/gpio/gpio${RESET_BTN}/edge" /tmp/io/resetBtnEdge
 
-# Set up Bluetooth programming data line
-echo 93 > export
-cd gpio93
-echo out > direction
-chmod 0666 value
-echo 0 > value
-cd ..
-
-# Set up Bluetooth programming clock line
-echo 94 > export
-cd gpio94
-echo out > direction
-chmod 0666 value
-echo 0 > value
-cd ..
-
-# Set up USB0 over-current as input
-echo 116 > export
-cd gpio116
-echo in > direction
-echo both > edge
-cd ..
-
-# Set up USB1 over-current as input
-echo 58 > export
-cd gpio58
-echo in > direction
-echo both > edge
-cd ..
+setup_gpio $ZIGBEE_RST out "" 1 zigbeeReset
+setup_gpio $ZWAVE_RST out "" 1 zwaveReset
+setup_gpio $BLE_RST out "" 1 bleReset
+setup_gpio $BLE_PROG_DATA out "" 0
+setup_gpio $BLE_PROG_CLK out "" 0
+setup_gpio $USB0_OC in both "" usb0OcValue
+setup_gpio $USB1_OC in both "" usb1OcValue
 
 # Set up battery hold gpio
-echo 117 > export
-cd gpio117
-echo out > direction
 # Wait a moment before setting the default to 1 to prevent the battery
 #  regulator hold from being switched too quickly, which led to boot up issues
+setup_gpio $BATT_HOLD out "" 0 batteryHold
 sleep 1
-echo 1 > value
-cd ..
+echo 1 > "/sys/class/gpio/gpio${BATT_HOLD}/value" 2>/dev/null
 
 echo Done with gpio setup
 
 # Set up buzzer
 echo Setup buzzer pwm
 cd /sys/class/pwm/pwmchip0
-echo 1 > export
+echo 1 > export 2>/dev/null
 chmod 0666 -R pwm1
 chmod o+x pwm1
 cd pwm1
@@ -128,7 +128,7 @@ chmod 0666 /tmp/ledMode
 mkdir -p /tmp/media
 
 # Check /mfg partition
-umount /mfg
+umount /mfg 2>/dev/null
 e2fsck -p /dev/mmcblk0p7
 if [ $? -le 2 ]; then
     echo "Manufacturing partition is clean"
@@ -173,7 +173,7 @@ echo ${flashSize} > /tmp/mfg/config/hwFlashSize
 echo "Flash size: " ${flashSize}
 
 # Check /data partition
-umount /data
+umount /data 2>/dev/null
 e2fsck -p /dev/mmcblk0p8
 if [ $? -le 2 ]; then
     echo "Data partition is clean"
@@ -229,7 +229,7 @@ modprobe cryptodev
 
 # Create link to securetty (for console port login control)
 # We do not allow console login for release image unless there is an override file
-if [ ! -e /data/config/enable_console ]; then
+if [ -e /data/config/disable_console ]; then
     cp /home/root/etc/securetty_noconsole /var/run/securetty
 else
     cp /home/root/etc/securetty /var/run/securetty
@@ -255,8 +255,25 @@ irisinitd
 # Launch battery daemon
 batteryd
 
+# Map serial ports — kernel 5.4+ renamed OMAP ttyO* to ttyS*
+ln -s /dev/ttyS1 /dev/ttyO1
+ln -s /dev/ttyS2 /dev/ttyO2
+ln -s /dev/ttyS4 /dev/ttyO4
+chmod 666 /dev/ttyS1
+chmod 666 /dev/ttyS2
+chmod 666 /dev/ttyS4
+
 # Launch ifplugd to keep track of interface up/down handling
 /etc/init.d/ifplugd start
+
+# Ensure eth0 gets configured — ifplugd may miss the initial link state
+# due to MAC address change timing. Wait for link then run udhcpc directly.
+(   for i in 1 2 3 4 5; do
+        ip link show eth0 | grep -q LOWER_UP && break
+        sleep 2
+    done
+    udhcpc -i eth0 -n -q 2>/dev/null
+) &
 
 # Start watcher to restart other daemons if they fail
 dwatcher

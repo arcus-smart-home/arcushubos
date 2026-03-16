@@ -2,7 +2,7 @@
 # We only need a subset of the full shadow package support since
 #  we have a read-only root filesystem and do not intend to allow
 #  passwords to be changed
-FILES_${PN} = "${base_bindir}/* \
+FILES:${PN} = "${base_bindir}/* \
 	       ${base_sbindir}/nologin \
 	       ${sysconfdir} \
 	       ${sharedstatedir} \
@@ -12,4 +12,4 @@ FILES_${PN} = "${base_bindir}/* \
 	       "
 
 # Stop complaints about missing files...
-INSANE_SKIP_${PN} = "installed-vs-shipped"
+INSANE_SKIP:${PN} = "installed-vs-shipped"

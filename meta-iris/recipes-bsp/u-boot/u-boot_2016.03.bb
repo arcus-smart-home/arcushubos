@@ -18,9 +18,10 @@
 # limitations under the License.
 #
 
-require ${COREBASE}/meta/recipes-bsp/u-boot/u-boot.inc
+#require ${COREBASE}/meta/recipes-bsp/u-boot/u-boot.inc
+require u-boot.inc
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LICENSE = "GPLv2+"
 LIC_FILES_CHKSUM = "file://Licenses/README;md5=a2c678cfd4a4d97135585cad908541c6"
@@ -38,6 +39,7 @@ SRCREV = "df61a74e6845ec9bdcdd48d2aff5e9c2c6debeaa"
 SRC_URI = " \
     git://git.denx.de/u-boot.git;branch=master;protocol=git \
     file://0001-Iris-patches-2016.03.patch \
+    file://0007-Fix-Overflow-GCC8_1.patch \
  "
 
 UBOOT_LOCALVERSION = "-Iris-${PR}"

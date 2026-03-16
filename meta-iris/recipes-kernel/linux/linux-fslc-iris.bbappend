@@ -1,11 +1,11 @@
-FILESEXTRAPATHS_append := "${THISDIR}/linux-fslc"
+FILESEXTRAPATHS:append := "${THISDIR}/linux-fslc"
 
 COMPATIBLE_MACHINE = "(imxdimagic)"
 
 # Clear out the kernel extra features to make sure netfilter support doesn't
 #  get added back in!
 #KERNEL_EXTRA_FEATURES = ""
-#KERNEL_FEATURES_append = ""
+#KERNEL_FEATURES:append = ""
 
 # Update to 4.14.22
 SRCREV = "fe88b0b06a4a31bf9477bfc219229a715eda4be7"

@@ -1,6 +1,7 @@
 From 951b7ca2e3c263de439f843ca5595b561abc1842 Mon Sep 17 00:00:00 2001
 Date: Wed, 18 Apr 2018 19:30:44 -0400
 Subject: [PATCH] Fixed issues with tag handling
+Upstream-Status: Inappropriate [Iris Hub specific]
 
 ---
  Libraries/95HF/inc/lib_iso15693pcd.h |  3 +++

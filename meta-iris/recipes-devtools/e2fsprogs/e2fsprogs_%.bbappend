@@ -1,7 +1,7 @@
 
 # The fsck.ext* files are copies of e2fsck.  Same with mkfs.ext* files.
 # Create symbolic links rather than copies of files.
-do_install_append() {
+do_install:append() {
 	ln -sf e2fsck ${D}${base_sbindir}/fsck.ext2
 	ln -sf e2fsck ${D}${base_sbindir}/fsck.ext3
 	ln -sf e2fsck ${D}${base_sbindir}/fsck.ext4

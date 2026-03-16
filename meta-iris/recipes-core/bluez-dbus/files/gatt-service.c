@@ -143,7 +143,7 @@ static gboolean desc_get_value(const GDBusPropertyTable *property,
 static void desc_write(struct descriptor *desc, const uint8_t *value, int len)
 {
 	g_free(desc->value);
-	desc->value = g_memdup(value, len);
+	desc->value = g_memdup2(value, len);
 	desc->vlen = len;
 
 	g_dbus_emit_property_changed(desc->chr->connection, desc->path,
@@ -272,7 +272,7 @@ static gboolean chr_get_value(const GDBusPropertyTable *property,
 	    int new_len;
 	    if ((*chr->update_cb)(&new_value, &new_len, true)) {
 		g_free(chr->value);
-		chr->value = g_memdup(new_value, new_len);
+		chr->value = g_memdup2(new_value, new_len);
 		chr->vlen = new_len;
 	    }
 	}
@@ -302,7 +302,7 @@ static gboolean chr_get_props(const GDBusPropertyTable *property,
 static void chr_write(struct characteristic *chr, const uint8_t *value, int len)
 {
 	g_free(chr->value);
-	chr->value = g_memdup(value, len);
+	chr->value = g_memdup2(value, len);
 	chr->vlen = len;
 
 	g_dbus_emit_property_changed(chr->connection, chr->path, GATT_CHR_IFACE,
@@ -497,7 +497,7 @@ static DBusMessage *chr_read_value(DBusConnection *conn, DBusMessage *msg,
 	    int new_len;
 	    if ((*chr->update_cb)(&new_value, &new_len, false)) {
 		g_free(chr->value);
-		chr->value = g_memdup(new_value, new_len);
+		chr->value = g_memdup2(new_value, new_len);
 		chr->vlen = new_len;
 	    }
 	}
@@ -647,7 +647,7 @@ gboolean register_characteristic(DBusConnection *conn,
 
 	chr = g_new0(struct characteristic, 1);
 	chr->uuid = g_strdup(chr_uuid);
-	chr->value = g_memdup(value, vlen);
+	chr->value = g_memdup2(value, vlen);
 	chr->vlen = vlen;
 	chr->props = props;
 	chr->service = g_strdup(service_path);
@@ -671,7 +671,7 @@ gboolean register_characteristic(DBusConnection *conn,
 
 	desc = g_new0(struct descriptor, 1);
 	desc->uuid = g_strdup(desc_uuid);
-	desc->value = g_memdup(dvalue, dvlen);
+	desc->value = g_memdup2(dvalue, dvlen);
 	desc->vlen = dvlen;
 	desc->chr = chr;
 	desc->props = desc_props;

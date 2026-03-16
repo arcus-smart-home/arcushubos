@@ -1,6 +1,7 @@
 From 5f36fd31ac1d6d80161c918e0fdc9925ca95849a Mon Sep 17 00:00:00 2001
 Date: Wed, 18 Apr 2018 09:54:14 -0400
 Subject: [PATCH] IRIS mods
+Upstream-Status: Inappropriate [Iris Hub specific]
 
 ---
  Libraries/95HF/inc/drv_spi.h              |  14 ++

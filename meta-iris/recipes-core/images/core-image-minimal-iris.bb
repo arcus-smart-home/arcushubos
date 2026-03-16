@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+OPENJDK_PACKAGE ?= "openjdk-8-armhf"
+
 CORE_IMAGE_EXTRA_INSTALL += " \
     dropbear \
     iris-utils \
@@ -34,7 +36,10 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     tzdata-americas \
     cryptodev-module \
     iris-4g \
-    openjdk-8-armhf \
+    ${OPENJDK_PACKAGE} \
+    strace \
+    libxcrypt-compat \
+    libstdc++ \
     "
 
 
@@ -48,7 +53,7 @@ IMAGE_INSTALL = "packagegroup-core-boot \
 IMAGE_LINGUAS = " "
 
 # Remove some packages that we really don't want
-PACKAGE_EXCLUDE_pn-core-image-minimal-iris = "rhino jamvm cacao \
+PACKAGE_EXCLUDE:pn-core-image-minimal-iris = "rhino jamvm cacao \
                                            virtual/java-native \
                                            virtual/java-initial \
                                            "
@@ -128,5 +133,4 @@ set_file_links() {
 
 # We do not want to write a timestamp as we have moved this file to
 #  /data/config/timestamp which doesn't exist when the rootfs is made
-rootfs_update_timestamp () {
-}
+ROOTFS_POSTPROCESS_COMMAND:remove = "rootfs_update_timestamp "

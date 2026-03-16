@@ -41,7 +41,7 @@ SRC_URI += "file://Makefile \
 	   "
 S = "${WORKDIR}/git"
 
-do_compile_prepend() {
+do_compile:prepend() {
     cp ${WORKDIR}/Makefile ${S}/
 }
 

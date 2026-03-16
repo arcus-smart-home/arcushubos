@@ -26,7 +26,7 @@ fi
 
 PMOUNT="/usr/bin/pmount"
 
-for line in `grep -h -v ^# /etc/udev/mount.blacklist /etc/udev/mount.blacklist.d/*`
+for line in `grep -h -v ^# /etc/udev/mount.ignorelist /etc/udev/mount.ignorelist.d/*`
 do
 	if [ ` expr match "$DEVNAME" "$line" ` -gt 0 ];
 	then
@@ -62,7 +62,7 @@ automount_systemd() {
         ;;
     esac
 
-    if ! $MOUNT --no-block -t auto $DEVNAME "/run/media/$name"
+    if ! $MOUNT --no-block -t ${ID_FS_TYPE:-auto} $DEVNAME "/run/media/$name"
     then
         #logger "mount.sh/automount" "$MOUNT -t auto $DEVNAME \"/run/media/$name\" failed!"
         rm_dir "/run/media/$name"
@@ -103,7 +103,7 @@ automount() {
 		;;
 	esac
 
-	if ! $MOUNT -t auto $DEVNAME "/run/media/$name"
+	if ! $MOUNT -t ${ID_FS_TYPE:-auto} $DEVNAME "/run/media/$name"
 	then
 		#logger "mount.sh/automount" "$MOUNT -t auto $DEVNAME \"/run/media/$name\" failed!"
 		rm_dir "/run/media/$name"

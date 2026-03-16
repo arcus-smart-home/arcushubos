@@ -21,11 +21,11 @@
  **********************************************************************/
 
 #define VERSION_MAJOR 3
-#define VERSION_MINOR 0
-#define VERSION_POINT 1
+#define VERSION_MINOR 1
+#define VERSION_POINT 0
 
 /* Build number gets incremented with each official build */
-#define VERSION_BUILD    29
+#define VERSION_BUILD    1
 
 /* The suffix is used to identify special, one-off, builds */
 #define VERSION_SUFFIX ""

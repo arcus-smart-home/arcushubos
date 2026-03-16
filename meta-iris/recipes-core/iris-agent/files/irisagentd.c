@@ -45,7 +45,9 @@
 
 /* Agent debug configuration related defines */
 #define HOSTS_FILE         "/var/run/hosts"
-#define DEFAULT_HOSTNAME   "bh.irisbylowes.com"
+#ifndef DEFAULT_HOSTNAME
+#define DEFAULT_HOSTNAME   "bh.arcussmarthome.com"
+#endif
 #define HUB_OS_BIN         "hubOS.bin"
 #define HUB_AGENT_BIN      "hubAgent.bin"
 #define HUB_AGENT_CKSUM    "/data/agent/lastAgentCksum.txt"
@@ -430,6 +432,11 @@ static void startHubAgent(void)
         clearHostEntries();
     }
 
+#ifdef IRIS_GATEWAY_URI
+    setenv("IRIS_GATEWAY_URI", IRIS_GATEWAY_URI, 1);
+    syslog(LOG_INFO, "Platform gateway: %s", IRIS_GATEWAY_URI);
+#endif
+
     syslog(LOG_INFO, "Starting hub agent...");
     child = fork();
     if (child >= 0) {
@@ -486,7 +493,7 @@ static int file_unpack200_cb(const char *fpath, const struct stat *sb,
     struct passwd *pwd = getpwnam("agent");
     char filename[256], cmd[512], *p;
 
-    strncpy(filename, fpath, sizeof(filename));
+    strncpy(filename, fpath, sizeof(filename)-1);
 
     /* Does file end with .pack.gz? */
     if ((p = strstr(filename, ".pack.gz")) == NULL) {

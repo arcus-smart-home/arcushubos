@@ -1,3 +1,3 @@
 
 # Remove perl dependency
-RDEPENDS_${PN}-dev_remove = "perl"
+RDEPENDS:${PN}-dev:remove = "perl"

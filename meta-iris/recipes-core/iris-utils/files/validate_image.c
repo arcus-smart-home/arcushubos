@@ -166,7 +166,7 @@ int main(int argc, char** argv)
         }
         if (fscanf(tempf, "%s", buf) != 1) {
             fprintf(stderr, "Unable to read version file!\n");
-            pclose(tempf);
+            fclose(tempf);
             res = INSTALL_DECRYPT_ERR;
             goto error_exit;
         }
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
     }
     if (fscanf(tempf, "%s", buf) != 1) {
         fprintf(stderr, "Unable to read model file!\n");
-        pclose(tempf);
+        fclose(tempf);
         res = INSTALL_DECRYPT_ERR;
         goto error_exit;
     }
@@ -218,7 +218,7 @@ int main(int argc, char** argv)
     }
     if (fscanf(tempf, "%s", buf) != 1) {
         fprintf(stderr, "Unable to read customer file!\n");
-        pclose(tempf);
+        fclose(tempf);
         res = INSTALL_DECRYPT_ERR;
         goto error_exit;
     }

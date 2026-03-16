@@ -1,0 +1,38 @@
+From 8a1c3f2e5b7d9a0c4e6f8b2d1a3c5e7f9b0d2e4a Mon Sep 17 00:00:00 2001
+From: Andrew Sorensen <andrew@andrewsorensen.net>
+Date: Sat, 1 Mar 2026 00:00:00 -0800
+Subject: [PATCH] NAU8810: fix PLL mode BCLK divider calculation
+
+The NAU8810 BCLK divider auto-configuration in pcm_hw_params assumes
+IMCLK = 256*fs, which is correct for MCLK prescaler mode. However,
+in PLL mode nau8810_calc_pll produces IMCLK = 1024*fs due to the 4x
+PLL multiplication factor in the target formula. This causes BCLK to
+run 4x too fast (e.g. 6.144 MHz instead of 1.536 MHz for 48 kHz
+stereo 16-bit), producing audio static/noise as the DMA cannot supply
+data at the accelerated frame rate.
+
+Fix by increasing the BCLK divider by 4x (2 steps in the power-of-2
+divider selection) when PLL mode is active.
+
+Signed-off-by: Andrew Sorensen <andrew@andrewsorensen.net>
+---
+ sound/soc/codecs/nau8810.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/sound/soc/codecs/nau8810.c b/sound/soc/codecs/nau8810.c
+index 2e8105b46..4f7a9c312 100644
+--- a/sound/soc/codecs/nau8810.c
++++ b/sound/soc/codecs/nau8810.c
+@@ -713,6 +713,9 @@ static int nau8810_pcm_hw_params(struct snd_pcm_substream *substream,
+ 			bclk_div = NAU8810_BCLKDIV_2;
+ 		else
+ 			return -EINVAL;
++		/* PLL mode IMCLK is 4x higher; increase BCLK divider to match */
++		if (nau8810->clk_id == NAU8810_SCLK_PLL)
++			bclk_div += (2 << NAU8810_BCLKSEL_SFT);
+ 		regmap_update_bits(nau8810->regmap, NAU8810_REG_CLOCK,
+ 			NAU8810_BCLKSEL_MASK, bclk_div);
+ 	}
+--
+2.39.5
+

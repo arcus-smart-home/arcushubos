@@ -107,13 +107,13 @@ int main(int argc, char** argv)
     f = popen(cmd, "r");
     if ((f == NULL) || (fgets(buf, sizeof(buf), f) == NULL)) {
         res = 1;
-        if (f) fclose(f);
+        if (f) pclose(f);
         goto validate_error;
     }
     /* Shouldn't find a second line of response if they match! */
     if (fgets(buf, sizeof(buf), f) != NULL) {
         res = 1;
-        if (f) fclose(f);
+        if (f) pclose(f);
         goto validate_error;
     }
     pclose(f);

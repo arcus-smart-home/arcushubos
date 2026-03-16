@@ -24,7 +24,7 @@ LICENSE = "LGPLv2.1 & GPLv2+"
 LIC_FILES_CHKSUM = "file://${WORKDIR}/COPYING.LIB;md5=fb504b67c50331fc78734fed90fb0e09"
 
 DEPENDS = "dbus glib-2.0"
-RDEPENDS_${PN} = "dbus"
+RDEPENDS:${PN} = "dbus"
 PR = "r0"
 
 SRC_URI = "file://bluez-dbus.h \

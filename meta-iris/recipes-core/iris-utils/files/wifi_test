@@ -84,7 +84,7 @@ sleep 1
 /sbin/ifconfig $INTF up
 case $SECURITY in
     *WPA* )
-	/usr/bin/wpa_passphrase "$SSID" "$KEY" > $WPACFG
+	/usr/sbin/wpa_passphrase "$SSID" "$KEY" > $WPACFG
 	/usr/sbin/wpa_supplicant -B -D wext -i $INTF -c $WPACFG -f $WPALOG
 	/sbin/ifup $INTF &
 	;;

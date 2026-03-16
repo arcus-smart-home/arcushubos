@@ -21,6 +21,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <time.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -30,7 +31,6 @@
 #include <sys/inotify.h>
 #include <semaphore.h>
 #include <irislib.h>
-#include <stropts.h>
 #include <linux/watchdog.h>
 
 
@@ -45,6 +45,10 @@
 
 /* Check ifplugd process every so often as well */
 #define IFPLUGD_PERIODIC 15
+
+/* Check gateway reachability every 5 minutes */
+#define GW_CHECK_PERIODIC 300
+#define GW_CHECK_FAIL_MAX 3
 
 /* Delay a bit before starting wifi config thread to avoid notification issues*/
 #define WIFI_CFG_INIT_DELAY       10
@@ -396,8 +400,8 @@ static gboolean pwrDownButtonHandler(GIOChannel *channel, GIOCondition cond,
         time_t delta = time(NULL) - pwrDownTime;
         if (delta >= POWER_DOWN_PERIOD) {
             syslog(LOG_ERR,
-                   "Power down button pushed for %ld seconds - halting!",
-                   delta);
+                   "Power down button pushed for %lld seconds - halting!",
+                   (long long)delta);
 
             // Set LED pattern then wait (5 seconds in total)
             setLedMode("turning-off");
@@ -481,7 +485,17 @@ static gboolean usbOCHandler(GIOChannel *channel, GIOCondition cond,
 }
 #endif
 
-/* Check if a debug dongle has been inserted with key to allow SSH access */
+/* Check if authorized_keys file exists and is non-empty */
+static int hasAuthorizedKeys(void)
+{
+    struct stat st;
+    if (stat(SSH_AUTH_KEYS_FILE, &st) == 0 && st.st_size > 0)
+        return 1;
+    return 0;
+}
+
+/* Check if a debug dongle has been inserted with key to allow SSH access,
+ * or if persistent SSH has been enabled via ssh_enabled file */
 static gboolean sshCheckAccess(gpointer data)
 {
     FILE *f;
@@ -543,7 +557,7 @@ static gboolean sshCheckAccess(gpointer data)
 
                 /* Verify key */
                 snprintf(cmd, sizeof(cmd),
-                       "openssl rsautl -verify -in %s -pubin -inkey %s -out %s",
+                       "openssl rsautl -verify -in %s -pubin -inkey %s -out %s 2>/dev/null",
                          filename, BUILD_PUBLIC_KEY, TEMP_HUB_ID);
                 if (system(cmd)) {
                     continue;
@@ -621,25 +635,69 @@ static gboolean sshCheckAccess(gpointer data)
         }
     }
 
-    /* Allow access? */
-    if (cur_access && !ssh_access) {
-        syslog(LOG_ERR, "Enabling SSH access.");
-        ssh_access = 1;
+    /* Check for persistent SSH enable file */
+    int file_enabled = (access(SSH_ENABLE_FILE, F_OK) != -1);
+    int has_keys = hasAuthorizedKeys();
+
+    /* Determine desired SSH mode:
+     *  0 = off
+     *  1 = on with password auth (debug dongle, or ssh_enabled without keys)
+     *  2 = on with key-only auth (ssh_enabled + keys, no dongle)
+     */
+    int want_mode = 0;
+    if (cur_access) {
+        want_mode = 1;
+    } else if (file_enabled && has_keys) {
+        want_mode = 2;
+    } else if (file_enabled) {
+        want_mode = 1;
+    }
+
+    if (want_mode > 0 && ssh_access <= 0) {
+        /* SSH not running, start it */
+        syslog(LOG_ERR, "Enabling SSH access%s.",
+               want_mode == 2 ? " (key-only)" : "");
+        ssh_access = want_mode;
 
         /* Change permissions on config so agent can remove on factory reset! */
         snprintf(cmd, sizeof(cmd), "chmod 777 %s", DROPBEAR_CONFIG_DIR);
         system(cmd);
 
-        /* Create debug file to signal agent we are in debug mode */
-        snprintf(cmd, sizeof(cmd), "touch %s", DEBUG_ENABLED_FILE);
-        system(cmd);
+        /* Debug dongle sets debug mode flag */
+        if (cur_access) {
+            snprintf(cmd, sizeof(cmd), "touch %s", DEBUG_ENABLED_FILE);
+            system(cmd);
+        }
 
         /* Start SSH if it's not already running */
         if (!IRIS_isSSHEnabled()) {
-            snprintf(cmd, sizeof(cmd), "%s realstart", SSH_INIT_SCRIPT);
+            snprintf(cmd, sizeof(cmd), "%s %s", SSH_INIT_SCRIPT,
+                     want_mode == 2 ? "realstart-keyonly" : "realstart");
             system(cmd);
         }
-    } else if (!cur_access && ssh_access) {
+    } else if (want_mode > 0 && ssh_access > 0 && want_mode != ssh_access) {
+        /* Mode changed (e.g. dongle inserted/removed while ssh_enabled active)
+         * — restart SSH with new settings */
+        syslog(LOG_ERR, "Switching SSH to %s mode.",
+               want_mode == 2 ? "key-only" : "password");
+        ssh_access = want_mode;
+
+        if (cur_access) {
+            snprintf(cmd, sizeof(cmd), "touch %s", DEBUG_ENABLED_FILE);
+            system(cmd);
+        } else {
+            remove(DEBUG_ENABLED_FILE);
+        }
+
+        if (IRIS_isSSHEnabled()) {
+            snprintf(cmd, sizeof(cmd), "%s stop", SSH_INIT_SCRIPT);
+            system(cmd);
+        }
+        snprintf(cmd, sizeof(cmd), "%s %s", SSH_INIT_SCRIPT,
+                 want_mode == 2 ? "realstart-keyonly" : "realstart");
+        system(cmd);
+    } else if (want_mode == 0 && ssh_access > 0) {
+        /* Disable SSH */
         syslog(LOG_ERR, "Disabling SSH access.");
         ssh_access = 0;
 
@@ -697,6 +755,86 @@ static gboolean ifplugdWatchdog(gpointer data)
     return TRUE;
 }
 
+/* Signal udhcpc to renew on a given interface, or run a one-shot request */
+static void gwRenewInterface(const char *iface)
+{
+    FILE *f;
+    char pidpath[64];
+    char cmd[128];
+
+    snprintf(pidpath, sizeof(pidpath), "/var/run/udhcpc.%s.pid", iface);
+    f = fopen(pidpath, "r");
+    if (f) {
+        int pid = 0;
+        if (fscanf(f, "%d", &pid) == 1 && pid > 0 && kill(pid, 0) == 0) {
+            kill(pid, SIGUSR1);
+            syslog(LOG_INFO, "Sent SIGUSR1 to udhcpc (pid %d) for %s",
+                   pid, iface);
+            fclose(f);
+            return;
+        }
+        fclose(f);
+    }
+
+    /* udhcpc not running — start a one-shot DHCP request */
+    syslog(LOG_ERR, "udhcpc not running for %s, starting one-shot DHCP", iface);
+    snprintf(cmd, sizeof(cmd), "udhcpc -i %s -n -q 2>/dev/null", iface);
+    system(cmd);
+}
+
+/* Check if gateway is reachable — force DHCP renewal if not */
+static int gw_check_failures = 0;
+static gboolean gwCheck(gpointer data)
+{
+    FILE *f;
+    char gateway[64] = {0};
+    char cmd[256];
+
+    /* Read the current gateway */
+    f = fopen("/tmp/pri_gw.conf", "r");
+    if (f == NULL) {
+        return TRUE;
+    }
+    if (fscanf(f, "%63s", gateway) != 1 || gateway[0] == '\0') {
+        fclose(f);
+        return TRUE;
+    }
+    fclose(f);
+
+    /* Ping the gateway without binding to an interface — tests actual
+       reachability regardless of which interface is active */
+    snprintf(cmd, sizeof(cmd),
+             "ping -c 3 -W 2 %s > /dev/null 2>&1", gateway);
+    if (system(cmd) == 0) {
+        if (gw_check_failures > 0) {
+            syslog(LOG_INFO, "Gateway %s reachable again after %d failures",
+                   gateway, gw_check_failures);
+        }
+        gw_check_failures = 0;
+        return TRUE;
+    }
+
+    gw_check_failures++;
+    syslog(LOG_WARNING, "Gateway %s unreachable (failure %d/%d)",
+           gateway, gw_check_failures, GW_CHECK_FAIL_MAX);
+
+    if (gw_check_failures < GW_CHECK_FAIL_MAX) {
+        return TRUE;
+    }
+
+    /* Too many consecutive failures — force DHCP renewal on whatever
+       udhcpc instances are running */
+    gw_check_failures = 0;
+    syslog(LOG_ERR, "Forcing DHCP renewal due to gateway unreachable");
+
+    gwRenewInterface("eth0");
+    if (access("/var/run/udhcpc.wlan0.pid", F_OK) == 0) {
+        gwRenewInterface("wlan0");
+    }
+
+    return TRUE;
+}
+
 /* Poke watchdog */
 static gboolean hwWatchdog(gpointer data)
 {
@@ -744,7 +882,7 @@ static void *ledThreadHandler(void *ptr)
                         /* Open ledMode file */
                         f = fopen(LED_MODE_FILE, "r");
                         if (f != NULL) {
-                            char data[128];
+                            char data[127];
                             char cmd[128];
 
                             /* Read data from ledMode file */
@@ -795,7 +933,7 @@ static void *ledThreadHandler(void *ptr)
                             } else {
                                 /* Update last mode */
                                 strncpy(last_led_mode, data,
-					sizeof(last_led_mode));
+					sizeof(last_led_mode)-1);
                             }
                         }
                     }
@@ -908,13 +1046,13 @@ static int checkConnection(void)
 
                     // First address is the server, second the host
                     if (addr_count == 0) {
-                        strncpy(server, ptr, sizeof(server));
+                        strncpy(server, ptr, sizeof(server)-1);
                     } else {
-                        strncpy(host, ptr, sizeof(host));
+                        strncpy(host, ptr, sizeof(host)-1);
                     }
                     if (++addr_count == 2) {
                         // If server == host, some sort of DNS redirect occurred
-                        if (strncmp(server, host, sizeof(server)) == 0) {
+                        if (strncmp(server, host, sizeof(server)-1) == 0) {
                             break;
                         } else {
                             // Found a result!
@@ -1178,7 +1316,7 @@ static void *provisioningThreadHandler(void *ptr)
                             char *ptr = strstr(line, "ssid: ");
                             if (ptr) {
                                 ptr += strlen("ssid: ");
-                                strncpy(ssid, ptr, sizeof(ssid));
+                                strncpy(ssid, ptr, sizeof(ssid)-1);
                                 ssid[strlen(ptr) - 1] = '\0';
                             }
                         }
@@ -1611,6 +1749,9 @@ int main(int argc, char** argv)
     /* Make sure ifplugd is always running */
     g_timeout_add_seconds(IFPLUGD_PERIODIC, ifplugdWatchdog, NULL);
 
+    /* Periodically check gateway reachability */
+    g_timeout_add_seconds(GW_CHECK_PERIODIC, gwCheck, NULL);
+
     /* For non-release image, need to poke the watchdog - done by the agent
        in release image */
     if (!IRIS_isReleaseImage()) {
@@ -1642,5 +1783,3 @@ int main(int argc, char** argv)
     g_main_loop_run(loop);
     return 0;
 }
-
-

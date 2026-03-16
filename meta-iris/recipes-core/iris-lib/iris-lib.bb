@@ -23,7 +23,7 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
 PR = "r0"
-DEPENDS_append_class-target = " iris-lib-native"
+DEPENDS:append:class-target = " iris-lib-native"
 BBCLASSEXTEND += "native"
 
 SRC_URI = "file://irisversion.h \
@@ -54,7 +54,7 @@ do_compile () {
 }
 
 # Only headers are used natively
-do_compile_class-native() {
+do_compile:class-native() {
 }
 
 do_install () {
@@ -71,7 +71,7 @@ do_install () {
 	ln -s ./libiris.so.1.0 ${D}${libdir}/libiris.so.1
 }
 
-do_install_class-native() {
+do_install:class-native() {
 	install -d ${D}${includedir}
 	install -m 0444 ${WORKDIR}/irisversion.h ${D}${includedir}
 	install -m 0444 ${WORKDIR}/irisdefs.h ${D}${includedir}

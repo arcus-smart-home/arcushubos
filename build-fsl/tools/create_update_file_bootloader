@@ -29,7 +29,7 @@ mkdir update
 cp u-boot-imxdimagic.imx update/
 cp imx6dl-imagic.dtb update/zImage-imx6dl-imagic.dtb
 cp zImage-imxdimagic.bin update/
-cp $1-imxdimagic.squashfs update/core-image-minimal-iris-imxdimagic.squashfs
+cp core-image-minimal-iris-imxdimagic.rootfs.squashfs update/core-image-minimal-iris-imxdimagic.squashfs
 
 # Add in latest Zwave firmware
 ZWAVE_FIRMWARE=../../../../../radios/zwave/SDK/ProductPlus/Bin/SerialAPI_Controller_Static/serialapi_controller_static_ZW050x_US.hex

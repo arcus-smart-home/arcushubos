@@ -23,8 +23,8 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
 DEPENDS = "glib-2.0 iris-lib"
-DEPENDS_append_class-target = " iris-utils-native"
-RDEPENDS_iris-utils = "iris-lib cronie curl"
+DEPENDS:append:class-target = " iris-utils-native"
+RDEPENDS:iris-utils = "iris-lib cronie curl"
 PR = "r0"
 S = "${WORKDIR}"
 BBCLASSEXTEND += "native"
@@ -106,10 +106,10 @@ USERADD_PACKAGES = "${PN}"
 # USERADD_PARAM specifies command line options to pass to the
 # useradd command. Multiple users can be created by separating
 # the commands with a semicolon.
-USERADD_PARAM_${PN} = "-u 1000 -d /home/agent -s /bin/sh -G dialout agent"
+USERADD_PARAM:${PN} = "-u 1000 -d /home/agent -s /bin/sh -G dialout,audio agent"
 
 # Consider any warnings errors (well, not ignored results or format truncation)
-CFLAGS += "-Wall -Werror -Wno-unused-result -Wno-format-truncation"
+CFLAGS += "-Wall -Werror -Wno-unused-result -Wno-format-truncation -Wno-stringop-truncation"
 
 # Add platform specific defines
 TARGET_MACHINE := "${@'${MACHINE}'.replace('-', '_')}"
@@ -159,13 +159,13 @@ do_compile () {
         ${CC} ${LDFLAGS} ${WORKDIR}/emmcparm_1.0.c -o emmcparm
 }
 
-do_compile_class-native() {
+do_compile:class-native() {
         # This is a host tool
         gcc ${HOSTCFLAGS} ${WORKDIR}/build_image.c -o build_image
         gcc ${HOSTCFLAGS} ${WORKDIR}/validate_image.c -o validate_image
 }
 
-FILES_${PN} += "/data \
+FILES:${PN} += "/data \
 	       /mfg \
 	       /home/root/bin/ \
 	       /home/root/etc/ \
@@ -301,7 +301,7 @@ do_install () {
 }
 
 
-do_install_class-native() {
+do_install:class-native() {
 	install -d ${D}${bindir}
 
 	# We install the host tools

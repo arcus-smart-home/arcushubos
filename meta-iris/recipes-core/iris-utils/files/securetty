@@ -4,6 +4,7 @@ console
 
 # TI OMAP SoCs
 ttyO0
+ttyS0
 
 # NXP/Freescale consoles
 ttymxc0

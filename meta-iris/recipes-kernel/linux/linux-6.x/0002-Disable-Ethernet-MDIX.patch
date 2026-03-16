@@ -1,0 +1,77 @@
+From 34d6cc5e58949a98ff784584bafd190d23cc9dbb Mon Sep 17 00:00:00 2001
+From: Andrew Sorensen <andrew@andrewsorensen.net>
+Date: Wed, 25 Feb 2026 10:19:11 -0800
+Subject: [PATCH 2/2] Disable Ethernet Auto-MDIX on LAN8710 PHY
+Upstream-Status: Inappropriate [Iris Hub V2 specific]
+
+---
+ drivers/net/ethernet/ti/davinci_mdio.c |  5 +++++
+ drivers/net/phy/smsc.c                 | 17 +++++++++++++++++
+ include/linux/smscphy.h                |  6 ++++++
+ 3 files changed, 28 insertions(+)
+
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index 89b6d23e9937..f8f9155d8ff3 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -662,6 +662,11 @@ static int davinci_mdio_probe(struct platform_device *pdev)
+ 			dev_info(dev, "phy[%d]: device %s, driver %s\n",
+ 				 phy->mdio.addr, phydev_name(phy),
+ 				 phy->drv ? phy->drv->name : "unknown");
++			// IRIS CHANGES
++			// Call config_init to disable MDIX
++			if (phy->drv->config_init)
++				 phy->drv->config_init(phy);
++			// IRIS CHANGES
+ 		}
+ 	}
+ 
+diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
+index c88edb19d2e7..3b5ec60cf6c7 100644
+--- a/drivers/net/phy/smsc.c
++++ b/drivers/net/phy/smsc.c
+@@ -136,9 +136,26 @@ EXPORT_SYMBOL_GPL(smsc_phy_config_init);
+ 
+ static int smsc_phy_reset(struct phy_device *phydev)
+ {
++        // IRIS CHANGES
++#if 1
++	// Disable MDIX
++	int rc = phy_read(phydev, MII_LAN8710_SCSI);
++	if (rc < 0)
++		return rc;
++	rc = phy_write(phydev, MII_LAN8710_SCSI,
++		rc | MII_LAN8710_SCSI_AMDIXCTRL);
++	if (rc < 0)
++		return rc;
++	rc = phy_write(phydev, MII_LAN8710_SCSI,
++		rc | MII_LAN8710_SCSI_CHANNELSEL);
++	pr_err("phy[lan8710]: Disabling Auto-MDIX support\n");
++	if (rc < 0)
++		return rc;
++#else	// IRIS CHANGES
+ 	int rc = phy_read(phydev, MII_LAN83C185_SPECIAL_MODES);
+ 	if (rc < 0)
+ 		return rc;
++#endif // IRIS CHANGES
+ 
+ 	/* If the SMSC PHY is in power down mode, then set it
+ 	 * in all capable mode before using it.
+diff --git a/include/linux/smscphy.h b/include/linux/smscphy.h
+index 1a6a851d2cf8..6512da95da05 100644
+--- a/include/linux/smscphy.h
++++ b/include/linux/smscphy.h
+@@ -72,4 +72,10 @@ int smsc_phy_probe(struct phy_device *phydev);
+ 
+ #define MII_LAN874X_PHY_PME_SELF_CLEAR_DELAY	0x1000 /* 81 milliseconds */
+ 
++// IRIS CHANGES
++#define MII_LAN8710_SCSI  27 /* Special Control/Status register */
++#define MII_LAN8710_SCSI_AMDIXCTRL (1<<15) /* Flag to disable Auto-MDIX */
++#define MII_LAN8710_SCSI_CHANNELSEL (1<<13) /* Channel select */
++// IRIS CHANGES
++
+ #endif /* __LINUX_SMSCPHY_H__ */
+-- 
+2.39.5
+

@@ -9,11 +9,17 @@ fi
 # Handle up and down of interface
 case "$2" in
 up)
-  # Kill wifi if Ethernet comes back
-  if [ "$1" == eth0 ]; then
-    /sbin/ifdown wlan0
+  # Don't bring up eth0 with the default U-Boot MAC
+  if [ "$1" = "eth0" ]; then
+    mac=$(ip link show eth0 | awk '/ether/ {print $2}')
+    if [ "$mac" = "dc:07:c1:00:ed:85" ]; then
+      echo "ifplugd: eth0 still has default MAC, skipping ifup" > /dev/stderr
+      exit 0
+    fi
+    # Kill wifi if Ethernet comes back
+    /sbin/ifdown wlan0 2>/dev/null || true
     # But leave up from ifconfig perspective so we can still scan!
-    /sbin/ifconfig wlan0 up
+    /sbin/ifconfig wlan0 up 2>/dev/null || true
   fi
   /sbin/ifup $1
   ;;

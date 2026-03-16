@@ -23,7 +23,7 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
 DEPENDS = "iris-lib tinycbor bluez-dbus glib-2.0"
-RDEPENDS_${PN} = "iris-lib tinycbor bluez-dbus"
+RDEPENDS:${PN} = "iris-lib tinycbor bluez-dbus"
 PR = "r0"
 
 SRC_URI = "file://ble_prog.c \
@@ -44,7 +44,7 @@ TARGET_MACHINE := "${@'${MACHINE}'.replace('-', '_')}"
 CFLAGS += "-D${TARGET_MACHINE}"
 
 # Avoid "was already stripped, this will prevent future debugging!" errors
-INSANE_SKIP_${PN} = "already-stripped"
+INSANE_SKIP:${PN} = "already-stripped"
 
 do_compile () {
     if [ "${MACHINE}" = "imxdimagic" ]; then

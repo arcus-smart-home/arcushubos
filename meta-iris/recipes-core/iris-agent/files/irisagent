@@ -90,6 +90,10 @@ else
 fi
 chmod 600 /var/run/authorized_keys
 
+
+# Constrain JVM native memory to avoid OOM on 512MB hub
+export JAVA_DBG_OPTS="-XX:ReservedCodeCacheSize=32m -XX:MaxMetaspaceSize=64m -XX:CICompilerCount=1"
+
 # Launch IRIS Hub agent daemon
 irisagentd
 

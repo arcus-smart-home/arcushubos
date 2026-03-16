@@ -25,12 +25,12 @@ rm -rf update
 
 mkdir update
 
-# Copy in files
-cp MLO-beaglebone-yocto update/MLO-beaglebone
-cp u-boot-beaglebone-yocto.img update/u-boot-beaglebone.img
+# Copy in files - use saved warrior debug u-boot (matches what's on hub)
+cp ../../../../tools/uboot-debug/MLO-debug update/MLO-beaglebone
+cp ../../../../tools/uboot-debug/u-boot-debug.img update/u-boot-beaglebone.img
 cp uImage-beaglebone-yocto.bin update/uImage-beaglebone.bin
 cp am335x-boneblack.dtb update/uImage-am335x-boneblack.dtb
-cp $1-beaglebone-yocto.squashfs update/core-image-minimal-iris-beaglebone.squashfs
+cp $1-beaglebone-yocto.rootfs.squashfs update/core-image-minimal-iris-beaglebone.squashfs
 
 # Add in latest Zwave firmware
 ZWAVE_FIRMWARE=../../../../../radios/zwave/SDK/ProductPlus/Bin/SerialAPI_Controller_Static/serialapi_controller_static_ZM5304_US.hex

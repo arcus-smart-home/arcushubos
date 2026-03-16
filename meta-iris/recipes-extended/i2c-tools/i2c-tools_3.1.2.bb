@@ -11,11 +11,11 @@ SRC_URI[sha256sum] = "db5e69f2e2a6e3aa2ecdfe6a5f490b149c504468770f58921c8c5b8a78
 
 inherit autotools-brokensep
 
-do_compile_prepend() {
+do_compile:prepend() {
     cp ${WORKDIR}/Makefile ${S}/
 }
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${includedir}/linux
     install -m 0644 include/linux/i2c-dev.h ${D}${includedir}/linux/i2c-dev-user.h
     rm -f ${D}${includedir}/linux/i2c-dev.h

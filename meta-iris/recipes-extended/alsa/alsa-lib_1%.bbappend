@@ -3,7 +3,6 @@
 
 EXTRA_OECONF += " \
     --disable-aload \
-    --disable-rawmidi \
     --disable-seq \
     --disable-ucm \
     --disable-topology \

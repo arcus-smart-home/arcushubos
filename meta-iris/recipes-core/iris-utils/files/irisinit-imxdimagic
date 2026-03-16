@@ -197,9 +197,11 @@ if [ -e /mfg/config/hubID ]; then
     hostname -F /mfg/config/hubID
 fi
 
-# Update eth0 MAC address
+# Update eth0 MAC address — ifdown first to kill any stale udhcpc
+# and clear ifstate from early boot, then set the real MAC
 if [ -e /mfg/config/macAddr1 ]; then
-    macEth0=$(cat /mfg/config/macAddr1);
+    macEth0=$(cat /mfg/config/macAddr1)
+    ifdown eth0 2>/dev/null || true
     ifconfig eth0 down
     ifconfig eth0 hw ether $macEth0
     ifconfig eth0 up
@@ -285,6 +287,9 @@ if [ ! -e /data/config/wpa_supplicant.conf ] || [ ! -s /data/config/wpa_supplica
     cp /home/root/etc/wpa_supplicant.conf /data/config/wpa_supplicant.conf
 fi
 
+# Load hardware RNG early to seed entropy pool before Java needs it
+modprobe imx-rngc 2>/dev/null || modprobe caam-rng 2>/dev/null || true
+
 # Load crypto device module
 modprobe cryptodev
 
@@ -314,6 +319,15 @@ batteryd
 
 # Launch ifplugd to keep track of interface up/down handling
 /etc/init.d/ifplugd start
+
+# Ensure eth0 gets configured — ifplugd may miss the initial link state
+# due to MAC address change timing. Wait for link then run udhcpc directly.
+(   for i in 1 2 3 4 5; do
+        ip link show eth0 | grep -q LOWER_UP && break
+        sleep 2
+    done
+    udhcpc -i eth0 -n -q 2>/dev/null
+) &
 
 # Map serial ports to expected ones and change permissions for agent use
 ln -s /dev/ttymxc4 /dev/ttyO1

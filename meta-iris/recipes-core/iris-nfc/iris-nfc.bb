@@ -29,7 +29,7 @@ SRC_URI = "file://nfc_test.c \
            file://irisnfcd.c \
            "
 
-FILES_${PN} += "${libdir}"
+FILES:${PN} += "${libdir}"
 
 # Consider any warnings errors (well, not ignored results)
 CFLAGS += "-Werror -Wno-unused-result"
